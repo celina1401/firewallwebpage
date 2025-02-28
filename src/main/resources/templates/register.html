@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" th:href="@{/images/favicon.png}"/>
+    <title>Register</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .register-container {
+            text-align: center;
+        }
+        .register-box {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            width: 30vw;
+        }
+        .title {
+            color: #2575fc;
+            /*font-size: 24px;*/
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: gray;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            width: 80px;
+            margin-bottom: 15px;
+        }
+        
+        .input-contain {
+            position: relative;
+            margin: 20px 0;
+            width: 80%;
+        }
+
+        .input-field {
+            margin-left: 8px;
+            width: 120%;
+            font-size: 18px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: #0e51ff;
+        }
+
+        label {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            color: #999;
+            font-size: 18px;
+            background: white;
+            padding: 0 5px;
+        }
+
+        .input-field:focus + label,
+        .input-field.has-content + label {
+            top: 0;
+            font-size: 14px;
+            color: #0e51ff;
+            transform: translateY(-50%);
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+        .register-btn {
+            padding: 12px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            
+            background: #28a745;
+            color: white;
+        }
+        .register-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-box">
+            <h1 class="title">Sign Up</h1>
+            <p class="subtitle">Create an Account</p>
+            <div class="logo">
+                <img th:src="@{/images/logo.png}" alt="Logo">
+            </div>
+            <form th:action="@{/register}" method="post">
+                <div class="input-contain">
+                    <input type="text" class="input-field" name="fullname" required>
+                    <label for="fullname">Full Name</label>
+                </div>
+                <div class="input-contain">
+                    <input type="text" class="input-field" name="username" required>
+                    <label for="username">Username</label>
+                </div>
+                 <div class="input-contain">
+                    <input type="email" class="input-field" name="email" required>
+                    <label for="email">Email</label>
+                </div>
+                <div class="input-contain">
+                    <input type="password" class="input-field" name="password" required>
+                    <label for="password">Password</label>
+                </div>
+                <div class="input-contain">
+                    <input type="password" class="input-field" name="confirm_password" required>
+                    <label for="confirm_password"> Confirm Password</label>
+                </div>
+                <div class="buttons">
+                    <button type="submit" class="register-btn">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        //Xu ly su kien onclick dang ki
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelector("form").addEventListener("submit", function (event) {
+                event.preventDefault(); // Ngăn chặn gửi form mặc định
+
+                let fullname = document.querySelector("[name='fullname']").value.trim();
+                let username = document.querySelector("[name='username']").value.trim();
+                let email = document.querySelector("[name='email']").value.trim();
+                let password = document.querySelector("[name='password']").value;
+                let confirmPassword = document.querySelector("[name='confirm_password']").value;
+
+                let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regex kiểm tra email
+                let isValid = true;
+                let errorMessage = "";
+
+                if (fullname === "" || username === "" || email === "" || password === "" || confirmPassword === "") {
+                    errorMessage = "Please fill out this field";
+                    isValid = false;
+                } else if (!emailPattern.test(email)) {
+                    errorMessage = "Email is invalid";
+                    isValid = false;
+                } else if (password.length < 6) {
+                    errorMessage = "Password must be at least 6 character";
+                    isValid = false;
+                } else if (password !== confirmPassword) {
+                    errorMessage = "Confirm password does not match";
+                    isValid = false;
+                }
+
+                if (!isValid) {
+                    alert(errorMessage);
+                } else {
+                    alert("Congratulation! Your account has been created!");
+                    window.location.href = "/login"; // Chuyển hướng sau khi đăng ký thành công
+                }
+            });
+        });
+        
+        document.addEventListener("DOMContentLoaded", function () {
+        let inputs = document.querySelectorAll(".input-field");
+
+        inputs.forEach(input => {
+            input.addEventListener("blur", function () {
+                if (this.value.trim() !== "") {
+                    this.classList.add("has-content");
+                } else {
+                    this.classList.remove("has-content");
+                }
+            });
+
+            // Để giữ label đúng vị trí khi load lại trang
+            if (input.value.trim() !== "") {
+                input.classList.add("has-content");
+            }
+            });
+        });
+    </script>
+</body>
+</html>
