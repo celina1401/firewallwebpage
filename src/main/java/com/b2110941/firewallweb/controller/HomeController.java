@@ -4,7 +4,7 @@
  */
 package com.b2110941.firewallweb.controller;
 
-import com.b2110941.firewallweb.entity.PC;
+import com.b2110941.firewallweb.model.PC;
 import java.util.List;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
