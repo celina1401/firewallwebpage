@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 public class User {
     @Id
-    private String id;
+    private String id;          // Mongodb sẽ tự tạo dữ liệu cho trường này
     private String fullname;
     private String username;  
     private String password;
@@ -20,13 +20,14 @@ public class User {
     public User() {
     }
 
-    public User(String id, String fullname, String username, String password, String email) {
-        this.id = id;
+    public User( String fullname, String username, String password, String email) {
         this.fullname = fullname;
         this.username = username;
         this.password = password;
         this.email = email;
     }
+    
+    
 
     public String getId() {
         return id;

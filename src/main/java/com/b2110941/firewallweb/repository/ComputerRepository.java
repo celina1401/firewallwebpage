@@ -8,6 +8,6 @@ package com.b2110941.firewallweb.repository;
  *
  * @author User
  */
-public class ComputerRepository {
+public class computerRepository {
     
 }

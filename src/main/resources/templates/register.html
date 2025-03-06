@@ -105,9 +105,49 @@
         .register-btn:hover {
             background: #218838;
         }
+        
+            /* Login box popup */
+        .login-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            width: 30vw;
+            text-align: center;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            opacity: 0;
+            display: none;
+            transition: opacity 0.5s ease;
+        }
+        .login-box.visible {
+            opacity: 1;
+            display: block;
+        }
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            display: none;
+            transition: opacity 0.5s ease;
+        }
+        .overlay.visible {
+            opacity: 1;
+            display: block;
+        }
     </style>
 </head>
 <body>
+    <div class="overlay" id="overlay"></div> <!-- Lớp phủ mờ -->
     <div class="register-container">
         <div class="register-box">
             <h1 class="title">Sign Up</h1>
@@ -143,62 +183,39 @@
         </div>
     </div>
     
+    <div class="login-box" id="loginBox">
+        <div th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div>
+        <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
+        <div class="buttons">
+            <button type="submit" class="register-btn" onclick="window.location.href='/'">Click here to login</button>
+        </div>
+    </div>
+    
     <script>
-        //Xu ly su kien onclick dang ki
         document.addEventListener("DOMContentLoaded", function () {
-            document.querySelector("form").addEventListener("submit", function (event) {
-                event.preventDefault(); // Ngăn chặn gửi form mặc định
-
-                let fullname = document.querySelector("[name='fullname']").value.trim();
-                let username = document.querySelector("[name='username']").value.trim();
-                let email = document.querySelector("[name='email']").value.trim();
-                let password = document.querySelector("[name='password']").value;
-                let confirmPassword = document.querySelector("[name='confirm_password']").value;
-
-                let emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regex kiểm tra email
-                let isValid = true;
-                let errorMessage = "";
-
-                if (fullname === "" || username === "" || email === "" || password === "" || confirmPassword === "") {
-                    errorMessage = "Please fill out this field";
-                    isValid = false;
-                } else if (!emailPattern.test(email)) {
-                    errorMessage = "Email is invalid";
-                    isValid = false;
-                } else if (password.length < 6) {
-                    errorMessage = "Password must be at least 6 character";
-                    isValid = false;
-                } else if (password !== confirmPassword) {
-                    errorMessage = "Confirm password does not match";
-                    isValid = false;
-                }
-
-                if (!isValid) {
-                    alert(errorMessage);
-                } else {
-                    alert("Congratulation! Your account has been created!");
-                    window.location.href = "/"; // Chuyển hướng sau khi đăng ký thành công
-                }
-            });
-        });
-        
-        document.addEventListener("DOMContentLoaded", function () {
-        let inputs = document.querySelectorAll(".input-field");
-
-        inputs.forEach(input => {
-            input.addEventListener("blur", function () {
-                if (this.value.trim() !== "") {
-                    this.classList.add("has-content");
-                } else {
-                    this.classList.remove("has-content");
+            // Xử lý hiệu ứng label cho input
+            let inputs = document.querySelectorAll(".input-field");
+            inputs.forEach(input => {
+                input.addEventListener("blur", function () {
+                    if (this.value.trim() !== "") {
+                        this.classList.add("has-content");
+                    } else {
+                        this.classList.remove("has-content");
+                    }
+                });
+                if (input.value.trim() !== "") {
+                    input.classList.add("has-content");
                 }
             });
 
-            // Để giữ label đúng vị trí khi load lại trang
-            if (input.value.trim() !== "") {
-                input.classList.add("has-content");
+            const loginBox = document.getElementById("loginBox");
+            const overlay = document.getElementById("overlay");
+            const message = /*[[${message}]]*/ null; // Lấy message từ Thymeleaf
+
+            if (message) {
+                loginBox.classList.add("visible");
+                overlay.classList.add("visible"); // Hiển thị overlay
             }
-            });
         });
     </script>
 </body>

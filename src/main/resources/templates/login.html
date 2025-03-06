@@ -50,7 +50,6 @@
             box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
         }
         
-        
         .input-contain {
             position: relative;
             margin: 20px 0;
@@ -131,6 +130,27 @@
         .register-btn:hover {
             background: #218838;
         }
+        
+        .login-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            width: 30vw;
+            text-align: center;
+            position: fixed; /* Đặt thành popup */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Căn giữa */
+            z-index: 1000; /* Layer trên cùng */
+            opacity: 1;
+            transition: opacity 0.5s ease; /* Hiệu ứng mờ dần */
+        }
+        .login-box.hidden {
+            opacity: 0;
+            pointer-events: none; /* Ngăn tương tác khi ẩn */
+        }
+        
     </style>
 </head>
 <body>
@@ -179,6 +199,20 @@
                 input.classList.add("has-content");
             }
             });
+        });
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            const loginBox = document.getElementById("loginBox");
+            const message = document.querySelector("[th\\:if='${message}']");
+
+            if (message) { // Chỉ ẩn nếu có thông báo (tức là vừa đăng ký thành công)
+                setTimeout(() => {
+                    loginBox.classList.add("hidden"); // Thêm class để mờ dần
+                    setTimeout(() => {
+                        loginBox.style.display = "none"; // Ẩn hoàn toàn sau khi mờ
+                    }, 500); // Đợi hiệu ứng mờ hoàn tất (0.5s)
+                }, 2000); // Hiển thị trong 2 giây
+            }
         });
     </script>
 </body>
