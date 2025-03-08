@@ -50,6 +50,7 @@
             box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
         }
         
+        
         .input-contain {
             position: relative;
             margin: 20px 0;
@@ -130,27 +131,6 @@
         .register-btn:hover {
             background: #218838;
         }
-        
-        .login-box {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
-            width: 30vw;
-            text-align: center;
-            position: fixed; /* Đặt thành popup */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%); /* Căn giữa */
-            z-index: 1000; /* Layer trên cùng */
-            opacity: 1;
-            transition: opacity 0.5s ease; /* Hiệu ứng mờ dần */
-        }
-        .login-box.hidden {
-            opacity: 0;
-            pointer-events: none; /* Ngăn tương tác khi ẩn */
-        }
-        
     </style>
 </head>
 <body>
@@ -161,7 +141,10 @@
             <div class="logo">
                 <img th:src="@{/images/logo.png}" alt="Logo">
             </div>
-            <form th:action="@{/login}" method="post">
+            
+            <div th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div>
+            <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
+            <form th:action="@{/}" method="post">
                 <div class="input-contain">
                     <input type="text" class="input-field" name="username" required>
                     <label for="username">Username</label>
@@ -174,7 +157,7 @@
                     <a th:href="@{/forgot-password}" onclick="window.location.href='/forgot-password'">Forgot password?</a>
                 </div>
                 <div class="buttons">
-                    <button type="submit" class="login-btn">Log In</button>
+                    <button type="submit" class="login-btn" >Log In</button>
                     <button type="button" class="register-btn" onclick="window.location.href='/register'">Register</button>
                 </div>
             </form>
@@ -199,20 +182,6 @@
                 input.classList.add("has-content");
             }
             });
-        });
-        
-        document.addEventListener("DOMContentLoaded", function () {
-            const loginBox = document.getElementById("loginBox");
-            const message = document.querySelector("[th\\:if='${message}']");
-
-            if (message) { // Chỉ ẩn nếu có thông báo (tức là vừa đăng ký thành công)
-                setTimeout(() => {
-                    loginBox.classList.add("hidden"); // Thêm class để mờ dần
-                    setTimeout(() => {
-                        loginBox.style.display = "none"; // Ẩn hoàn toàn sau khi mờ
-                    }, 500); // Đợi hiệu ứng mờ hoàn tất (0.5s)
-                }, 2000); // Hiển thị trong 2 giây
-            }
         });
     </script>
 </body>

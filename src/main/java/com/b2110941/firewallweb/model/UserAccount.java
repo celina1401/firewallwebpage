@@ -4,12 +4,12 @@
  */
 package com.b2110941.firewallweb.model;
 
-/**
- *
- * @author User
- */
-public class UserAccount {
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+@Document(collection = "user_account")
+public class UserAccount {
+    @Id
     private String username;  
     private String password;
 

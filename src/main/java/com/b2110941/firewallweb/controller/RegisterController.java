@@ -5,6 +5,8 @@
 package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.User;
+import com.b2110941.firewallweb.model.UserAccount;
+import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -26,6 +28,7 @@ public class RegisterController {
     
     @Autowired
     private userRepository userRepository;
+//    private userAccountRepository userAccountRepository;
     
     @PostMapping("/register")
     public String register(@RequestParam String fullname, 
@@ -56,9 +59,11 @@ public class RegisterController {
 
         // Tạo user mới và lưu vào database
         User newUser = new User(fullname, username, email, password);
+//        UserAccount newUserAccount = new UserAccount(username, password);
         userRepository.save(newUser);
+//        userAccountRepository.save(newUserAccount);
 
         model.addAttribute("message", "Registration successful! Please login.");
-        return "register"; // Trả về trang đăng nhập sau khi đăng ký thành công
+        return "login"; // Trả về trang đăng nhập sau khi đăng ký thành công
     }
 }
