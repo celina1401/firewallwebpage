@@ -58,6 +58,11 @@
                         <groupId>org.springframework.boot</groupId>
                         <artifactId>spring-boot-starter-security</artifactId>
                 </dependency>-->
+                <dependency>
+                    <groupId>com.jcraft</groupId>
+                    <artifactId>jsch</artifactId>
+                    <version>0.1.55</version> <!-- Sử dụng phiên bản mới nhất, kiểm tra trên Maven Central nếu cần -->
+                </dependency>
 	</dependencies>
 
 	<build>

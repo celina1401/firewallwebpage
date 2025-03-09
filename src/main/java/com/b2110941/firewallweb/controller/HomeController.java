@@ -5,9 +5,13 @@
 package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.PC;
+import com.b2110941.firewallweb.repository.pcAccountRepository;
+import com.b2110941.firewallweb.repository.pcRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
@@ -26,5 +30,13 @@ public class HomeController {
         model.addAttribute("computers", computers);
         return "home";
     }
+    
+    @Autowired
+    private pcRepository pcRepository;
+    @Autowired
+    private pcAccountRepository pcAccountRepository;
+    
+//    @PostMapping("/home")
+    
     
 }

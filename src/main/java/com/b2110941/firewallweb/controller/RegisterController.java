@@ -28,7 +28,8 @@ public class RegisterController {
     
     @Autowired
     private userRepository userRepository;
-//    private userAccountRepository userAccountRepository;
+    @Autowired
+    private userAccountRepository userAccountRepository;
     
     @PostMapping("/register")
     public String register(@RequestParam String fullname, 
@@ -59,9 +60,9 @@ public class RegisterController {
 
         // Tạo user mới và lưu vào database
         User newUser = new User(fullname, username, email, password);
-//        UserAccount newUserAccount = new UserAccount(username, password);
         userRepository.save(newUser);
-//        userAccountRepository.save(newUserAccount);
+        UserAccount newUserAccount = new UserAccount(username, password);
+        userAccountRepository.save(newUserAccount);
 
         model.addAttribute("message", "Registration successful! Please login.");
         return "login"; // Trả về trang đăng nhập sau khi đăng ký thành công

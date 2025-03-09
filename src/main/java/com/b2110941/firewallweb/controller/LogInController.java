@@ -33,9 +33,7 @@ public class LogInController {
             return "login";
         }else{
             model.addAttribute("message","Login successful! Welcome, " + username);
-            return "home";
-        }
-        
-        
+            return "redirect:/home";
+        }        
     }
 }
