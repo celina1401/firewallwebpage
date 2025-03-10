@@ -94,7 +94,12 @@
         }
         .computer img {
             width: 80px;
-            margin-bottom: 20px
+            margin-bottom: 20px;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .computer img:hover {
+            transform: scale(1.1); /* Phóng to nhẹ khi hover */
         }
         .add-computer {
             width: 12vw;
@@ -246,7 +251,7 @@
 <body>
     <div class="sidebar">
         <div class="profile-icon"></div>
-        <div class ="full-name" th:text="${username}"><h2>User</h2></div>
+        <div class ="full-name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
         <button class="menu-btn" th:text="'INFORMATION'"></button>
         <!--<button class="menu-btn active" th:text="'SETTING'"></button>-->
         <button class="menu-btn" th:text="'? HELP'"></button>
@@ -265,7 +270,9 @@
     </div>
     <div class="main-content">
         <div class="success-message" th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div> <br>
-        <div th:each="computer : ${computers}" class="computer">
+        <div th:each="computer : ${computers}" class="computer" 
+             th:data-pcname="${computer.pcName}" 
+             th:onclick="redirectToMachine(this)" style="cursor: pointer;">
             <img src="/images/computer.png" alt="Computer">
             <span th:text="${computer.pcName}">Computer 1</span>
         </div>
@@ -320,7 +327,10 @@
         function closeModal() {
             document.getElementById("computerModal").style.display = "none";
         }
-        
+        function redirectToMachine(element) {
+            let pcName = element.getAttribute("data-pcname");
+            window.location.href = "/machine/" + encodeURIComponent(pcName);
+        }       
         //xu ly label
         document.addEventListener("DOMContentLoaded", function () {
         let inputs = document.querySelectorAll(".input-field");

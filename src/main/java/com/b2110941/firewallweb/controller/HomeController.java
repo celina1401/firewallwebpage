@@ -10,6 +10,7 @@ import com.b2110941.firewallweb.repository.pcAccountRepository;
 import com.b2110941.firewallweb.repository.pcRepository;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,6 +35,7 @@ public class HomeController {
         // Lấy danh sách tất cả PCs từ database
         List<PC> computers = pcRepository.findAll();
         model.addAttribute("computers", computers);
+        model.addAttribute("username", username);
         return "home";
     }
     
@@ -51,8 +53,8 @@ public class HomeController {
                                 @RequestParam String password,
                                 Model model,
                                 HttpSession session){
-        PC existPCByUsername = pcRepository.findBypcUsername(pcUsername);
-        PC existPCBypcName = pcRepository.findBypcName(pcName);
+        Optional<PC> existPCByUsername = pcRepository.findBypcUsername(pcUsername);
+        Optional<PC> existPCBypcName = pcRepository.findBypcName(pcName);
         String username = (String) session.getAttribute("username");
         
         if (existPCByUsername != null && existPCBypcName != null){
