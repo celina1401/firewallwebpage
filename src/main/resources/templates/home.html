@@ -83,7 +83,7 @@
         }
         .computer {
             width: 12vw;
-            height: 28vh;
+            height: 30vh;
             background: white;
             display: flex;
             flex-direction: column;
@@ -160,7 +160,7 @@
 
         .input-contain {
             position: relative;
-            margin: 12px 0;
+            margin: 10px 0;
             width: 80%;
         }
         
@@ -230,12 +230,23 @@
             background: #1e7e34;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+/*        
+        .success-message {
+            color: green;
+            width: 100%;
+            transition: opacity 0.5s ease;
+        }
+        .success-message.hidden {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+        }*/
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="profile-icon"></div>
-        <div class ="full-name"><h2>User</h2></div>
+        <div class ="full-name" th:text="${username}"><h2>User</h2></div>
         <button class="menu-btn" th:text="'INFORMATION'"></button>
         <!--<button class="menu-btn active" th:text="'SETTING'"></button>-->
         <button class="menu-btn" th:text="'? HELP'"></button>
@@ -253,9 +264,10 @@
         </div>
     </div>
     <div class="main-content">
+        <div class="success-message" th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div> <br>
         <div th:each="computer : ${computers}" class="computer">
             <img src="/images/computer.png" alt="Computer">
-            <span th:text="${computer.name}">Computer 1</span>
+            <span th:text="${computer.pcName}">Computer 1</span>
         </div>
         <div class="add-computer" onclick="openModal()">
             <img src="/images/add_icon.png" alt="add_icon"/>
@@ -265,14 +277,15 @@
     <div id="computerModal" class="modal">
         <div class="modal-content">
             <div class="modal-left">
-                <form th:action="@{/addComputer}" method="post">
+                <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
+                <form th:action="@{/home}" method="post">
                     <div class="input-contain">
-                        <input type="text" class="input-field" name="computerName" required>
-                        <label for="computerName">Computer Name</label>
+                        <input type="text" class="input-field" name="pcName" required>
+                        <label for="pcName">Computer Name</label>
                     </div>
                     <div class="input-contain">
-                        <input type="text" class="input-field" name="username" required>
-                        <label for="username">Ubuntu Username</label>
+                        <input type="text" class="input-field" name="pcUsername" required>
+                        <label for="pcUsername">Ubuntu Username</label>
                     </div>
                     <div class="input-contain">
                         <input type="text" class="input-field" name="ipAddress" required>

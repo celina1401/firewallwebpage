@@ -2,7 +2,7 @@ package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.UserAccount;
 import com.b2110941.firewallweb.repository.userAccountRepository;
-import com.b2110941.firewallweb.repository.userRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,7 +23,8 @@ public class LogInController {
     @PostMapping("/")
     public String login(@RequestParam String username,
                         @RequestParam String password,
-                        Model model){
+                        Model model,
+                        HttpSession session){
         UserAccount user = userAccountRepository.findByUsername(username);
         if (user == null){
             model.addAttribute("error", "Username does not exist!");
@@ -33,6 +34,7 @@ public class LogInController {
             return "login";
         }else{
             model.addAttribute("message","Login successful! Welcome, " + username);
+            session.setAttribute("username", username);
             return "redirect:/home";
         }        
     }

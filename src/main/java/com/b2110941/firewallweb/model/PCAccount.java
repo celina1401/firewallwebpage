@@ -1,15 +1,9 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Other/File.java to edit this template
- */
 package com.b2110941.firewallweb.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-/**
- *
- * @author User
- */
+@Document(collection = "pc_account")
 public class PCAccount {
     @Id
     private String pcId;
@@ -25,6 +19,11 @@ public class PCAccount {
         this.pcPassword = pcPassword;
     }
 
+    public PCAccount(String pcUsername, String pcPassword) {
+        this.pcUsername = pcUsername;
+        this.pcPassword = pcPassword;
+    }
+    
     public String getPcId() {
         return pcId;
     }

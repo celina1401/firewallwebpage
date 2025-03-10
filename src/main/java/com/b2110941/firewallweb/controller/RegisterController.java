@@ -8,6 +8,7 @@ import com.b2110941.firewallweb.model.User;
 import com.b2110941.firewallweb.model.UserAccount;
 import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,7 +38,8 @@ public class RegisterController {
                            @RequestParam String password,
                            @RequestParam String confirm_password,
                            @RequestParam String email,
-                           Model model){
+                           Model model,
+                           HttpSession session){
         // Kiểm tra xem username hoặc email đã tồn tại chưa
         User existingUserByUsername = userRepository.findByUsername(username);
         User existingUserByEmail = userRepository.findByEmail(email);
@@ -61,6 +63,9 @@ public class RegisterController {
         // Tạo user mới và lưu vào database
         User newUser = new User(fullname, username, email, password);
         userRepository.save(newUser);
+        session.setAttribute("fullname", fullname);
+        session.setAttribute("username", username);
+        session.setAttribute("email", email);
         UserAccount newUserAccount = new UserAccount(username, password);
         userAccountRepository.save(newUserAccount);
 

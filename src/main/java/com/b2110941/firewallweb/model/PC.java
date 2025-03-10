@@ -29,14 +29,13 @@ public class PC {
         this.password = password;
     }
 
-    public PC(String pcId, String pcUsername, String ipAddress, String port, String password) {
-        this.pcId = pcId;
+    public PC(String pcName, String pcUsername, String ipAddress, String port, String password) {
+        this.pcName = pcName;
         this.pcUsername = pcUsername;
         this.ipAddress = ipAddress;
         this.port = port;
         this.password = password;
     }
-
 
     public String getPcId() {
         return pcId;

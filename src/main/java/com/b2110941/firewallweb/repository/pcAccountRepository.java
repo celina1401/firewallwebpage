@@ -6,11 +6,9 @@ package com.b2110941.firewallweb.repository;
 
 import com.b2110941.firewallweb.model.PCAccount;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.stereotype.Repository;
 
-/**
- *
- * @author User
- */
+@Repository
 public interface pcAccountRepository extends MongoRepository<PCAccount, String>{
-    PCAccount findByUbuntuUsername(String pcUsername);
+    PCAccount findBypcUsername(String pcUsername);
 }
