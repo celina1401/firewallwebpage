@@ -8,6 +8,7 @@ import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.model.PCAccount;
 import com.b2110941.firewallweb.repository.pcAccountRepository;
 import com.b2110941.firewallweb.repository.pcRepository;
+import com.b2110941.firewallweb.service.ConnectSSH;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
@@ -43,41 +44,59 @@ public class HomeController {
     private pcRepository pcRepository;
     @Autowired
     private pcAccountRepository pcAccountRepository;
+    @Autowired
+    private ConnectSSH connectSSH;
     
-    @PostMapping("/home")
-    public String add_computer (
-                                @RequestParam String pcName,
-                                @RequestParam String pcUsername,
-                                @RequestParam String ipAddress,
-                                @RequestParam String port,
-                                @RequestParam String password,
-                                Model model,
-                                HttpSession session){
-        Optional<PC> existPCByUsername = pcRepository.findBypcUsername(pcUsername);
-        Optional<PC> existPCBypcName = pcRepository.findBypcName(pcName);
-        String username = (String) session.getAttribute("username");
-        
-        if (existPCByUsername != null && existPCBypcName != null){
-            model.addAttribute("error", "Your PC already exists");
-            return "home";
-        }else if (existPCBypcName != null){
-             model.addAttribute("error", "PC name already exist");
-        }else{
-            PC newPC = new PC(pcName, pcUsername, ipAddress, port, password);
-            pcRepository.save(newPC);
-            session.setAttribute("username", username);
-            
-            PCAccount newPCAccount = new PCAccount(pcUsername, password);
-            pcAccountRepository.save(newPCAccount);     
-            
-            model.addAttribute("message", "PC added successfully");
-        }
-        // Lấy lại danh sách PCs để hiển thị
-        List<PC> computers = pcRepository.findAll();
-        model.addAttribute("computers", computers);
-        model.addAttribute("username", username);
-        return "home";
-        
+@PostMapping("/home")
+public String add_computer(
+        @RequestParam String pcName,
+        @RequestParam String pcUsername,
+        @RequestParam String ipAddress,
+        @RequestParam int port,
+        @RequestParam String password,
+        Model model,
+        HttpSession session) {
+    
+    String username = (String) session.getAttribute("username");
+    if (username == null) {
+        return "redirect:/"; // Nếu không có username, quay lại trang login
     }
+
+    Optional<PC> existPCByUsername = pcRepository.findBypcUsername(pcUsername);
+    Optional<PC> existPCBypcName = pcRepository.findBypcName(pcName);
+
+    if (existPCByUsername.isPresent() && existPCBypcName.isPresent()) {
+        model.addAttribute("error", "Your PC already exists");
+        return "home";
+    } else if (existPCBypcName.isPresent()) {
+        model.addAttribute("error", "PC name already exists");
+        return "home";
+    }
+
+    // Kiểm tra kết nối SSH trước khi lưu
+    boolean sshSuccess = connectSSH.checkConnectSSH(ipAddress, port, pcUsername, password);
+    if (!sshSuccess) {
+        model.addAttribute("error", "SSH connection failed!");
+        return "home";
+    }
+
+    // Nếu mọi thứ đều ổn, thêm máy vào database
+    PC newPC = new PC(pcName, pcUsername, ipAddress, port, password);
+    pcRepository.save(newPC);
+
+    // Thêm tài khoản máy vào database
+    PCAccount newPCAccount = new PCAccount(pcUsername, password);
+    pcAccountRepository.save(newPCAccount);
+
+    model.addAttribute("message", "PC added successfully and SSH connected!");
+
+    // Lấy danh sách PCs để hiển thị trên giao diện
+    List<PC> computers = pcRepository.findAll();
+    model.addAttribute("computers", computers);
+    model.addAttribute("username", username);
+
+    return "redirect:/home";
+}
+
     
 }

@@ -11,12 +11,23 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ConnectSSH {
-    public Session establishSSH(String host, int port, String username, String password) throws JSchException{
-        JSch jsch = new JSch();
-        Session session = jsch.getSession(username, host, port);
-        session.setPassword(password);
-        session.setConfig("StrictHostKeyChecking","no");
-        session.connect(1000);
-        return session;
+    public boolean checkConnectSSH(String host, int port, String username, String password){
+        try {
+            System.out.println("Connecting to: " + host + ":" + port);
+
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(username, host, port);
+            session.setPassword(password);
+            session.setConfig("StrictHostKeyChecking", "no");
+
+            session.connect(5000); // Timeout 5s
+            System.out.println("SSH Connection Successful!");
+
+            session.disconnect();
+            return true;
+        } catch (JSchException e) {
+            System.err.println("SSH Connection Error: " + e.getMessage());
+            return false;
+        }
     }
 }

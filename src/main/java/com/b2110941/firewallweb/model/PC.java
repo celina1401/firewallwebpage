@@ -14,13 +14,13 @@ public class PC {
     private String pcName;
     private String pcUsername;
     private String ipAddress;
-    private String port;
+    private int port;
     private String password;
 
     public PC() {   
     }
 
-    public PC(String pcId, String pcName, String pcUsername, String ipAddress, String port, String password) {
+    public PC(String pcId, String pcName, String pcUsername, String ipAddress, int port, String password) {
         this.pcId = pcId;
         this.pcName = pcName;
         this.pcUsername = pcUsername;
@@ -29,7 +29,7 @@ public class PC {
         this.password = password;
     }
 
-    public PC(String pcName, String pcUsername, String ipAddress, String port, String password) {
+    public PC(String pcName, String pcUsername, String ipAddress, int port, String password) {
         this.pcName = pcName;
         this.pcUsername = pcUsername;
         this.ipAddress = ipAddress;
@@ -69,11 +69,11 @@ public class PC {
         this.ipAddress = ipAddress;
     }
 
-    public String getPort() {
+    public int getPort() {
         return port;
     }
 
-    public void setPort(String port) {
+    public void setPort(int port) {
         this.port = port;
     }
       
