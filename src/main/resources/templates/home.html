@@ -32,8 +32,11 @@
             margin-bottom: 20px;
         }
         
-        .full-name{
-            margin-bottom: 60px;
+        .name{
+            margin: 30px 60px;
+            font-weight: bold;
+            font-size: 150%;
+            text-transform: uppercase;
         }
         
         .menu-btn {
@@ -251,7 +254,7 @@
 <body>
     <div class="sidebar">
         <div class="profile-icon"></div>
-        <div class ="full-name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
+        <div class ="name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
         <button class="menu-btn" th:text="'INFORMATION'"></button>
         <!--<button class="menu-btn active" th:text="'SETTING'"></button>-->
         <button class="menu-btn" th:text="'? HELP'"></button>
