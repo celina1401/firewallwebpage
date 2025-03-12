@@ -288,7 +288,7 @@
         <div class="modal-content">
             <div class="modal-left">
                 <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
-                <form th:action="@{/home}" method="post">
+                <form th:action="@{/home_{username}(username=${username})}" method="post">
                     <div class="input-contain">
                         <input type="text" class="input-field" name="pcName" required>
                         <label for="pcName">Computer Name</label>

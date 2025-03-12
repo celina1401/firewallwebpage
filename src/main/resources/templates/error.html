@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Error</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        .error-message {
+            color: red;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        a {
+            color: blue;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Access Denied</h1>
+    <div class="error-message">
+        <p th:text="${error}"></p>
+    </div>
+    <a href="/">Return to Login Page</a>
+</body>
+</html>

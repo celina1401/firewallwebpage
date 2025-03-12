@@ -25,17 +25,21 @@ public class LogInController {
                         @RequestParam String password,
                         Model model,
                         HttpSession session){
-        UserAccount user = userAccountRepository.findByUsername(username);
-        if (user == null){
+        String normalizedUsername = username.toLowerCase();
+
+        // Tìm user trong database với username đã chuẩn hóa
+        UserAccount user = userAccountRepository.findByUsername(normalizedUsername);
+        
+        if (user == null) {
             model.addAttribute("error", "Username does not exist!");
             return "login";
-        } else if (!user.getPassword().equals(password)){
+        } else if (!user.getPassword().equals(password)) {
             model.addAttribute("error", "Incorrect password");
             return "login";
-        }else{
-            model.addAttribute("message","Login successful! Welcome, " + username);
-            session.setAttribute("username", username);
-            return "redirect:/home";
-        }        
+        } else {
+            model.addAttribute("message", "Login successful! Welcome, " + normalizedUsername);
+            session.setAttribute("username", normalizedUsername); // Lưu username chữ thường vào session
+            return "redirect:/home_" + normalizedUsername; // Redirect với username chữ thường
+        }       
     }
 }

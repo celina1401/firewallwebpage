@@ -16,25 +16,28 @@ public class PC {
     private String ipAddress;
     private int port;
     private String password;
+    private String ownerUsername;
 
     public PC() {   
     }
 
-    public PC(String pcId, String pcName, String pcUsername, String ipAddress, int port, String password) {
+    public PC(String pcId, String pcName, String pcUsername, String ipAddress, int port, String password, String ownerUsername) {
         this.pcId = pcId;
         this.pcName = pcName;
         this.pcUsername = pcUsername;
         this.ipAddress = ipAddress;
         this.port = port;
         this.password = password;
-    }
+        this.ownerUsername = ownerUsername.toLowerCase();
+    } 
 
-    public PC(String pcName, String pcUsername, String ipAddress, int port, String password) {
+    public PC(String pcName, String pcUsername, String ipAddress, int port, String password, String ownerUsername) {
         this.pcName = pcName;
         this.pcUsername = pcUsername;
         this.ipAddress = ipAddress;
         this.port = port;
         this.password = password;
+        this.ownerUsername = ownerUsername.toLowerCase();
     }
 
     public String getPcId() {
@@ -84,4 +87,13 @@ public class PC {
     public void setPassword(String password) {
         this.password = password;
     }
+
+    public String getOwnerUsername() {
+        return ownerUsername;
+    }
+
+    public void setOwnerUsername(String ownerUsername) {
+        this.ownerUsername = ownerUsername;
+    }
+    
 }

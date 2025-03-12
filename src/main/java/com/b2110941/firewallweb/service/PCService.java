@@ -21,12 +21,6 @@ public class PCService {
         return pcRepository.findAll();
     }
 
-//    // Lấy thông tin máy tính theo ID
-//    public PC findById(Long id) {
-//        Optional<PC> computer = pcRepository.findById(id);
-//        return computer.orElseThrow(() -> new RuntimeException("Computer not found with id: " + id));
-//    }
-
     // Lấy thông tin máy tính theo pcName
     public PC findByPcName(String pcName) {
         Optional<PC> computer = pcRepository.findBypcName(pcName);
@@ -36,6 +30,10 @@ public class PCService {
     public PC findByPcUsername(String pcUsername) {
         Optional<PC> computer = pcRepository.findBypcUsername(pcUsername);
         return computer.orElseThrow(() -> new RuntimeException("Computer not found with pcUsername: " + pcUsername));
+    }
+    
+    public Optional<PC> findByPcNameAndOwnerUsername(String pcName, String ownerUsername) {
+        return pcRepository.findByPcNameAndOwnerUsername(pcName, ownerUsername);
     }
 
     // Thêm máy tính mới

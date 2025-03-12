@@ -41,6 +41,8 @@ public class RegisterController {
                            Model model,
                            HttpSession session){
         // Kiểm tra xem username hoặc email đã tồn tại chưa
+        String normalizedUsername = username.toLowerCase();
+        
         User existingUserByUsername = userRepository.findByUsername(username);
         User existingUserByEmail = userRepository.findByEmail(email);
 
@@ -61,12 +63,12 @@ public class RegisterController {
         }
 
         // Tạo user mới và lưu vào database
-        User newUser = new User(fullname, username, email, password);
+        User newUser = new User(fullname, normalizedUsername, email, password);
         userRepository.save(newUser);
         session.setAttribute("fullname", fullname);
-        session.setAttribute("username", username);
+        session.setAttribute("username", normalizedUsername);
         session.setAttribute("email", email);
-        UserAccount newUserAccount = new UserAccount(username, password);
+        UserAccount newUserAccount = new UserAccount(normalizedUsername, password);
         userAccountRepository.save(newUserAccount);
 
         model.addAttribute("message", "Registration successful! Please login.");
