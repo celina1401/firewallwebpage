@@ -69,22 +69,38 @@ public class HomeController {
             return "error"; 
         }
         
-        Optional<PC> existPC = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+        // Loại bỏ khoảng trắng ở đầu và cuối cho tất cả các trường nhập liệu
+        String trimmedPcName = pcName.trim();
+        String trimmedPcUsername = pcUsername.trim();
+        String trimmedIpAddress = ipAddress.trim();
+        String trimmedPassword = password.trim();
+
+        // Kiểm tra xem các trường có rỗng sau khi trim không
+        if (trimmedPcName.isEmpty() || trimmedPcUsername.isEmpty() || 
+            trimmedIpAddress.isEmpty() || trimmedPassword.isEmpty()) {
+            model.addAttribute("error", "All fields are required and cannot be empty!");
+            List<PC> computers = pcRepository.findByOwnerUsername(username);
+            model.addAttribute("computers", computers);
+            model.addAttribute("username", username);
+            return "home";
+        }
+        
+        Optional<PC> existPC = pcRepository.findByPcNameAndOwnerUsername(trimmedPcName, username);
 
         if (existPC.isPresent() && existPC.get().getOwnerUsername().equals(username)) {
             model.addAttribute("error", "PC name already exists");
             return "home";
         }else{
             // Kiểm tra kết nối SSH trước khi lưu
-            boolean sshSuccess = connectSSH.checkConnectSSH(ipAddress, port, pcUsername, password);
+            boolean sshSuccess = connectSSH.checkConnectSSH(trimmedIpAddress, port, trimmedPcUsername, trimmedPassword);
             if (!sshSuccess) {
                 model.addAttribute("error", "SSH connection failed!");
             }else{
                 // Luu vao db
-                PC newPC = new PC(pcName, pcUsername, ipAddress, port, password, username);
+                PC newPC = new PC(trimmedPcName, trimmedPcUsername, trimmedIpAddress, port, trimmedPassword, username);
                 pcRepository.save(newPC);
 
-                PCAccount newPCAccount = new PCAccount(pcUsername, password);
+                PCAccount newPCAccount = new PCAccount(trimmedPcUsername, trimmedPassword);
                 pcAccountRepository.save(newPCAccount);
 
                 model.addAttribute("message", "PC added successfully and SSH connected!");

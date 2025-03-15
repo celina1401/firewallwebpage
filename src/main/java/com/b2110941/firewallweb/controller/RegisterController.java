@@ -9,6 +9,7 @@ import com.b2110941.firewallweb.model.UserAccount;
 import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import jakarta.servlet.http.HttpSession;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,8 +44,8 @@ public class RegisterController {
         // Kiểm tra xem username hoặc email đã tồn tại chưa
         String normalizedUsername = username.toLowerCase();
         
-        User existingUserByUsername = userRepository.findByUsername(username);
-        User existingUserByEmail = userRepository.findByEmail(email);
+        Optional<User>  existingUserByUsername = userRepository.findByUsername(username);
+        Optional<User>  existingUserByEmail = userRepository.findByEmail(email);
 
         if (existingUserByUsername != null) {
             model.addAttribute("error", "Username already exists");
