@@ -32,6 +32,10 @@ public class PCService {
         return computer.orElseThrow(() -> new RuntimeException("Computer not found with pcUsername: " + pcUsername));
     }
     
+    public List<PC> findByOwnerUsername(String ownerUsername) {
+        return pcRepository.findByOwnerUsername(ownerUsername);
+    }    
+    
     public Optional<PC> findByPcNameAndOwnerUsername(String pcName, String ownerUsername) {
         return pcRepository.findByPcNameAndOwnerUsername(pcName, ownerUsername);
     }
@@ -45,4 +49,5 @@ public class PCService {
     public void deleteById(String id) {
         pcRepository.deleteById(id);
     }
+
 }

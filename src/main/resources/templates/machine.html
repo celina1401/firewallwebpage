@@ -1,268 +1,505 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" th:href="@{/images/favicon.png}"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
-    <title>Machine</title>
+    <head>
+        <meta charset="UTF-8">
+        <title>Machine Management</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            margin: 0;
-            height: 100vh;
-        }
-        .sidebar {
-            width: 25vw;
-            background: #444;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
-        }
-        .profile-icon img{
-            width: 10vw;
-            margin-top: 3%;
-        }
-        
-        .pcName{
-            margin: 30px 60px;
-            font-weight: bold;
-            font-size: 150%;
-            text-transform: uppercase;
-        }
-        
-        .menu-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 20px;
-            margin: 5px 0;
-            padding: 10px;
-            width: 100%;
-            text-align: center;
-            cursor: pointer;
-        }
-/*        .menu-btn.active {
-            background: #555;
-        }*/
-        
-        .menu-btn:hover, .gear-icon:hover, .power-icon:hover{
-            background: #555;
-        }
-        .settings {
-            width: 25vw;
-            margin-top: auto;
-            padding-bottom: 20px;
-        }
-        .gear-icon, .power-icon {
-            display: flex;
-            font-size: 20px;
-            cursor: pointer;
-            width: 100%;
-            justify-content: center;
-            align-items: center;
-            gap: 5%
-        }
-        
-         .exit-icon{
-            width: 24px;
-            height: 24px;
-        }
-        
-        /*rule*/
-        .main-content {
-            width: 75vw;
-            padding: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .btnRule {
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 30px;
-            display: flex;
-            width: 60%;
-            height: 80%;
-        }
-        .modal-left {
-            flex: 1;
-            padding: 20px;
-        }
-        .modal-right {
-            width: 45%;
-            background-color: #FF8400;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 25px;
-            font-weight: bold;
-            border-radius: 0 30px 30px 0;
-        }
-        
-        .modal-right img{
-            position: absolute;
-            top: 10%;
-            right: 384px;
-/*            width: 24px;  Điều chỉnh kích thước 
-            height: 24px;*/
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        .modal-right img:hover {
-            transform: scale(1.2); /* Hiệu ứng phóng to khi hover */
-        }
-        
-        .input-field {
-            width: 80%;
-            font-size: 30px;
-            padding: 10px;
-            margin: 10px 0;
-        }
-        
-        form{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            justify-content: center;
-        }
-        .btn_add_computer{
-            padding: 20px;
-            font-size: 30px;
-            margin: 20px 0;
-            width: 85%;
-        }
-        
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <div class="profile-icon">
-            <img src="/images/computer.png" alt="Computer">
-        </div>
-        <div class ="pcName" th:text="${computer.pcName}"><h2>Computer (Tên computer)</h2></div>
-        <button class="menu-btn" th:text="'INFORMATION'"></button>
-        <button class="menu-btn active" th:text="'SETTING'"></button>
-        <button class="menu-btn" th:text="'? HELP'"></button>
-        <button class="menu-btn" th:text="'LOG IN'"></button>
-        <button class="menu-btn" th:text="'SIGN UP'"></button>
-        <div class="settings">
-            <div class="power-icon">
-                <img class="exit-icon" src="/images/exit.png" alt="exit"/>
-                <p>EXIT</p>
+        <style>
+            /* Reset mặc định */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                height: 100vh;
+                margin: 0;
+                background-color: #f0f0f0;
+            }
+
+            /* Main container */
+            .container {
+                display: flex;
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Sidebar styles */
+            .sidebar {
+                width: 25vw;
+                background: #444;
+                color: white;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding-top: 20px;
+            }
+
+            .profile {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .profile-icon img {
+                width: 10vw;
+                margin-top: 3%;
+            }
+
+            .pc-name {
+                margin: 30px 60px;
+                font-weight: bold;
+                font-size: 150%;
+                text-transform: uppercase;
+                text-align: center;
+                color: white;
+            }
+
+            /* Menu navigation */
+            .menu {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                flex-grow: 1;
+            }
+
+            .menu-btn {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 18px;
+                margin: 5px 0;
+                padding: 10px;
+                width: 100%;
+                text-align: center;
+                cursor: pointer;
+                transition: background 0.2s ease;
+            }
+
+            .menu-btn:hover {
+                background: #555;
+            }
+
+            .menu-btn.active {
+                background: #555;
+            }
+
+            /* Footer section */
+            .footer {
+                width: 100%;
+                margin-top: auto;
+                padding-bottom: 20px;
+            }
+
+            .power-button {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 18px;
+                cursor: pointer;
+                padding: 10px;
+                width: 100%;
+                gap: 5%;
+                transition: background 0.2s ease;
+            }
+
+            .power-button:hover {
+                background: #555;
+            }
+
+            .exit-icon {
+                width: 24px;
+                height: 24px;
+            }
+
+            .power-button p {
+                color: white;
+            }
+
+            /* Content area */
+            .content {
+                flex: 1;
+                padding: 20px;
+                overflow-y: auto;
+            }
+
+            .section {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .section h2 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+
+            .error-message {
+                color: white;
+                padding: 10px;
+                margin-bottom: 20px;
+                background-color: #dc3545;
+                border-radius: 5px;
+                text-align: center;
+            }
+
+            /* Form styles */
+            .form-group {
+                position: relative;
+                margin: 20px 0;
+                width: 100%;
+            }
+
+            .form-group input {
+                width: 100%;
+                font-size: 16px;
+                padding: 15px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                outline: none;
+            }
+
+            .form-group input:focus {
+                border-color: #0e51ff;
+            }
+
+            .form-group label {
+                position: absolute;
+                left: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                transition: all 0.3s ease;
+                pointer-events: none;
+                color: #999;
+                font-size: 16px;
+                background: white;
+                padding: 0 5px;
+            }
+
+            .form-group input:focus + label,
+            .form-group input:not(:placeholder-shown) + label {
+                top: 0;
+                font-size: 12px;
+                color: #0e51ff;
+                transform: translateY(-50%);
+            }
+
+            .btn {
+                padding: 15px 20px;
+                border-radius: 8px;
+                font-size: 18px;
+                background: #28A745;
+                color: white;
+                border: none;
+                cursor: pointer;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                transition: background 0.3s, box-shadow 0.3s;
+            }
+
+            .btn:hover {
+                background: #218838;
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            .btn:active {
+                background: #1e7e34;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                .sidebar {
+                    width: 200px;
+                }
+
+                .profile-icon img {
+                    width: 120px;
+                    height: 120px;
+                }
+
+                .pc-name {
+                    margin: 20px 40px;
+                    font-size: 130%;
+                }
+
+                .menu-btn, .power-button {
+                    font-size: 16px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .container {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    width: 100%;
+                    height: auto;
+                    padding-top: 10px;
+                }
+
+                .content {
+                    padding: 15px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="sidebar">
+                <div class="profile">
+                    <div class="profile-icon">
+                        <img src="/images/computer.png" alt="Computer">
+                    </div>
+                    <h2 class="pc-name" th:text="${computer.pcName}">Computer (Tên computer)</h2>
+                </div>
+
+                <nav class="menu">
+                    <button class="menu-btn" th:classappend="${currentMenu == 'information'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='information'"
+                            th:text="'INFORMATION'"></button>
+                    <button class="menu-btn" th:classappend="${currentMenu == 'setting'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='setting'"
+                            th:text="'SETTING'"></button>
+                    <button class="menu-btn" th:classappend="${currentMenu == 'help'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='help'"
+                            th:text="'? HELP'"></button>
+                    <button class="menu-btn" th:classappend="${currentMenu == 'login'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='login'"
+                            th:text="'LOG IN'"></button>
+                    <button class="menu-btn" th:classappend="${currentMenu == 'signup'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='signup'"
+                            th:text="'SIGN UP'"></button>
+                </nav>
+
+                <div class="footer">
+                    <div class="power-button" th:attr="data-pcname=${computer.pcName}">
+                        <img class="exit-icon" src="/images/exit.png" alt="exit"/>
+                        <p>EXIT</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content" id="content-area">
+                <!-- Sử dụng th:replace để hiển thị fragment ban đầu -->
+                <div th:replace="~{machine :: section(${currentMenu})}"></div>
             </div>
         </div>
-    </div>
-    
-    <div class="main-content">
-        <h2>Firewall Rules</h2>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Source IP</th>
-                    <th>Destination IP</th>
-                    <th>Port</th>
-                    <th>Protocol</th>
-                    <th>Action</th>
-                    <th>Options</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="rule : ${firewallRules}">
-                    <td th:text="${rule.id}"></td>
-                    <td th:text="${rule.sourceIp}"></td>
-                    <td th:text="${rule.destinationIp}"></td>
-                    <td th:text="${rule.port}"></td>
-                    <td th:text="${rule.protocol}"></td>
-                    <td th:text="${rule.action}"></td>
-                    <td>
-                        <button class="btnRule" onclick="editRule(this)" th:data-id="${rule.id}">Edit</button>
-                        <button class="btnRule" onclick="deleteRule(this)" th:data-id="${rule.id}">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    
-        <!-- Modal for adding a computer -->
-    <div id="computerModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-left">
-                <form th:action="@{/addComputer}" method="post">
-                    <input type="text" class="input-field" name="username" placeholder="Username" required>
-                    <input type="password" class="input-field" name="password" placeholder="Password" required>
-                    <input type="text" class="input-field" name="ipAddress" placeholder="IP Address" required>
-                    <input type="number" class="input-field" name="port" placeholder="Port" required>
-                    <button type="submit" class="btn_add_computer">Add Rule</button>
-                </form>
-            </div>
-            <div class="modal-right" >
-                <h1>ADD RULE FIREWALL</h1>
-                <div>
-                    <img src="/images/close.png" alt="Close" onclick="closeModal()">
+
+        <!-- Định nghĩa fragment section -->
+        <div th:fragment="section(menuOption)" th:remove="tag">
+            <div th:if="${error}" class="error-message" th:text="${error}"></div>
+            <div th:switch="${menuOption}">
+                <div th:case="'information'" class="section" id="information-section">
+                    <h2>Information</h2>
+                    <div class="info-content">
+                        <p>Computer Name: <span th:text="${computer.pcName}"></span></p>
+                    </div>
+                </div>
+
+                <div th:case="'setting'" class="section" id="settings-section">
+                    <h2>Settings</h2>
+                    <div class="settings-content">
+                        <form id="settings-form" method="post" th:action="@{/machine/updateSettings}">
+                            <input type="hidden" name="pcName" th:value="${computer.pcName}" />
+                            <div class="form-group">
+                                <input type="text" id="setting1" name="setting1" placeholder=" " />
+                                <label for="setting1">Setting 1</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="setting2" name="setting2" placeholder=" " />
+                                <label for="setting2">Setting 2</label>
+                            </div>
+                            <button type="submit" class="btn">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div th:case="'help'" class="section" id="help-section">
+                    <h2>Help</h2>
+                    <div class="help-content">
+                        <p>Need assistance? Find helpful information here.</p>
+                        <div class="faq">
+                            <h3>Frequently Asked Questions</h3>
+                            <div class="faq-item">
+                                <h4>How to change settings?</h4>
+                                <p>Navigate to the Settings menu and update your preferences.</p>
+                            </div>
+                            <div class="faq-item">
+                                <h4>How to logout?</h4>
+                                <p>Click on the EXIT button in the sidebar.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:case="'login'" class="section" id="login-section">
+                    <h2>Log In</h2>
+                    <div class="login-content">
+                        <form id="login-form" method="post" th:action="@{/login}">
+                            <div class="form-group">
+                                <input type="text" id="username" name="username" placeholder=" " required />
+                                <label for="username">Username</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" id="password" name="password" placeholder=" " required />
+                                <label for="password">Password</label>
+                            </div>
+                            <button type="submit" class="btn">Log In</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div th:case="'signup'" class="section" id="signup-section">
+                    <h2>Sign Up</h2>
+                    <div class="signup-content">
+                        <form id="signup-form" method="post" th:action="@{/signup}">
+                            <div class="form-group">
+                                <input type="text" id="newUsername" name="username" placeholder=" " required />
+                                <label for="newUsername">Username</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" id="newPassword" name="password" placeholder=" " required />
+                                <label for="newPassword">Password</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="password" id="confirmPassword" name="confirmPassword" placeholder=" " required />
+                                <label for="confirmPassword">Confirm Password</label>
+                            </div>
+                            <button type="submit" class="btn">Sign Up</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-        
-        
-        
-    <script>
-        function editRule(button) {
-            let ruleId = button.getAttribute("data-id");
-            alert("Edit rule " + ruleId);
-            // Thêm logic chỉnh sửa tại đây
-        }
 
-        function deleteRule(button) {
-            let ruleId = button.getAttribute("data-id");
-            if (confirm("Are you sure you want to delete rule " + ruleId + "?")) {
-                // Gửi request xóa quy tắc
-                alert("Rule " + ruleId + " deleted.");
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const menuButtons = document.querySelectorAll('.menu-btn');
+                const contentArea = document.getElementById('content-area');
+                let activeButton = document.querySelector('.menu-btn.active');
+
+                menuButtons.forEach(button => {
+                    button.addEventListener('click', function (e) {
+                        e.preventDefault();
+
+                        const menuOption = this.getAttribute('data-menu');
+                        const pcName = this.getAttribute('data-pcname');
+                        const url = `/machine/${pcName}/${menuOption}`;
+
+                        if (activeButton) {
+                            activeButton.classList.remove('active');
+                        }
+                        this.classList.add('active');
+                        activeButton = this;
+
+                        contentArea.style.opacity = '0';
+
+                        fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                                .then(response => {
+                                    if (!response.ok)
+                                        throw new Error('Network response was not ok');
+                                    return response.text();
+                                })
+                                .then(html => {
+                                    setTimeout(() => {
+                                        contentArea.innerHTML = html;
+                                        contentArea.style.opacity = '1';
+                                        reinitializeForms();
+                                    }, 200);
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    contentArea.innerHTML = '<div class="error-message">Error loading content</div>';
+                                    contentArea.style.opacity = '1';
+                                });
+                    });
+                });
+
+                const exitButton = document.querySelector('.power-button');
+                if (exitButton) {
+                    exitButton.addEventListener('click', function () {
+                        if (confirm('Are you sure you want to exit?')) {
+                            window.location.href = '/';
+                        }
+                    });
+                }
+
+                setupFormValidations();
+            });
+
+            function reinitializeForms() {
+                setupFormValidations();
+
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        const action = this.getAttribute('action');
+
+                        fetch(action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                                .then(response => response.text())
+                                .then(html => {
+                                    document.getElementById('content-area').innerHTML = html;
+                                    reinitializeForms();
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                });
+                    });
+                });
             }
-        }
-        
-        
-        function openModal() {
-            document.getElementById("computerModal").style.display = "flex";
-        }
-        function closeModal() {
-            document.getElementById("computerModal").style.display = "none";
-        }
-        
-    </script>
-</body>
+
+            function setupFormValidations() {
+                const loginForm = document.getElementById('login-form');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        const username = document.getElementById('username').value;
+                        const password = document.getElementById('password').value;
+                        if (!username || !password) {
+                            alert('Please enter both username and password');
+                            return;
+                        }
+                        this.dispatchEvent(new Event('submit', {cancelable: true}));
+                    });
+                }
+
+                const signupForm = document.getElementById('signup-form');
+                if (signupForm) {
+                    signupForm.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        const username = document.getElementById('newUsername').value;
+                        const password = document.getElementById('newPassword').value;
+                        const confirmPassword = document.getElementById('confirmPassword').value;
+                        if (!username || !password || !confirmPassword) {
+                            alert('Please fill in all fields');
+                            return;
+                        }
+                        if (password !== confirmPassword) {
+                            alert('Passwords do not match');
+                            return;
+                        }
+                        this.dispatchEvent(new Event('submit', {cancelable: true}));
+                    });
+                }
+            }
+        </script>
+    </body>
 </html>
