@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" th:href="@{/images/favicon.png}"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"/>
     <title>Control Rule</title>
 
     <style>
@@ -321,7 +320,7 @@
         }
         function redirectToMachine(element) {
             let pcName = element.getAttribute("data-pcname");
-            window.location.href = "/machine/" + encodeURIComponent(pcName);
+            window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
         }       
         //xu ly label
         document.addEventListener("DOMContentLoaded", function () {
