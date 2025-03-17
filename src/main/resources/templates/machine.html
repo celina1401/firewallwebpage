@@ -223,6 +223,107 @@
                 text-align: center;
             }
 
+            /*Firewall rules*/
+            /* Rule table styles */
+            .rule-table-container {
+                margin-bottom: 30px;
+                overflow-x: auto;
+            }
+
+            .rule-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #ffffff;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
+
+            .rule-table th, .rule-table td {
+                padding: 12px 15px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .rule-table th {
+                background-color: #2c3e50;
+                color: white;
+                font-weight: 600;
+            }
+
+            .rule-table tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            .rule-table td {
+                font-size: 16px;
+                color: #333;
+            }
+
+            /* Edit/Delete buttons */
+            .edit-btn, .delete-btn {
+                padding: 6px 12px;
+                margin-right: 5px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.2s ease;
+            }
+
+            .edit-btn {
+                background-color: #3498db;
+                color: white;
+            }
+
+            .edit-btn:hover {
+                background-color: #2980b9;
+            }
+
+            .delete-btn {
+                background-color: #e74c3c;
+                color: white;
+            }
+
+            .delete-btn:hover {
+                background-color: #c0392b;
+            }
+
+            /* Add rule form styles */
+            .add-rule-form {
+                background: #ffffff;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                margin-top: 20px;
+            }
+
+            .add-rule-form h3 {
+                margin-bottom: 20px;
+                color: #2c3e50;
+                font-size: 20px;
+            }
+
+            .add-rule-form .form-group {
+                margin-bottom: 15px;
+            }
+
+            .add-rule-form select {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                outline: none;
+                appearance: none;
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                background: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 15px center;
+            }
+
+            .add-rule-form select:focus {
+                border-color: #0e51ff;
+            }
+
             /* Form styles */
             .form-group {
                 position: relative;
@@ -338,12 +439,9 @@
                     <button class="menu-btn" th:classappend="${currentMenu == 'information'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='information'"
                             th:text="'INFORMATION'"></button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'setting'} ? 'active' : ''" 
-                            th:attr="data-pcname=${computer.pcName},data-menu='setting'"
-                            th:text="'SETTING'"></button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'help'} ? 'active' : ''" 
-                            th:attr="data-pcname=${computer.pcName},data-menu='help'"
-                            th:text="'? HELP'"></button>
+                    <button class="menu-btn" th:classappend="${currentMenu == 'rule'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='rule'"
+                            th:text="'FIREWALL RULES'"></button>
                     <button class="menu-btn" th:classappend="${currentMenu == 'login'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='login'"
                             th:text="'LOG IN'"></button>
@@ -389,38 +487,84 @@
                 </div>
             </div>
 
-            <div th:case="'setting'" class="section" id="settings-section">
-                <h2>Settings</h2>
-                <div class="settings-content">
-                    <form id="settings-form" method="post" th:action="@{/machine/updateSettings}">
-                        <input type="hidden" name="pcName" th:value="${computer.pcName}" />
-                        <div class="form-group">
-                            <input type="text" id="setting1" name="setting1" placeholder=" " />
-                            <label for="setting1">Setting 1</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" id="setting2" name="setting2" placeholder=" " />
-                            <label for="setting2">Setting 2</label>
-                        </div>
-                        <button type="submit" class="btn">Save Settings</button>
-                    </form>
-                </div>
-            </div>
+            <div th:case="'rule'" class="section" id="rule-section">
+                <h1 class="section-title">Firewall rules</h1>
+                <div class="rule-content">
+                    <div class="rule-table-container">
+                        <table class="rule-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Source IP</th>
+                                    <th>Destination IP</th>
+                                    <th>Port</th>
+                                    <th>Protocol</th>
+                                    <th>Action</th>
+                                    <th>Options</th>
+                                </tr>
+                            </thead>
+                            <tbody>
 
-            <div th:case="'help'" class="section" id="help-section">
-                <h2>Help</h2>
-                <div class="help-content">
-                    <p>Need assistance? Find helpful information here.</p>
-                    <div class="faq">
-                        <h3>Frequently Asked Questions</h3>
-                        <div class="faq-item">
-                            <h4>How to change settings?</h4>
-                            <p>Navigate to the Settings menu and update your preferences.</p>
-                        </div>
-                        <div class="faq-item">
-                            <h4>How to logout?</h4>
-                            <p>Click on the EXIT button in the sidebar.</p>
-                        </div>
+                                <tr th:each="rule : ${firewallRules}">
+                                    <td th:text="${rule.id}"></td>
+                                    <td th:text="${rule.sourceIp}"></td>
+                                    <td th:text="${rule.destinationIp}"></td>
+                                    <td th:text="${rule.port}"></td>
+                                    <td th:text="${rule.protocol}"></td>
+                                    <td th:text="${rule.action}"></td>
+                                    <td>
+                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">
+                                            <img src="/images/editing.png" alt=""/>
+                                        </button>
+                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">
+                                            <img src="/images/delete.png" alt=""/>
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
+                                    <td colspan="7" style="text-align: center;">No firewall rules found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="add-rule-form">
+                        <h3>Add New Rule</h3>
+                        <form id="add-rule-form" method="post" th:action="@{/machine/addRule}">
+                            <input type="hidden" name="pcName" th:value="${computer.pcName}" />
+                            <div class="form-group">
+                                <input type="text" id="sourceIp" name="sourceIp" placeholder=" " required />
+                                <label for="sourceIp">Source IP</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="destinationIp" name="destinationIp" placeholder=" " required />
+                                <label for="destinationIp">Destination IP</label>
+                            </div>
+                            <div class="form-group">
+                                <input type="number" id="port" name="port" placeholder=" " min="1" max="65535" required />
+                                <label for="port">Port</label>
+                            </div>
+                            <div class="form-group">
+                                <select id="protocol" name="protocol" required>
+                                    <!--<option value="" disabled selected>Select Protocol</option>-->
+                                    <option value="TCP">TCP</option>
+                                    <option value="UDP">UDP</option>
+                                    <option value="ICMP">ICMP</option>
+                                </select>
+                                <label for="protocol">Select Protocol</label>
+                            </div>
+                            <div class="form-group">
+                                <select id="action" name="action" required>
+                                    <!--<option value="" disabled selected>Select Action</option>-->
+                                    <option value="ACCEPT">ACCEPT</option>
+                                    <option value="DROP">DROP</option>
+                                    <option value="REJECT">REJECT</option>
+                                </select>
+                                <label for="action">Select Action</label>
+                            </div>
+                            <button type="submit" class="btn">Add Rule</button>
+                        </form>
                     </div>
                 </div>
             </div>

@@ -27,10 +27,8 @@ public class UbuntuInfo {
         Map<String, String> systemInfo = new HashMap<>();
 
         try {
-            // 📌 Dùng ConnectSSH để kết nối SSH
             Session session = connectSSH.establishSSH(host, port, username, password);
 
-            // 📌 Lấy thông tin hệ thống
             systemInfo.put("CPU", executeCommand(session, "lscpu | grep 'Model name' | awk -F ':' '{print $2}'"));
             systemInfo.put("RAM", executeCommand(session, "free -h | grep 'Mem:' | awk '{print $2}'"));
             systemInfo.put("Ubuntu Version", executeCommand(session, "lsb_release -d | awk -F ':' '{print $2}'"));
