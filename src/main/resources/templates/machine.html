@@ -490,6 +490,7 @@
             <div th:case="'rule'" class="section" id="rule-section">
                 <h1 class="section-title">Firewall rules</h1>
                 <div class="rule-content">
+                    <!-- Bảng hiển thị danh sách quy tắc firewall -->
                     <div class="rule-table-container">
                         <table class="rule-table">
                             <thead>
@@ -504,7 +505,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-
+                                <!-- Dùng th:each để lặp qua danh sách quy tắc -->
                                 <tr th:each="rule : ${firewallRules}">
                                     <td th:text="${rule.id}"></td>
                                     <td th:text="${rule.sourceIp}"></td>
@@ -513,22 +514,18 @@
                                     <td th:text="${rule.protocol}"></td>
                                     <td th:text="${rule.action}"></td>
                                     <td>
-                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">
-                                            <img src="/images/editing.png" alt=""/>
-                                        </button>
-                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">
-                                            <img src="/images/delete.png" alt=""/>
-                                        </button>
+                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">Edit</button>
+                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">Delete</button>
                                     </td>
                                 </tr>
-                                
+                                <!-- Nếu không có quy tắc, hiển thị thông báo -->
                                 <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
                                     <td colspan="7" style="text-align: center;">No firewall rules found.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="add-rule-form">
                         <h3>Add New Rule</h3>
                         <form id="add-rule-form" method="post" th:action="@{/machine/addRule}">
@@ -609,7 +606,7 @@
         </div>
     </div>
 
-    <script>
+    <script>    
         document.addEventListener('DOMContentLoaded', function () {
             const menuButtons = document.querySelectorAll('.menu-btn');
             const contentArea = document.getElementById('content-area');
@@ -734,7 +731,7 @@
             if (exitButton) {
                 exitButton.addEventListener('click', function () {
                     if (confirm('Do you truly intend to exit?')) {
-                        window.location.href = '/';
+                        window.location.href = '/home_{username}';
                     }
                 });
             }

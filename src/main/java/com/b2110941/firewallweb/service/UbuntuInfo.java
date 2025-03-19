@@ -9,6 +9,7 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -44,18 +45,35 @@ public class UbuntuInfo {
 
     // 📌 Thực thi lệnh qua SSH
     public String executeCommand(Session session, String command) throws Exception {
-        ChannelExec channel = (ChannelExec) session.openChannel("exec");
-        channel.setCommand(command);
-        channel.setInputStream(null);
-        channel.setErrStream(System.err);
+        ChannelExec channel = null;
+        StringBuilder outputBuffer = new StringBuilder();
+        try {
+            // Tạo channel exec
+            channel = (ChannelExec) session.openChannel("exec");
+            channel.setCommand(command);
 
-        InputStream inputStream = channel.getInputStream();
-        channel.connect();
+            InputStream in = channel.getInputStream();
+            InputStream err_in = channel.getErrStream();
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-        String result = reader.readLine(); // Đọc dòng đầu tiên
-        channel.disconnect();
+            //Thực thi
+            channel.connect();
 
-        return (result != null) ? result.trim() : "N/A";
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+            String line;
+//            System.out.println("aaaaaaaaaa");
+            while ((line = reader.readLine()) != null) {
+                outputBuffer.append(line).append("\n");
+
+            }
+            return outputBuffer.toString();
+
+        } catch (Exception e) {
+            throw new Exception("Failed to execute command: " + command + ". Error: " + e.getMessage(), e);
+        } finally {
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
     }
 }
