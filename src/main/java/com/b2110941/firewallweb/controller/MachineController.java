@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.PC;
@@ -11,17 +7,17 @@ import com.b2110941.firewallweb.service.UbuntuInfo;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 @Controller
 public class MachineController {
@@ -141,7 +137,7 @@ public class MachineController {
         return "machine";
     }
 
-// 📌 API lấy danh sách quy tắc UFW qua SSH
+    // 📌 API lấy danh sách quy tắc UFW và trạng thái firewall qua SSH
     @GetMapping("/machine/{pcName}/rule")
     public String getFirewallRules(
             @PathVariable("pcName") String pcName,
@@ -172,13 +168,20 @@ public class MachineController {
                     computer.getPcUsername(),
                     computer.getPassword()
             );
-            System.out.println("ket noi SSH thành công 181");
+            System.out.println("Kết nối SSH thành công");
 
             String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
-            String ufwOutput = ubuntuInfo.executeCommand(sshSession, command); //BUG
-            System.out.println("aaaaaaaaaaaa");
-            System.out.println(ufwOutput);
+            String ufwOutput = ubuntuInfo.executeCommand(sshSession, command);
+            System.out.println("UFW Output: " + ufwOutput);
 
+            // Set firewall status
+            if (ufwOutput != null && ufwOutput.contains("Status: active")) {
+                model.addAttribute("firewallStatus", "active");
+            } else {
+                model.addAttribute("firewallStatus", "inactive");
+            }
+
+            // Parse and set firewall rules
             if (ufwOutput == null || ufwOutput.trim().isEmpty()) {
                 model.addAttribute("error", "Không thể lấy trạng thái UFW hoặc UFW chưa được kích hoạt.");
             } else {
@@ -187,8 +190,10 @@ public class MachineController {
             }
         } catch (JSchException e) {
             model.addAttribute("error", "Không thể kết nối SSH tới " + pcName + ": " + e.getMessage());
+            model.addAttribute("firewallStatus", "inactive");
         } catch (Exception e) {
             model.addAttribute("error", "Lỗi khi lấy danh sách quy tắc: " + e.getMessage());
+            model.addAttribute("firewallStatus", "inactive");
         }
 
         if ("XMLHttpRequest".equals(requestedWith)) {
@@ -267,5 +272,60 @@ public class MachineController {
 
         // If no rules were found but UFW is active, the list will be empty
         return firewallRules;
+    }
+
+    @PostMapping("/machine/{pcName}/toggle-firewall")
+    @ResponseBody
+    public Map<String, Object> toggleFirewall(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("enable") boolean enable,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
+        }
+
+        try {
+            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+            if (computerOptional.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Computer " + pcName + " not found");
+                return response;
+            }
+
+            PC computer = computerOptional.get();
+            Session sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword()
+            );
+            String command = enable
+                    ? "echo '" + computer.getPassword() + "' | sudo -S sh -c \"echo y | ufw enable\""
+                    : "echo '" + computer.getPassword() + "' | sudo -S ufw disable";
+            String result = ubuntuInfo.executeCommand(sshSession, command);
+            System.out.println("Toggle result: " + result);
+
+            // Lấy trạng thái và quy tắc mới sau khi bật/tắt
+            String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
+            String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
+            boolean isActive = statusOutput != null && statusOutput.contains("Status: active");
+
+            response.put("success", true);
+            response.put("message", "Firewall " + (enable ? "enabled" : "disabled"));
+            response.put("firewallStatus", isActive ? "active" : "inactive");
+            response.put("firewallRules", isActive ? parseUfwOutput(statusOutput) : Collections.emptyList());
+        } catch (JSchException e) {
+            response.put("success", false);
+            response.put("message", "SSH connection failed: " + e.getMessage());
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error toggling firewall: " + e.getMessage());
+            e.printStackTrace(); // Print full stack trace for debugging
+        }
+        return response;
     }
 }

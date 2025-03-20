@@ -324,6 +324,63 @@
                 border-color: #0e51ff;
             }
 
+            /*Switch*/
+            .toggle-container {
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 60px;
+                height: 34px;
+            }
+
+            .switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ccc;
+                transition: .4s;
+                border-radius: 34px;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 26px;
+                width: 26px;
+                left: 4px;
+                bottom: 4px;
+                background-color: white;
+                transition: .4s;
+                border-radius: 50%;
+            }
+
+            input:checked + .slider {
+                background-color: #2196F3;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(26px);
+            }
+
+            .toggle-label {
+                font-size: 16px;
+            }
+
             /* Form styles */
             .form-group {
                 position: relative;
@@ -489,7 +546,23 @@
 
             <div th:case="'rule'" class="section" id="rule-section">
                 <h1 class="section-title">Firewall rules</h1>
-                <div class="rule-content">
+
+                <!--Toggle switch hiển thị trạng thái--> 
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" 
+                               id="firewallToggle" 
+                               th:checked="${firewallStatus == 'active'}" 
+                               th:attr="data-pc-name=${computer.pcName}"
+                               onchange="toggleFirewall(this)">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label" 
+                          th:text="${firewallStatus == 'active' ? 'Firewall: ON' : 'Firewall: OFF'}">
+                    </span>
+                </div>
+
+                <div class="rule-content" id="firewallRulesTable" th:style="${firewallStatus == 'active' ? 'display: block' : 'display: none'}"> 
                     <!-- Bảng hiển thị danh sách quy tắc firewall -->
                     <div class="rule-table-container">
                         <table class="rule-table">
@@ -505,7 +578,6 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Dùng th:each để lặp qua danh sách quy tắc -->
                                 <tr th:each="rule : ${firewallRules}">
                                     <td th:text="${rule.id}"></td>
                                     <td th:text="${rule.sourceIp}"></td>
@@ -606,7 +678,7 @@
         </div>
     </div>
 
-    <script>    
+    <script>
         document.addEventListener('DOMContentLoaded', function () {
             const menuButtons = document.querySelectorAll('.menu-btn');
             const contentArea = document.getElementById('content-area');
@@ -811,6 +883,61 @@
                     this.dispatchEvent(new Event('submit', {cancelable: true}));
                 });
             }
+        }
+
+        function toggleFirewall(element) {
+            // Get the pcName from the element's data attribute
+            const pcName = element.getAttribute('data-pc-name');
+
+            // Check if pcName exists
+            if (!pcName) {
+                console.error("data-pc-name attribute is missing or empty");
+                alert("Error: Computer name not found");
+                return;
+            }
+
+            const isChecked = element.checked;
+            const url = '/machine/' + pcName + '/toggle-firewall';
+
+            // Disable the toggle while processing
+            element.disabled = true;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'enable=' + isChecked
+            })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Re-enable the toggle
+                        element.disabled = false;
+
+                        if (data.success) {
+                            document.querySelector('.toggle-label').textContent = isChecked ? 'Firewall: ON' : 'Firewall: OFF';
+                            console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
+
+                            const firewallRulesTable = document.getElementById('firewallRulesTable');
+                            firewallRulesTable.style.display = isChecked ? 'block' : 'none';
+                        } else {
+                            console.error('Failed to toggle firewall:', data.message);
+                            alert('Failed to toggle firewall: ' + data.message);
+                            element.checked = !isChecked; // Restore previous state
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error: ' + error.message);
+                        element.checked = !isChecked; // Restore previous state
+                        element.disabled = false; // Make sure to re-enable on error
+                    });
         }
     </script>
 </body>
