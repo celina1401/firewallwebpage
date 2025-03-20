@@ -260,32 +260,33 @@
             }
 
             /* Edit/Delete buttons */
-            .edit-btn, .delete-btn {
-                padding: 6px 12px;
-                margin-right: 5px;
+            .edit-btn{
                 border: none;
-                border-radius: 4px;
+                border-radius: 8px;
+                background-color: #b0dafd;
+            }
+
+
+            .edit-btn:hover{
+                background-color: #3f81b9;
+            }
+
+            .delete-btn{
+                border: none;
+                border-radius: 8px;
+                background-color: #f19ca4;
+
+            }
+            
+            .delete-btn:hover{
+                background-color: #b1333b;
+            }
+            
+            .edit-btn img, .delete-btn img{
+                padding: 6px 12px;
+                border: none;
                 cursor: pointer;
-                font-size: 14px;
                 transition: background 0.2s ease;
-            }
-
-            .edit-btn {
-                background-color: #3498db;
-                color: white;
-            }
-
-            .edit-btn:hover {
-                background-color: #2980b9;
-            }
-
-            .delete-btn {
-                background-color: #e74c3c;
-                color: white;
-            }
-
-            .delete-btn:hover {
-                background-color: #c0392b;
             }
 
             /* Add rule form styles */
@@ -558,7 +559,7 @@
                         <span class="slider"></span>
                     </label>
                     <span class="toggle-label" 
-                          th:text="${firewallStatus == 'active' ? 'Firewall: ON' : 'Firewall: OFF'}">
+                          th:text="${firewallStatus == 'active' ? 'Firewall Status: ON' : 'Firewall Status: OFF'}">
                     </span>
                 </div>
 
@@ -586,8 +587,12 @@
                                     <td th:text="${rule.protocol}"></td>
                                     <td th:text="${rule.action}"></td>
                                     <td>
-                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">Edit</button>
-                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">Delete</button>
+                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">
+                                            <img src="/images/editing.png" alt=""/>
+                                        </button>
+                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">
+                                            <img src="/images/delete.png" alt=""/>                                            
+                                        </button>
                                     </td>
                                 </tr>
                                 <!-- Nếu không có quy tắc, hiển thị thông báo -->
