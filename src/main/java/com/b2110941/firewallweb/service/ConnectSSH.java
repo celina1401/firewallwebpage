@@ -4,14 +4,9 @@
  */
 package com.b2110941.firewallweb.service;
 
-import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
