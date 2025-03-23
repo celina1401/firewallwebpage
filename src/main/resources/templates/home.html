@@ -23,11 +23,8 @@
             align-items: center;
             padding-top: 20px;
         }
-        .profile-icon {
-            width: 180px;
-            height: 180px;
-            background: #777;
-            border-radius: 50%;
+        .profile-icon img{
+            width: 10vw;
             margin-bottom: 20px;
         }
         
@@ -241,7 +238,9 @@
 </head>
 <body>
     <div class="sidebar">
-        <div class="profile-icon"></div>
+        <div class="profile-icon">
+            <img src="/images/avt.png" alt=""/>
+        </div>
         <div class ="name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
         <button class="menu-btn" th:text="'INFORMATION'"></button>
         <!--<button class="menu-btn active" th:text="'SETTING'"></button>-->

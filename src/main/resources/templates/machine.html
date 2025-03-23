@@ -1221,9 +1221,9 @@
                 toRangeEndFields.classList.remove('hidden');
             } else if (toType === 'app') {
                 toAppFields.classList.remove('hidden');
-            }else if (toType === 'interface') {
-        toInterfaceFields.classList.remove('hidden');
-    }
+            } else if (toType === 'interface') {
+                toInterfaceFields.classList.remove('hidden');
+            }
         }
 
         function togglePortFields() {
@@ -1236,7 +1236,7 @@
             }
         }
 
-// Khởi tạo sự kiện sau khi DOM tải xong
+        // Khởi tạo sự kiện sau khi DOM tải xong
         document.addEventListener('DOMContentLoaded', function () {
             // Gắn sự kiện cho checkbox specific port
             const specificPortCheckbox = document.getElementById('specificPortCheck');
@@ -1245,7 +1245,7 @@
             }
         });
 
-// Hiển thị/ẩn trường cho mục "Source"
+        // Hiển thị/ẩn trường cho mục "Source"
         function toggleFromFields() {
             const fromType = document.getElementById('fromType').value;
             const fromIpFields = document.getElementById('fromIpFields');
@@ -1257,7 +1257,7 @@
             }
         }
 
-// Kiểm tra định dạng địa chỉ IP
+        // Kiểm tra định dạng địa chỉ IP
         function validateIpAddress(ip) {
             const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
             if (!ipRegex.test(ip))
@@ -1266,7 +1266,7 @@
             return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
         }
 
-// Kiểm tra form trước khi submit
+        // Kiểm tra form trước khi submit
         function validateRuleForm() {
             const action = document.getElementById('action').value;
             const toType = document.getElementById('toType').value;
@@ -1321,7 +1321,7 @@
             return true;
         }
 
-// Khởi tạo form và các sự kiện liên quan
+        // Khởi tạo form và các sự kiện liên quan
         function initializeRuleForm() {
             // Lắng nghe thay đổi của checkbox Outgoing để cập nhật giá trị direction
             const outgoingCheckbox = document.getElementById('outgoingCheckbox');
@@ -1342,7 +1342,7 @@
             });
         }
 
-// Gọi hàm khởi tạo sau khi DOM tải xong
+        // Gọi hàm khởi tạo sau khi DOM tải xong
         document.addEventListener('DOMContentLoaded', function () {
             initializeRuleForm();
         });
