@@ -119,33 +119,29 @@ public class HomeController {
         return "redirect:/home_{username}";
     }
 
-@GetMapping("/home_{username}/control/{menuOption}")
-public String showControlContent(
-        @PathVariable("username") String username,
-        @PathVariable("menuOption") String menuOption,
-        HttpServletRequest request,
-        HttpSession session,
-        Model model) {
-    String sessionUsername = (String) session.getAttribute("username");
-    
-    if (sessionUsername == null || !sessionUsername.equals(username)) {
-        model.addAttribute("error", "Unauthorized access!");
-        return "error";
-    }
+    @GetMapping("/home_{username}/{menuOption}")
+    public String loadSection(@PathVariable("username") String username,
+            @PathVariable("menuOption") String menuOption,
+            HttpServletRequest request,
+            Model model) {
+        // Thêm các thuộc tính cần thiết cho view
+        model.addAttribute("username", username);
+        model.addAttribute("currentMenu", menuOption);
 
-    model.addAttribute("username", username);
-    model.addAttribute("menuOption", menuOption);
-
-    String requestedWith = request.getHeader("X-Requested-With");
-    if ("XMLHttpRequest".equals(requestedWith)) {
+        // Tùy vào menuOption, bạn có thể lấy dữ liệu từ service, ví dụ:
         if ("information".equals(menuOption)) {
-            model.addAttribute("fullName", "Nguyen Van A"); // Thay bằng dữ liệu thực
-            model.addAttribute("email", username + "@example.com");
+            // model.addAttribute("computer", computerService.findComputerByUser(username));
         }
-        return "home :: section"; // Trả về fragment 'section' từ home.html
+
+        // Kiểm tra nếu là Ajax request
+        String ajaxHeader = request.getHeader("X-Requested-With");
+        if ("XMLHttpRequest".equals(ajaxHeader)) {
+            // Trả về Thymeleaf fragment chứa nội dung tương ứng
+            // Giả sử file "home.html" chứa fragment "section"
+            return "home :: section";
+        }
+        // Nếu không phải Ajax, trả về trang home đầy đủ
+        return "home";
     }
-    
-    return "home";
-}
 
 }
