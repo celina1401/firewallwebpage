@@ -73,13 +73,11 @@
                 height: 24px;
             }
 
-            .main-content {
-                flex: 1;
-                padding: 20px;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-            }
+            /*            .main-content {
+                            padding: 20px;
+                            flex-wrap: wrap;
+                            gap: 20px;
+                        }*/
             .computer {
                 width: 12vw;
                 height: 30vh;
@@ -304,9 +302,11 @@
             }
 
             .section {
-                align-items: center;
+                display: flex;
                 height: 100%;
-                /*background-color: #f3f4f6;*/
+                padding: 20px;
+                flex-wrap: wrap;
+                gap: 20px;
             }
 
             .section h1 {
@@ -387,19 +387,38 @@
                 </div>
             </div>
         </div>
-        <div class="main-content">
+        <div class="main-content" id="content-area">
             <div class="success-message" th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div> <br>
-            <div th:each="computer : ${computers}" class="computer" 
-                 th:data-pcname="${computer.pcName}" 
-                 th:onclick="redirectToMachine(this)" style="cursor: pointer;">
-                <img src="/images/computer.png" alt="Computer">
-                <span th:text="${computer.pcName}">Computer 1</span>
+            <div th:fragment="section(menuOption)" th:remove="tag">
+                <div th:switch="${menuOption}">
+
+                    <div th:case="'information'" id="information-section">
+                        <h1 class="section-title">Details of the Ubuntu system</h1>
+                        <div class="info-container">
+                            <div class="info-content">
+                                <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
+                                <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
+                                <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div th:case="*" class="section">
+                        <div th:each="computer : ${computers}" class="computer" 
+                             th:data-pcname="${computer.pcName}" 
+                             th:onclick="redirectToMachine(this)" style="cursor: pointer;">
+                            <img src="/images/computer.png" alt="Computer">
+                            <span th:text="${computer.pcName}">Computer 1</span>
+                        </div>
+                        <div class="add-computer" onclick="openModal()">
+                            <img src="/images/add_icon.png" alt="add_icon"/>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="add-computer" onclick="openModal()">
-                <img src="/images/add_icon.png" alt="add_icon"/>
-            </div>
-            <div id="content-area" class="content" ></div>
         </div>
+
+
         <!-- Modal for adding a computer -->
         <div id="computerModal" class="modal">
             <div class="modal-content">
@@ -438,24 +457,7 @@
             </div>
         </div>
 
-        <div th:fragment="section(menuOption)" th:remove="tag">
-            <div th:switch="${menuOption}">
-                <div th:case="'information'" id="information-section">
-                    <h1 class="section-title">Details of the Ubuntu system</h1>
-                    <div class="info-container">
-                        <div class="info-content">
-                            <p><strong>Name of Ubuntu system:</strong> 
 
-                            </p>
-
-                        </div>
-                    </div>
-                </div>
-                <div th:case="*" class="section">
-
-                </div>
-            </div>
-        </div>
 
 
 
@@ -463,7 +465,7 @@
             const menuButtons = document.querySelectorAll('.menu-btn');
             const contentArea = document.getElementById('content-area');
             let activeButton = document.querySelector('.menu-btn.active');
-            const username = 'celina';
+            const username = document.getElementById('user-name').textContent;
 
             function openModal() {
                 document.getElementById("computerModal").style.display = "flex";
@@ -501,7 +503,7 @@
                 button.addEventListener('click', function (e) {
                     e.preventDefault();
                     const menuOption = this.getAttribute('data-menu');
-                    const pcName = this.getAttribute('data-pcname') || 'defaultPC';
+                    const pcName = this.getAttribute('data-pcname');
                     const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
 
                     if (activeButton)
@@ -543,7 +545,6 @@
                 const state = event.state;
                 if (state) {
                     const menuOption = state.menu || 'information';
-                    const pcName = state.pcName || 'defaultPC';
                     const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
 
                     if (contentArea) {
@@ -562,7 +563,7 @@
                                     menuButtons.forEach(btn => {
                                         btn.classList.remove('active');
                                         if (btn.getAttribute('data-menu') === menuOption &&
-                                                btn.getAttribute('data-pcname') === pcName) {
+                                                btn.getAttribute('data-pcname') === state.pcName) {
                                             btn.classList.add('active');
                                             activeButton = btn;
                                         }
@@ -578,6 +579,7 @@
                     }
                 }
             });
+
         </script>
     </body>
 </html>

@@ -6,8 +6,10 @@ package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.model.PCAccount;
+import com.b2110941.firewallweb.model.User;
 import com.b2110941.firewallweb.repository.pcAccountRepository;
 import com.b2110941.firewallweb.repository.pcRepository;
+import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -33,6 +35,8 @@ public class HomeController {
     private pcRepository pcRepository;
     @Autowired
     private pcAccountRepository pcAccountRepository;
+    @Autowired
+    private userRepository userRepository;
     @Autowired
     private ConnectSSH connectSSH;
 
@@ -124,24 +128,29 @@ public class HomeController {
             @PathVariable("menuOption") String menuOption,
             HttpServletRequest request,
             Model model) {
-        // Thêm các thuộc tính cần thiết cho view
         model.addAttribute("username", username);
         model.addAttribute("currentMenu", menuOption);
 
-        // Tùy vào menuOption, bạn có thể lấy dữ liệu từ service, ví dụ:
+        // Ví dụ: Lấy userInfo nếu là information
         if ("information".equals(menuOption)) {
-            // model.addAttribute("computer", computerService.findComputerByUser(username));
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            userOpt.ifPresentOrElse(
+                    user -> model.addAttribute("userInfo", user),
+                    () -> model.addAttribute("error", "User not found")
+            );
+        } else {
+            // Nếu là menu mặc định, ta load danh sách máy tính
+            List<PC> computers = pcRepository.findByOwnerUsername(username);
+            model.addAttribute("computers", computers);
         }
 
-        // Kiểm tra nếu là Ajax request
+        // Kiểm tra AJAX
         String ajaxHeader = request.getHeader("X-Requested-With");
         if ("XMLHttpRequest".equals(ajaxHeader)) {
-            // Trả về Thymeleaf fragment chứa nội dung tương ứng
-            // Giả sử file "home.html" chứa fragment "section"
-            return "home :: section";
+            return "home :: section(menuOption='" + menuOption + "')";
         }
-        // Nếu không phải Ajax, trả về trang home đầy đủ
         return "home";
     }
 
+//    @GetMapping("/home_{username}/infomation")
 }
