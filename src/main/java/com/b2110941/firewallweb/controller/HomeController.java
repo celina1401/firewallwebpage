@@ -7,8 +7,10 @@ package com.b2110941.firewallweb.controller;
 import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.model.PCAccount;
 import com.b2110941.firewallweb.model.User;
+import com.b2110941.firewallweb.model.UserAccount;
 import com.b2110941.firewallweb.repository.pcAccountRepository;
 import com.b2110941.firewallweb.repository.pcRepository;
+import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,10 +26,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- *
- * @author User
- */
 @Controller
 public class HomeController {
 
@@ -37,6 +35,8 @@ public class HomeController {
     private pcAccountRepository pcAccountRepository;
     @Autowired
     private userRepository userRepository;
+    @Autowired
+    private userAccountRepository userAccountRepository;
     @Autowired
     private ConnectSSH connectSSH;
 
@@ -152,5 +152,43 @@ public class HomeController {
         return "home";
     }
 
-//    @GetMapping("/home_{username}/infomation")
+    @PostMapping("/home_{username}/information")
+    public String updateUserInformation(
+            @PathVariable("username") String username,
+            @RequestParam("fullname") String fullname,
+            @RequestParam("email") String email,
+            @RequestParam("password") String password,
+            Model model) {
+
+        // Lấy user từ CSDL dựa trên username
+        Optional<User> updateUser = userRepository.findByUsername(username);
+        Optional<UserAccount> updateUserAcc = userAccountRepository.findByUsername(username);
+        if (updateUser == null) {
+            // Xử lý nếu không tìm thấy user, trả về trang lỗi hoặc redirect
+            return "error-page";
+        }
+        User user = updateUser.get();
+        UserAccount userAcc = updateUserAcc.get();
+        // Cập nhật lại các trường
+        user.setFullname(fullname);
+        user.setEmail(email);
+        user.setPassword(password);
+        
+        userAcc.setPassword(password);
+
+        // Lưu thay đổi vào CSDL
+        userRepository.save(user);
+        userAccountRepository.save(userAcc);
+
+        // Sau khi cập nhật, có thể đưa user đã cập nhật vào model
+        model.addAttribute("userInfo", user);
+
+        // Có thể redirect về trang thông tin, hoặc trả về template
+        // 1) Redirect để tránh submit form lặp:
+        return "redirect:/home_" + username + "/information";
+
+        // 2) Hoặc trả về template trực tiếp (không redirect):
+        // return "user-information";
+    }
+
 }

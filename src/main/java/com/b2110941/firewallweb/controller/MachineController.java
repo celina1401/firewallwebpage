@@ -269,8 +269,6 @@ public class MachineController {
 
             firewallRules.add(rule);
         }
-
-        // If no rules were found but UFW is active, the list will be empty
         return firewallRules;
     }
 

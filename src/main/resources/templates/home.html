@@ -73,11 +73,6 @@
                 height: 24px;
             }
 
-            /*            .main-content {
-                            padding: 20px;
-                            flex-wrap: wrap;
-                            gap: 20px;
-                        }*/
             .computer {
                 width: 12vw;
                 height: 30vh;
@@ -366,6 +361,15 @@
                 margin: auto 10px;
             }
 
+            .info-form strong{
+                color: #2c3e50;
+                font-weight: 600;
+            }
+
+            .info-form p{
+                font-size: 18px;
+            }
+
             .info-actions button{
                 margin-top: 20px;
                 padding: 12px;
@@ -391,6 +395,16 @@
                 border-radius: 5px;
                 text-align: center;
             }
+            input[readonly] {
+                background-color: #e9ecef;  
+                color: #6c757d;           
+                cursor: not-allowed;      
+                border: 1px solid #ced4da; 
+            }
+
+            input[readonly]:focus {
+                outline: none;
+            }
         </style>
     </head>
     <body>
@@ -407,7 +421,7 @@
                 <button class="menu-btn" 
                         th:classappend="${currentMenu == 'manage_system'} ? 'active' : ''"
                         data-menu="manageSystem"
-                        th:text="'MANAGE SYSTEM'"></button>
+                        th:text="'MANAGE SYSTEMS'"></button>
             </nav>
             <div class="settings">
                 <div class="gear-icon">
@@ -432,11 +446,12 @@
                                 <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
                                 <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
                                 <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
+                                <!--<p><strong>Password:</strong> <span th:text="${userInfo.password}">N/A</span></p>-->
                             </div>
                         </div>
-                        
+
                         <h1 class="section-title">Edit your Infomation</h1>
-                        <form th:action="@{/updateUser}" method="post">
+                        <form th:action="@{'/home_' + ${userInfo.username} + '/information'}" method="post">
                             <div class="info-form">
                                 <p>
                                     <strong>Full Name:</strong>
@@ -444,11 +459,15 @@
                                 </p>
                                 <p>
                                     <strong>Username:</strong>
-                                    <input type="text" th:value="${userInfo.username}" name="username" disabled />
+                                    <input type="text" th:value="${userInfo.username}" name="username" readonly />
                                 </p>
                                 <p>
                                     <strong>Email:</strong>
                                     <input type="email" th:value="${userInfo.email}" name="email" disabled />
+                                </p>
+                                <p>
+                                    <strong>Password:</strong>
+                                    <input type="password" th:value="${userInfo.password}" name="password" disabled />
                                 </p>
                             </div>
                             <div class="info-actions">

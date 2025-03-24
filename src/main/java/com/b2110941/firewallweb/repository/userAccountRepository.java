@@ -1,5 +1,6 @@
 package com.b2110941.firewallweb.repository;
 
+import com.b2110941.firewallweb.model.User;
 import com.b2110941.firewallweb.model.UserAccount;
 import java.util.Optional;
 import org.springframework.data.mongodb.repository.MongoRepository;
