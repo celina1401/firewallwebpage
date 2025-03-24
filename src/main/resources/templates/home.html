@@ -295,16 +295,14 @@
             }
 
             /* Content area */
-            .content {
-                flex: 1;
-                padding: 20px;
-                overflow-y: auto;
+            #content-area{
+                width: 100%;
+                margin: 2% 3%;
             }
 
             .section {
                 display: flex;
                 height: 100%;
-                padding: 20px;
                 flex-wrap: wrap;
                 gap: 20px;
             }
@@ -333,7 +331,7 @@
                 padding: 20px;
                 border-radius: 12px;
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                width: 100%;
+                width: 50%;
                 text-align: left;
                 border-left: 5px solid #3498db;
             }
@@ -369,12 +367,10 @@
             </div>
             <div id="user-name" class ="name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
             <nav class="menu">
-                <!-- Các button menu, ví dụ "information" -->
                 <button class="menu-btn" 
                         th:classappend="${currentMenu == 'information'} ? 'active' : ''"
                         data-menu="information"
                         th:text="'INFORMATION'"></button>
-                <!-- Bạn có thể thêm nhiều mục khác -->
             </nav>
             <div class="settings">
                 <div class="gear-icon">
@@ -393,15 +389,16 @@
                 <div th:switch="${menuOption}">
 
                     <div th:case="'information'" id="information-section">
-                        <h1 class="section-title">Details of the Ubuntu system</h1>
+                        <h1 class="section-title">User Infomation</h1>
                         <div class="info-container">
                             <div class="info-content">
                                 <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
                                 <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
                                 <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
-
                             </div>
                         </div>
+                        <h2 class="session-title">Edit your Infomation</h2>
+                        
                     </div>
                     <div th:case="*" class="section">
                         <div th:each="computer : ${computers}" class="computer" 
