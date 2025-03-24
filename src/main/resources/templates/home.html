@@ -350,6 +350,39 @@
                 box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
             }
 
+            .info-form{
+                background: #ffffff;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                width: 50%;
+                text-align: left;
+                border-left: 5px solid #e67e22;
+            }
+            .info-form input{
+                font-size: 16px;
+                padding: 12px;
+                border-radius: 15px;
+                margin: auto 10px;
+            }
+
+            .info-actions button{
+                margin-top: 20px;
+                padding: 12px;
+                font-size: 20px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+
+                background: #28a745;
+                color: white;
+            }
+
+            .info-actions button:hover{
+                background: #218838;
+            }
+
             .error-message {
                 color: white;
                 padding: 10px;
@@ -371,6 +404,10 @@
                         th:classappend="${currentMenu == 'information'} ? 'active' : ''"
                         data-menu="information"
                         th:text="'INFORMATION'"></button>
+                <button class="menu-btn" 
+                        th:classappend="${currentMenu == 'manage_system'} ? 'active' : ''"
+                        data-menu="manageSystem"
+                        th:text="'MANAGE SYSTEM'"></button>
             </nav>
             <div class="settings">
                 <div class="gear-icon">
@@ -397,8 +434,31 @@
                                 <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
                             </div>
                         </div>
-                        <h2 class="session-title">Edit your Infomation</h2>
                         
+                        <h1 class="section-title">Edit your Infomation</h1>
+                        <form th:action="@{/updateUser}" method="post">
+                            <div class="info-form">
+                                <p>
+                                    <strong>Full Name:</strong>
+                                    <input type="text" th:value="${userInfo.fullname}" name="fullname" disabled />
+                                </p>
+                                <p>
+                                    <strong>Username:</strong>
+                                    <input type="text" th:value="${userInfo.username}" name="username" disabled />
+                                </p>
+                                <p>
+                                    <strong>Email:</strong>
+                                    <input type="email" th:value="${userInfo.email}" name="email" disabled />
+                                </p>
+                            </div>
+                            <div class="info-actions">
+                                <button type="button" id="editBtn" onclick="enableEditing()">Edit</button>
+                                <button type="submit" id="saveBtn" style="display:none;">Save</button>
+                                <button type="button" id="cancelBtn" style="display:none;" onclick="disableEditing()">Cancel</button>
+                            </div>
+                        </form>
+
+
                     </div>
                     <div th:case="*" class="section">
                         <div th:each="computer : ${computers}" class="computer" 
@@ -576,6 +636,30 @@
                     }
                 }
             });
+
+            function enableEditing() {
+                // Kích hoạt tất cả các input trong section
+                document.querySelectorAll("#information-section input").forEach(function (input) {
+                    input.disabled = false;
+                });
+                // Ẩn nút Edit, hiển thị nút Save và Cancel
+                document.getElementById("editBtn").style.display = "none";
+                document.getElementById("saveBtn").style.display = "inline-block";
+                document.getElementById("cancelBtn").style.display = "inline-block";
+            }
+
+            function disableEditing() {
+                // Vô hiệu hóa các input trong section
+                document.querySelectorAll("#information-section input").forEach(function (input) {
+                    input.disabled = true;
+                });
+                // Hiển thị lại nút Edit, ẩn nút Save và Cancel
+                document.getElementById("editBtn").style.display = "inline-block";
+                document.getElementById("saveBtn").style.display = "none";
+                document.getElementById("cancelBtn").style.display = "none";
+            }
+
+
 
         </script>
     </body>
