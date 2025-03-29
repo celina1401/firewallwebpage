@@ -446,7 +446,6 @@
                                 <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
                                 <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
                                 <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
-                                <!--<p><strong>Password:</strong> <span th:text="${userInfo.password}">N/A</span></p>-->
                             </div>
                         </div>
 
@@ -533,7 +532,7 @@
             </div>
         </div>
 
-
+        <!--Modal for edit pcName-->
 
 
 
@@ -622,7 +621,8 @@
                 if (state) {
                     const menuOption = state.menu || 'information';
                     const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-
+                    window.history.pushState({menu: menuOption}, '', url);
+                    
                     if (contentArea) {
                         contentArea.style.opacity = '0';
                         fetch(url, {
@@ -652,7 +652,7 @@
                                 });
                     } else {
                         console.error('Content area not found!');
-                    }
+                    }   
                 }
             });
 

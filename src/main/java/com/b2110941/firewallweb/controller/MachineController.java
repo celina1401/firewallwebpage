@@ -1,6 +1,8 @@
 package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.PC;
+import com.b2110941.firewallweb.model.User;
+import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import com.b2110941.firewallweb.service.PCService;
 import com.b2110941.firewallweb.service.UbuntuInfo;
@@ -28,6 +30,8 @@ public class MachineController {
     private UbuntuInfo ubuntuInfo;
     @Autowired
     private ConnectSSH connectSSH;
+    @Autowired
+    private userRepository userRepository;
 
     @GetMapping("/machine/{pcName}")
     public String showMachinePage(
@@ -58,6 +62,20 @@ public class MachineController {
         if (ownerUsername == null) {
             model.addAttribute("error", "User not logged in");
             model.addAttribute("currentMenu", "information");
+            return "redirect:/";
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(ownerUsername);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Đưa username (hoặc toàn bộ user) vào model
+            model.addAttribute("username", user.getUsername());
+            // Nếu cần hiển thị fullname hoặc các thông tin khác:
+            // model.addAttribute("fullname", user.getFullname());
+            // model.addAttribute("user", user); // tuỳ ý
+        } else {
+            // Không tìm thấy user trong DB => xử lý lỗi
+            model.addAttribute("error", "User not found in DB");
             return "redirect:/";
         }
 
@@ -118,7 +136,7 @@ public class MachineController {
                     computer.getPcUsername(),
                     computer.getPassword()
             );
-            System.out.println("Kết nối SSH thành công line 126");
+            System.out.println("Ket noi thanh cong line 126");
 
             Map<String, String> systemInfo = new HashMap<>();
             systemInfo.put("CPU", ubuntuInfo.executeCommand(sshSession, "lscpu | grep 'Model name' | awk -F ':' '{print $2}'").trim());

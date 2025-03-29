@@ -673,16 +673,19 @@
                             th:text="'FIREWALL RULES'"></button>
                     <button class="menu-btn" th:classappend="${currentMenu == 'login'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='login'"
-                            th:text="'LOG IN'"></button>
+                            th:text="'LOGGING'"></button>
                     <button class="menu-btn" th:classappend="${currentMenu == 'signup'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='signup'"
-                            th:text="'SIGN UP'"></button>
+                            th:text="'TERMINAL'"></button>
                 </nav>
 
                 <div class="footer">
-                    <div class="power-button" th:attr="data-pcname=${computer.pcName}">
+                    <div class="power-button" 
+                         th:onclick="|if(confirm('Do you truly intend to exit?')) { window.location.href='@{/home_{username}(username=${username})}'; }|">
                         <img class="exit-icon" src="/images/exit.png" alt="exit"/>
                         <p>EXIT</p>
+
+                        <a th:href="@{/home_{username}(username=${username})}">Home</a>
                     </div>
                 </div>
             </div>
@@ -897,41 +900,11 @@
             </div>
 
             <div th:case="'login'" class="section" id="login-section">
-                <h2>Log In</h2>
-                <div class="login-content">
-                    <form id="login-form" method="post" th:action="@{/login}">
-                        <div class="form-group">
-                            <input type="text" id="username" name="username" placeholder=" " required />
-                            <label for="username">Username</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="password" name="password" placeholder=" " required />
-                            <label for="password">Password</label>
-                        </div>
-                        <button type="submit" class="btn">Log In</button>
-                    </form>
-                </div>
+
             </div>
 
             <div th:case="'signup'" class="section" id="signup-section">
-                <h2>Sign Up</h2>
-                <div class="signup-content">
-                    <form id="signup-form" method="post" th:action="@{/signup}">
-                        <div class="form-group">
-                            <input type="text" id="newUsername" name="username" placeholder=" " required />
-                            <label for="newUsername">Username</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="newPassword" name="password" placeholder=" " required />
-                            <label for="newPassword">Password</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder=" " required />
-                            <label for="confirmPassword">Confirm Password</label>
-                        </div>
-                        <button type="submit" class="btn">Sign Up</button>
-                    </form>
-                </div>
+
             </div>
         </div>
     </div>
@@ -1056,16 +1029,6 @@
                 }
             });
 
-            // Handle EXIT button
-            const exitButton = document.querySelector('.power-button');
-            if (exitButton) {
-                exitButton.addEventListener('click', function () {
-                    if (confirm('Do you truly intend to exit?')) {
-                        window.location.href = '/home_{username}';
-                    }
-                });
-            }
-
             // Initialize form validations
             setupFormValidations();
             reinitializeForms();
@@ -1108,40 +1071,6 @@
         }
 
         // Setup form validations
-        function setupFormValidations() {
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const username = document.getElementById('username').value;
-                    const password = document.getElementById('password').value;
-                    if (!username || !password) {
-                        alert('Vui lòng nhập cả username và password');
-                        return;
-                    }
-                    this.dispatchEvent(new Event('submit', {cancelable: true}));
-                });
-            }
-
-            const signupForm = document.getElementById('signup-form');
-            if (signupForm) {
-                signupForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const username = document.getElementById('newUsername').value;
-                    const password = document.getElementById('newPassword').value;
-                    const confirmPassword = document.getElementById('confirmPassword').value;
-                    if (!username || !password || !confirmPassword) {
-                        alert('Vui lòng điền tất cả các trường');
-                        return;
-                    }
-                    if (password !== confirmPassword) {
-                        alert('Mật khẩu không khớp');
-                        return;
-                    }
-                    this.dispatchEvent(new Event('submit', {cancelable: true}));
-                });
-            }
-        }
 
         function toggleFirewall(element) {
             // Get the pcName from the element's data attribute
@@ -1198,7 +1127,7 @@
                     });
         }
 
-// Hiển thị/ẩn các trường cho mục "Destination"
+        // Hiển thị/ẩn các trường cho mục "Destination"
         function toggleToFields() {
             const toType = document.getElementById('toType').value;
             const toIpFields = document.getElementById('toIpFields');
@@ -1323,7 +1252,7 @@
 
         // Khởi tạo form và các sự kiện liên quan
         function initializeRuleForm() {
-            // Lắng nghe thay đổi của checkbox Outgoing để cập nhật giá trị direction
+
             const outgoingCheckbox = document.getElementById('outgoingCheckbox');
             if (outgoingCheckbox) {
                 outgoingCheckbox.addEventListener('change', function () {

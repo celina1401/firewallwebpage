@@ -41,19 +41,15 @@ public class RegisterController {
                            @RequestParam String email,
                            Model model,
                            HttpSession session){
-        // Kiểm tra xem username hoặc email đã tồn tại chưa
+        
         String normalizedUsername = username.toLowerCase();
         
         Optional<User>  existingUserByUsername = userRepository.findByUsername(username);
-        Optional<User>  existingUserByEmail = userRepository.findByEmail(email);
+        System.out.println(existingUserByUsername);
+//        Optional<User>  existingUserByEmail = userRepository.findByEmail(email);
 
-        if (existingUserByUsername != null) {
-            model.addAttribute("error", "Username already exists");
-            return "register"; // Trả về trang đăng ký với thông báo lỗi
-        }
-
-        if (existingUserByEmail != null) {
-            model.addAttribute("error", "Email already exists");
+        if (!existingUserByUsername.equals(Optional.empty()) ) {
+            model.addAttribute("error", "Account already exists");
             return "register"; // Trả về trang đăng ký với thông báo lỗi
         }
 
