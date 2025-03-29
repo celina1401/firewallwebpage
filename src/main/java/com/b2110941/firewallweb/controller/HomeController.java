@@ -129,7 +129,7 @@ public class HomeController {
             HttpServletRequest request,
             Model model) {
         model.addAttribute("username", username);
-        model.addAttribute("currentMenu", menuOption);
+        model.addAttribute("menuOption", menuOption);
 
         // Ví dụ: Lấy userInfo nếu là information
         if ("information".equals(menuOption)) {

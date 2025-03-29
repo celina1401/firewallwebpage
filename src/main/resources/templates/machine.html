@@ -910,173 +910,139 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const menuButtons = document.querySelectorAll('.menu-btn');
-            const contentArea = document.getElementById('content-area');
-            let activeButton = document.querySelector('.menu-btn.active');
 
-            // Load initial content based on active button or default to 'information'
-            const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
-            const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
-            const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
-
-            fetch(initialUrl, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        contentArea.innerHTML = html;
-                        contentArea.style.opacity = '1';
-                        reinitializeForms();
-                    })
-                    .catch(error => {
-                        console.error('Initial fetch error:', error);
-                        contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                        contentArea.style.opacity = '1';
-                    });
-
-            // Handle menu button clicks
-            menuButtons.forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-
-                    const menuOption = this.getAttribute('data-menu');
-                    const pcName = this.getAttribute('data-pcname') || 'wsl';
-                    const url = `/machine/${pcName}/${menuOption}`;
-
-                    window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
-
-                    if (activeButton) {
-                        activeButton.classList.remove('active');
-                    }
-                    this.classList.add('active');
-                    activeButton = this;
-
-                    contentArea.style.opacity = '0';
-
-                    fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                }
-                                return response.text();
-                            })
-                            .then(html => {
-                                setTimeout(() => {
-                                    contentArea.innerHTML = html;
-                                    contentArea.style.opacity = '1';
-                                    reinitializeForms();
-                                }, 200);
-                            })
-                            .catch(error => {
-                                console.error('Fetch error:', error);
-                                contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                contentArea.style.opacity = '1';
-                            });
-                });
-            });
-
-            // Handle browser back/forward navigation
-            window.addEventListener('popstate', function (event) {
-                const state = event.state;
-                if (state) {
-                    const menuOption = state.menu || 'information';
-                    const pcName = state.pcName || activeButton?.getAttribute('data-pcname') || 'wsl';
-                    const url = `/machine/${pcName}/${menuOption}`;
-
-                    contentArea.style.opacity = '0';
-
-                    fetch(url, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                }
-                                return response.text();
-                            })
-                            .then(html => {
-                                contentArea.innerHTML = html;
-                                contentArea.style.opacity = '1';
-                                reinitializeForms();
-
-                                menuButtons.forEach(btn => {
-                                    btn.classList.remove('active');
-                                    if (btn.getAttribute('data-menu') === menuOption) {
-                                        btn.classList.add('active');
-                                        activeButton = btn;
-                                    }
-                                });
-                            })
-                            .catch(error => {
-                                console.error('Popstate fetch error:', error);
-                                contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                contentArea.style.opacity = '1';
-                            });
-                }
-            });
-
-            // Initialize form validations
-            setupFormValidations();
-            reinitializeForms();
-        });
-
-        // Reinitialize forms after content updates
-        function reinitializeForms() {
-            setupFormValidations();
-
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(this);
-                    const action = this.getAttribute('action');
-
-                    fetch(action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                }
-                                return response.text();
-                            })
-                            .then(html => {
-                                document.getElementById('content-area').innerHTML = html;
-                                reinitializeForms();
-                            })
-                            .catch(error => {
-                                console.error('Form submission error:', error);
-                                document.getElementById('content-area').innerHTML = '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
-                            });
-                });
-            });
+        // Check if an IP address is valid
+        function validateIpAddress(ip) {
+            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+            if (!ipRegex.test(ip))
+                return false;
+            const parts = ip.split('.');
+            return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
         }
 
-        // Setup form validations
+        // Validate the firewall rule form
+        function validateRuleForm() {
+            const action = document.getElementById('action')?.value;
+            const toType = document.getElementById('toType')?.value;
+            const fromType = document.getElementById('fromType')?.value;
+
+            const portChecked = document.getElementById('portCheck')?.checked
+                    || document.getElementById('specificPortCheck')?.checked;
+
+            if (!action || !toType || !fromType) {
+                alert('Please fill out all required fields');
+                return false;
+            }
+
+            // Destination: IP address
+            if (toType === 'ipaddress') {
+                const toIp = document.getElementById('toIp')?.value;
+                if (!toIp || !validateIpAddress(toIp)) {
+                    alert('Please enter a valid destination IP address');
+                    return false;
+                }
+            }
+
+            // Destination: Range
+            if (toType === 'range') {
+                const rangeStart = document.getElementById('rangeStart')?.value;
+                const rangeEnd = document.getElementById('rangeEnd')?.value;
+                if (!rangeStart || !rangeEnd ||
+                        !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
+                    alert('Please enter a valid IP range');
+                    return false;
+                }
+            }
+
+            // Destination: App
+            if (toType === 'app') {
+                const appName = document.getElementById('toApp')?.value;
+                if (!appName) {
+                    alert('Please select an application');
+                    return false;
+                }
+            }
+
+            // If user checked "Specific port" or "Out coming" portCheck
+            if (portChecked) {
+                const port = document.getElementById('port')?.value;
+                if (!port || isNaN(port) || port < 1 || port > 65535) {
+                    alert('Please enter a valid port number (1-65535)');
+                    return false;
+                }
+            }
+
+            // Source: IP address
+            if (fromType === 'ipaddress') {
+                const fromIp = document.getElementById('fromIp')?.value;
+                if (!fromIp || !validateIpAddress(fromIp)) {
+                    alert('Please enter a valid source IP address');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /*
+         * 2) --- Show/Hide Fields ---
+         */
+        // Destination fields
+        function toggleToFields() {
+            const toType = document.getElementById('toType')?.value;
+            const toIpFields = document.getElementById('toIpFields');
+            const toRangeFields = document.getElementById('toRangeFields');
+            const toRangeEndFields = document.getElementById('toRangeEndFields');
+            const toAppFields = document.getElementById('toAppFields');
+            const toInterfaceFields = document.getElementById('toInterfaceFields');
+
+            // Hide all first
+            toIpFields?.classList.add('hidden');
+            toRangeFields?.classList.add('hidden');
+            toRangeEndFields?.classList.add('hidden');
+            toAppFields?.classList.add('hidden');
+            toInterfaceFields?.classList.add('hidden');
+
+            if (toType === 'ipaddress') {
+                toIpFields?.classList.remove('hidden');
+            } else if (toType === 'range') {
+                toRangeFields?.classList.remove('hidden');
+                toRangeEndFields?.classList.remove('hidden');
+            } else if (toType === 'app') {
+                toAppFields?.classList.remove('hidden');
+            } else if (toType === 'interface') {
+                toInterfaceFields?.classList.remove('hidden');
+            }
+        }
+
+        // Specific port fields
+        function togglePortFields() {
+            const specificPortCheckbox = document.getElementById('specificPortCheck');
+            const portFields = document.getElementById('portFields');
+            if (specificPortCheckbox && portFields) {
+                if (specificPortCheckbox.checked) {
+                    portFields.classList.remove('hidden');
+                } else {
+                    portFields.classList.add('hidden');
+                }
+            }
+        }
+
+
+        function toggleFromFields() {
+            const fromType = document.getElementById('fromType')?.value;
+            const fromIpFields = document.getElementById('fromIpFields');
+            if (fromIpFields) {
+                if (fromType === 'ipaddress') {
+                    fromIpFields.classList.remove('hidden');
+                } else {
+                    fromIpFields.classList.add('hidden');
+                }
+            }
+        }
 
         function toggleFirewall(element) {
-            // Get the pcName from the element's data attribute
             const pcName = element.getAttribute('data-pc-name');
-
-            // Check if pcName exists
             if (!pcName) {
                 console.error("data-pc-name attribute is missing or empty");
                 alert("Error: Computer name not found");
@@ -1086,7 +1052,7 @@
             const isChecked = element.checked;
             const url = '/machine/' + pcName + '/toggle-firewall';
 
-            // Disable the toggle while processing
+            // Disable toggle while processing
             element.disabled = true;
 
             fetch(url, {
@@ -1108,174 +1074,232 @@
                         element.disabled = false;
 
                         if (data.success) {
-                            document.querySelector('.toggle-label').textContent = isChecked ? 'Firewall: ON' : 'Firewall: OFF';
-                            console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                            document.querySelector('.toggle-label').textContent =
+                                    isChecked ? 'Firewall: ON' : 'Firewall: OFF';
 
                             const firewallRulesTable = document.getElementById('firewallRulesTable');
-                            firewallRulesTable.style.display = isChecked ? 'block' : 'none';
+                            if (firewallRulesTable) {
+                                firewallRulesTable.style.display = isChecked ? 'block' : 'none';
+                            }
+                            console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
                         } else {
                             console.error('Failed to toggle firewall:', data.message);
                             alert('Failed to toggle firewall: ' + data.message);
-                            element.checked = !isChecked; // Restore previous state
+                            element.checked = !isChecked; // revert
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         alert('Error: ' + error.message);
-                        element.checked = !isChecked; // Restore previous state
-                        element.disabled = false; // Make sure to re-enable on error
+                        element.checked = !isChecked; // revert
+                        element.disabled = false;
                     });
         }
 
-        // Hiển thị/ẩn các trường cho mục "Destination"
-        function toggleToFields() {
-            const toType = document.getElementById('toType').value;
-            const toIpFields = document.getElementById('toIpFields');
-            const toRangeFields = document.getElementById('toRangeFields');
-            const toRangeEndFields = document.getElementById('toRangeEndFields');
-            const toAppFields = document.getElementById('toAppFields');
-            const toInterfaceFields = document.getElementById('toInterfaceFields');
-
-            // Ẩn tất cả trước
-            toIpFields.classList.add('hidden');
-            toRangeFields.classList.add('hidden');
-            toRangeEndFields.classList.add('hidden');
-            toAppFields.classList.add('hidden');
-            toInterfaceFields.classList.add('hidden');
-
-            if (toType === 'ipaddress') {
-                toIpFields.classList.remove('hidden');
-            } else if (toType === 'range') {
-                toRangeFields.classList.remove('hidden');
-                toRangeEndFields.classList.remove('hidden');
-            } else if (toType === 'app') {
-                toAppFields.classList.remove('hidden');
-            } else if (toType === 'interface') {
-                toInterfaceFields.classList.remove('hidden');
-            }
-        }
-
-        function togglePortFields() {
-            const specificPortCheckbox = document.getElementById('specificPortCheck');
-            const portFields = document.getElementById('portFields');
-            if (specificPortCheckbox.checked) {
-                portFields.classList.remove('hidden');
-            } else {
-                portFields.classList.add('hidden');
-            }
-        }
-
-        // Khởi tạo sự kiện sau khi DOM tải xong
-        document.addEventListener('DOMContentLoaded', function () {
-            // Gắn sự kiện cho checkbox specific port
-            const specificPortCheckbox = document.getElementById('specificPortCheck');
-            if (specificPortCheckbox) {
-                specificPortCheckbox.addEventListener('change', togglePortFields);
-            }
-        });
-
-        // Hiển thị/ẩn trường cho mục "Source"
-        function toggleFromFields() {
-            const fromType = document.getElementById('fromType').value;
-            const fromIpFields = document.getElementById('fromIpFields');
-
-            if (fromType === 'ipaddress') {
-                fromIpFields.classList.remove('hidden');
-            } else {
-                fromIpFields.classList.add('hidden');
-            }
-        }
-
-        // Kiểm tra định dạng địa chỉ IP
-        function validateIpAddress(ip) {
-            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-            if (!ipRegex.test(ip))
-                return false;
-            const parts = ip.split('.');
-            return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
-        }
-
-        // Kiểm tra form trước khi submit
-        function validateRuleForm() {
-            const action = document.getElementById('action').value;
-            const toType = document.getElementById('toType').value;
-            const fromType = document.getElementById('fromType').value;
-            const portChecked = document.getElementById('portCheck').checked;
-
-            if (!action || !toType || !fromType) {
-                alert('Please fill out all required fields');
-                return false;
-            }
-
-            if (toType === 'ipaddress') {
-                const toIp = document.getElementById('toIp').value;
-                if (!toIp || !validateIpAddress(toIp)) {
-                    alert('Please enter a valid destination IP address');
-                    return false;
-                }
-            }
-
-            if (toType === 'range') {
-                const rangeStart = document.getElementById('rangeStart').value;
-                const rangeEnd = document.getElementById('rangeEnd').value;
-                if (!rangeStart || !rangeEnd || !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
-                    alert('Please enter valid IP range');
-                    return false;
-                }
-            }
-
-            if (toType === 'app') {
-                const appName = document.getElementById('toApp').value;
-                if (!appName) {
-                    alert('Please select an application');
-                    return false;
-                }
-            }
-
-            if (portChecked) {
-                const port = document.getElementById('port').value;
-                if (!port || isNaN(port) || port < 1 || port > 65535) {
-                    alert('Please enter a valid port number (1-65535)');
-                    return false;
-                }
-            }
-
-            if (fromType === 'ipaddress') {
-                const fromIp = document.getElementById('fromIp').value;
-                if (!fromIp || !validateIpAddress(fromIp)) {
-                    alert('Please enter a valid source IP address');
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        // Khởi tạo form và các sự kiện liên quan
-        function initializeRuleForm() {
-
-            const outgoingCheckbox = document.getElementById('outgoingCheckbox');
-            if (outgoingCheckbox) {
-                outgoingCheckbox.addEventListener('change', function () {
-                    document.getElementById('direction').value = this.checked ? 'out' : 'in';
+        function setupFormValidations() {
+            const ruleForm = document.getElementById('dynamicForm');
+            if (ruleForm) {
+                ruleForm.addEventListener('submit', function (e) {
+                    // If not valid, prevent submit
+                    if (!validateRuleForm()) {
+                        e.preventDefault();
+                    }
                 });
             }
-            document.getElementById('toType')?.addEventListener('change', toggleToFields);
-            document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
-            document.getElementById('portCheck')?.addEventListener('change', function () {
-                const portFields = document.getElementById('portFields');
-                if (this.checked) {
-                    portFields.classList.remove('hidden');
-                } else {
-                    portFields.classList.add('hidden');
-                }
+
+            // If you have other forms (login, signup), you can attach their validations here as well.
+        }
+
+        /*
+         * 5) --- Reinitialize Forms after AJAX content load ---
+         *     (Attaches fetch-based submission if you want purely AJAX form submissions)
+         */
+        function reinitializeForms() {
+            // Re-run validations setup
+            setupFormValidations();
+
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const action = this.getAttribute('action');
+
+                    fetch(action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                document.getElementById('content-area').innerHTML = html;
+                                reinitializeForms(); // re-init again for newly loaded content
+                            })
+                            .catch(error => {
+                                console.error('Form submission error:', error);
+                                document.getElementById('content-area').innerHTML =
+                                        '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
+                            });
+                });
             });
         }
 
-        // Gọi hàm khởi tạo sau khi DOM tải xong
-        document.addEventListener('DOMContentLoaded', function () {
-            initializeRuleForm();
-        });
+        /*
+         * 6) --- Initialize Rule Form (checkboxes, etc.) ---
+         */
+        function initializeRuleForm() {
+            const outgoingCheckbox = document.getElementById('outgoingCheckbox');
+            if (outgoingCheckbox) {
+                outgoingCheckbox.addEventListener('change', function () {
+                    const directionField = document.getElementById('direction');
+                    if (directionField) {
+                        directionField.value = this.checked ? 'out' : 'in';
+                    }
+                });
+            }
 
+            document.getElementById('toType')?.addEventListener('change', toggleToFields);
+            document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
+
+
+            document.getElementById('portCheck')?.addEventListener('change', function () {
+
+                const portFields = document.getElementById('portFields');
+                if (portFields) {
+                    if (this.checked) {
+                        portFields.classList.remove('hidden');
+                    } else {
+                        portFields.classList.add('hidden');
+                    }
+                }
+            });
+
+            document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // 7.1) Handle the side menu AJAX loading
+            const menuButtons = document.querySelectorAll('.menu-btn');
+            const contentArea = document.getElementById('content-area');
+            let activeButton = document.querySelector('.menu-btn.active');
+
+            // Determine initial content to load
+            const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
+            const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
+            const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
+
+            // Fetch initial fragment
+            fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        contentArea.innerHTML = html;
+                        contentArea.style.opacity = '1';
+                        reinitializeForms();
+                    })
+                    .catch(error => {
+                        console.error('Initial fetch error:', error);
+                        contentArea.innerHTML =
+                                '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                        contentArea.style.opacity = '1';
+                    });
+
+            // 7.2) Menu button clicks => AJAX navigation
+            menuButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const menuOption = this.getAttribute('data-menu');
+                    const pcName = this.getAttribute('data-pcname') || 'wsl';
+                    const url = `/machine/${pcName}/${menuOption}`;
+
+                    window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
+
+                    if (activeButton) {
+                        activeButton.classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    activeButton = this;
+
+                    contentArea.style.opacity = '0';
+
+                    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                setTimeout(() => {
+                                    contentArea.innerHTML = html;
+                                    contentArea.style.opacity = '1';
+                                    reinitializeForms();
+                                }, 200);
+                            })
+                            .catch(error => {
+                                console.error('Fetch error:', error);
+                                contentArea.innerHTML =
+                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                contentArea.style.opacity = '1';
+                            });
+                });
+            });
+
+            window.addEventListener('popstate', function (event) {
+                const state = event.state;
+                if (state) {
+                    const menuOption = state.menu || 'information';
+                    const pcName = state.pcName ||
+                            activeButton?.getAttribute('data-pcname') ||
+                            'wsl';
+                    const url = `/machine/${pcName}/${menuOption}`;
+
+                    contentArea.style.opacity = '0';
+
+                    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                contentArea.innerHTML = html;
+                                contentArea.style.opacity = '1';
+                                reinitializeForms();
+
+                                menuButtons.forEach(btn => {
+                                    btn.classList.remove('active');
+                                    if (btn.getAttribute('data-menu') === menuOption) {
+                                        btn.classList.add('active');
+                                        activeButton = btn;
+                                    }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Popstate fetch error:', error);
+                                contentArea.innerHTML =
+                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                contentArea.style.opacity = '1';
+                            });
+                }
+            });
+
+            // 7.4) Run initial setups
+            setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
+            reinitializeForms();    // attach AJAX submission to forms
+            initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
+        });
     </script>
+
 </body>
 </html>

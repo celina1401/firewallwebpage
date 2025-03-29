@@ -396,10 +396,10 @@
                 text-align: center;
             }
             input[readonly] {
-                background-color: #e9ecef;  
-                color: #6c757d;           
-                cursor: not-allowed;      
-                border: 1px solid #ced4da; 
+                background-color: #e9ecef;
+                color: #6c757d;
+                cursor: not-allowed;
+                border: 1px solid #ced4da;
             }
 
             input[readonly]:focus {
@@ -534,8 +534,6 @@
 
         <!--Modal for edit pcName-->
 
-
-
         <script>
             const menuButtons = document.querySelectorAll('.menu-btn');
             const contentArea = document.getElementById('content-area');
@@ -621,8 +619,7 @@
                 if (state) {
                     const menuOption = state.menu || 'information';
                     const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-                    window.history.pushState({menu: menuOption}, '', url);
-                    
+
                     if (contentArea) {
                         contentArea.style.opacity = '0';
                         fetch(url, {
@@ -652,7 +649,7 @@
                                 });
                     } else {
                         console.error('Content area not found!');
-                    }   
+                    }
                 }
             });
 
