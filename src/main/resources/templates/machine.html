@@ -3,8 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <link rel="icon" th:href="@{/images/favicon.png}"/>
+        <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
         <title>Machine Management</title>
-
+        <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
+        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
         <style>
             /* Reset mặc định */
             * {
@@ -674,8 +676,8 @@
                     <button class="menu-btn" th:classappend="${currentMenu == 'login'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='login'"
                             th:text="'LOGGING'"></button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'signup'} ? 'active' : ''" 
-                            th:attr="data-pcname=${computer.pcName},data-menu='signup'"
+                    <button class="menu-btn" th:classappend="${currentMenu == 'terminal'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='terminal'"
                             th:text="'TERMINAL'"></button>
                 </nav>
 
@@ -693,613 +695,653 @@
             <div class="content" id="content-area">
             </div>
         </div>
-    </div>
 
-    <div th:fragment="section(menuOption)" th:remove="tag">
-        <div th:if="${error}" class="error-message" th:text="${error}"></div>
-        <div th:switch="${menuOption}">
+        <div th:fragment="section(menuOption)" th:remove="tag">
+            <div th:if="${error}" class="error-message" th:text="${error}"></div>
+            <div th:switch="${menuOption}">
 
-            <div th:case="'information'" class="section" id="information-section">
-                <h1 class="section-title">Details of the Ubuntu system</h1>
-                <div class="info-container">
-                    <div class="info-content">
-                        <p><strong>Name of Ubuntu system:</strong> <span th:text="${computer.pcName}"></span></p>
-                        <p><strong>Ubuntu Username:</strong> <span th:text="${computer.pcUsername}"></span></p>
-                        <p><strong>IP Address:</strong> <span th:text="${computer.ipAddress}"></span></p>
-                        <p><strong>Port:</strong> <span th:text="${computer.port}"></span></p>
-                        <p><strong>Owner Username:</strong> <span th:text="${computer.ownerUsername}"></span></p>
+                <div th:case="'information'" class="section" id="information-section">
+                    <h1 class="section-title">Details of the Ubuntu system</h1>
+                    <div class="info-container">
+                        <div class="info-content">
+                            <p><strong>Name of Ubuntu system:</strong> <span th:text="${computer.pcName}"></span></p>
+                            <p><strong>Ubuntu Username:</strong> <span th:text="${computer.pcUsername}"></span></p>
+                            <p><strong>IP Address:</strong> <span th:text="${computer.ipAddress}"></span></p>
+                            <p><strong>Port:</strong> <span th:text="${computer.port}"></span></p>
+                            <p><strong>Owner Username:</strong> <span th:text="${computer.ownerUsername}"></span></p>
+                        </div>
+
+                        <div class="system-info">
+                            <p><strong>CPU:</strong> <span th:text="${systemInfo?.get('CPU') ?: 'N/A'}"></span></p>
+                            <p><strong>RAM:</strong> <span th:text="${systemInfo?.get('RAM') ?: 'N/A'}"></span></p>
+                            <p><strong>Ubuntu Version:</strong> <span th:text="${systemInfo?.get('Ubuntu Version') ?: 'N/A'}"></span></p>
+                        </div>
+
                     </div>
-
-                    <div class="system-info">
-                        <p><strong>CPU:</strong> <span th:text="${systemInfo?.get('CPU') ?: 'N/A'}"></span></p>
-                        <p><strong>RAM:</strong> <span th:text="${systemInfo?.get('RAM') ?: 'N/A'}"></span></p>
-                        <p><strong>Ubuntu Version:</strong> <span th:text="${systemInfo?.get('Ubuntu Version') ?: 'N/A'}"></span></p>
-                    </div>
-
-                </div>
-            </div>
-
-            <div th:case="'rule'" class="section" id="rule-section">
-                <h1 class="section-title">Firewall rules</h1>
-
-                <!--Toggle switch hiển thị trạng thái--> 
-                <div class="toggle-container">
-                    <label class="switch">
-                        <input type="checkbox" 
-                               id="firewallToggle" 
-                               th:checked="${firewallStatus == 'active'}" 
-                               th:attr="data-pc-name=${computer.pcName}"
-                               onchange="toggleFirewall(this)">
-                        <span class="slider"></span>
-                    </label>
-                    <span class="toggle-label" 
-                          th:text="${firewallStatus == 'active' ? 'Firewall Status: ON' : 'Firewall Status: OFF'}">
-                    </span>
                 </div>
 
-                <div class="rule-content" id="firewallRulesTable" th:style="${firewallStatus == 'active' ? 'display: block' : 'display: none'}"> 
-                    <!-- Bảng hiển thị danh sách quy tắc firewall -->
-                    <div class="rule-table-container">
-                        <table class="rule-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Source IP</th>
-                                    <th>Destination IP</th>
-                                    <th>Port</th>
-                                    <th>Protocol</th>
-                                    <th>Action</th>
-                                    <th>Options</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="rule : ${firewallRules}">
-                                    <td th:text="${rule.id}"></td>
-                                    <td th:text="${rule.sourceIp}"></td>
-                                    <td th:text="${rule.destinationIp}"></td>
-                                    <td th:text="${rule.port}"></td>
-                                    <td th:text="${rule.protocol}"></td>
-                                    <td th:text="${rule.action}"></td>
-                                    <td>
-                                        <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">
-                                            <img src="/images/editing.png" alt=""/>
-                                        </button>
-                                        <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">
-                                            <img src="/images/delete.png" alt=""/>                                            
-                                        </button>
-                                    </td>
-                                </tr>
-                                <!-- Nếu không có quy tắc, hiển thị thông báo -->
-                                <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
-                                    <td colspan="7" style="text-align: center;">No firewall rules found.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                <div th:case="'rule'" class="section" id="rule-section">
+                    <h1 class="section-title">Firewall rules</h1>
+
+                    <!--Toggle switch hiển thị trạng thái--> 
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" 
+                                   id="firewallToggle" 
+                                   th:checked="${firewallStatus == 'active'}" 
+                                   th:attr="data-pc-name=${computer.pcName}"
+                                   onchange="toggleFirewall(this)">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label" 
+                              th:text="${firewallStatus == 'active' ? 'Firewall Status: ON' : 'Firewall Status: OFF'}">
+                        </span>
                     </div>
 
-                    <!-- Add Rule Form -->
-                    <div class="add-rule-form">
-                        <h3>Add New Firewall Rule</h3>
-                        <form id="dynamicForm" method="post" action="/machine/addRule" onsubmit="return validateRuleForm()">
-                            <!-- Hidden field for PC name, will be populated by JavaScript -->
-                            <input type="hidden" name="pcName" id="pcNameField">
+                    <div class="rule-content" id="firewallRulesTable" th:style="${firewallStatus == 'active' ? 'display: block' : 'display: none'}"> 
+                        <!-- Bảng hiển thị danh sách quy tắc firewall -->
+                        <div class="rule-table-container">
+                            <table class="rule-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Source IP</th>
+                                        <th>Destination IP</th>
+                                        <th>Port</th>
+                                        <th>Protocol</th>
+                                        <th>Action</th>
+                                        <th>Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="rule : ${firewallRules}">
+                                        <td th:text="${rule.id}"></td>
+                                        <td th:text="${rule.sourceIp}"></td>
+                                        <td th:text="${rule.destinationIp}"></td>
+                                        <td th:text="${rule.port}"></td>
+                                        <td th:text="${rule.protocol}"></td>
+                                        <td th:text="${rule.action}"></td>
+                                        <td>
+                                            <button class="edit-btn" th:attr="data-rule-id=${rule.id}" onclick="editRule(this)">
+                                                <img src="/images/editing.png" alt=""/>
+                                            </button>
+                                            <button class="delete-btn" th:attr="data-rule-id=${rule.id}" onclick="deleteRule(this)">
+                                                <img src="/images/delete.png" alt=""/>                                            
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Nếu không có quy tắc, hiển thị thông báo -->
+                                    <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
+                                        <td colspan="7" style="text-align: center;">No firewall rules found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                            <!-- Action -->
-                            <div class="form-group">
-                                <select id="action" name="action" required>
-                                    <option value="allow">allow</option>
-                                    <option value="deny">deny</option>
-                                    <option value="limit">limit</option>
-                                </select>
-                                <label for="action">Action</label>
-                            </div>
+                        <!-- Add Rule Form -->
+                        <div class="add-rule-form">
+                            <h3>Add New Firewall Rule</h3>
+                            <form id="dynamicForm" method="post" action="/machine/addRule" onsubmit="return validateRuleForm()">
+                                <!-- Hidden field for PC name, will be populated by JavaScript -->
+                                <input type="hidden" name="pcName" id="pcNameField">
 
-                            <!-- Outgoing checkbox for direction -->
-                            <div class="form-group checkbox-like">
-                                <input type="checkbox" id="portCheck" name="portCheck" onchange="togglePortFields()">
-                                <p for="portCheck">Out coming</p>
-                            </div>
+                                <!-- Action -->
+                                <div class="form-group">
+                                    <select id="action" name="action" required>
+                                        <option value="allow">allow</option>
+                                        <option value="deny">deny</option>
+                                        <option value="limit">limit</option>
+                                    </select>
+                                    <label for="action">Action</label>
+                                </div>
 
-                            <!-- Protocol Selection -->
-                            <div class="form-group">
-                                <select id="protocol" name="protocol" required>
-                                    <option value="tcp">tcp</option>
-                                    <option value="udp">udp</option>
-                                    <option value="icmp">icmp</option>
-                                    <option value="none">none</option>
-                                </select>
-                                <label for="protocol">Protocol</label>
-                            </div>
+                                <!-- Outgoing checkbox for direction -->
+                                <div class="form-group checkbox-like">
+                                    <input type="checkbox" id="portCheck" name="portCheck" onchange="togglePortFields()">
+                                    <p for="portCheck">Out coming</p>
+                                </div>
 
-                            <!-- Destination (To) -->
-                            <div class="form-group">
-                                <select id="toType" name="toType" onchange="toggleToFields()" required>
-                                    <option value="any">Any</option>
-                                    <option value="range">Range IP</option>
-                                    <option value="app">App</option>
-                                    <option value="ipaddress">IP Address</option>
-                                    <option value="interface">Interface</option>
-                                </select>
-                                <label for="toType">Destination</label>
-                            </div>
+                                <!-- Protocol Selection -->
+                                <div class="form-group">
+                                    <select id="protocol" name="protocol" required>
+                                        <option value="tcp">tcp</option>
+                                        <option value="udp">udp</option>
+                                        <option value="icmp">icmp</option>
+                                        <option value="none">none</option>
+                                    </select>
+                                    <label for="protocol">Protocol</label>
+                                </div>
 
-                            <!-- Destination IP Address (chỉ hiển thị khi toType = ipaddress) -->
-                            <div class="form-group hidden" id="toIpFields">
-                                <input type="text" id="toIp" name="toIp" placeholder=" ">
-                                <label for="toIp">Destination IP</label>
-                            </div>
+                                <!-- Destination (To) -->
+                                <div class="form-group">
+                                    <select id="toType" name="toType" onchange="toggleToFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="range">Range IP</option>
+                                        <option value="app">App</option>
+                                        <option value="ipaddress">IP Address</option>
+                                        <option value="interface">Interface</option>
+                                    </select>
+                                    <label for="toType">Destination</label>
+                                </div>
 
-                            <!-- IP Range (chỉ hiển thị khi toType = range) -->
-                            <div class="form-group hidden" id="toRangeFields">
-                                <input type="text" id="rangeStart" name="rangeStart" placeholder=" ">
-                                <label for="rangeStart">Start IP</label>
-                            </div>
-                            <div class="form-group hidden" id="toRangeEndFields">
-                                <input type="text" id="rangeEnd" name="rangeEnd" placeholder=" ">
-                                <label for="rangeEnd">End IP</label>
-                            </div>
+                                <!-- Destination IP Address (chỉ hiển thị khi toType = ipaddress) -->
+                                <div class="form-group hidden" id="toIpFields">
+                                    <input type="text" id="toIp" name="toIp" placeholder=" ">
+                                    <label for="toIp">Destination IP</label>
+                                </div>
 
-                            <!-- Application (chỉ hiển thị khi toType = app) -->
-                            <div class="form-group hidden" id="toAppFields">
-                                <select id="toApp" name="toApp">
-                                    <option value="" disabled selected>Select Application</option>
-                                    <option value="app1">App1</option>
-                                    <option value="app2">App2</option>
-                                    <option value="app3">App3</option>
-                                </select>
-                                <label for="toApp">Application</label>
-                            </div>
+                                <!-- IP Range (chỉ hiển thị khi toType = range) -->
+                                <div class="form-group hidden" id="toRangeFields">
+                                    <input type="text" id="rangeStart" name="rangeStart" placeholder=" ">
+                                    <label for="rangeStart">Start IP</label>
+                                </div>
+                                <div class="form-group hidden" id="toRangeEndFields">
+                                    <input type="text" id="rangeEnd" name="rangeEnd" placeholder=" ">
+                                    <label for="rangeEnd">End IP</label>
+                                </div>
 
-                            <!-- Interface (chỉ hiển thị khi toType = interface) -->
-                            <div class="form-group hidden" id="toInterfaceFields">
-                                <select id="toInterface" name="toInterface">
-                                    <option value="" disabled selected>Select Interface</option>
-                                    <option value="eth0">eth0</option>
-                                    <option value="eth1">eth1</option>
-                                    <option value="wlan0">wlan0</option>
-                                    <option value="wlan1">wlan1</option>
-                                </select>
-                                <label for="toInterface">Interface</label>
-                            </div>
+                                <!-- Application (chỉ hiển thị khi toType = app) -->
+                                <div class="form-group hidden" id="toAppFields">
+                                    <select id="toApp" name="toApp">
+                                        <option value="" disabled selected>Select Application</option>
+                                        <option value="app1">App1</option>
+                                        <option value="app2">App2</option>
+                                        <option value="app3">App3</option>
+                                    </select>
+                                    <label for="toApp">Application</label>
+                                </div>
 
-                            <!-- Port Option -->
-                            <div class="form-group checkbox-like">
-                                <input type="checkbox" id="specificPortCheck" name="specificPortCheck" onchange="togglePortFields()">
-                                <p for="specificPortCheck">Specific port</p>
-                            </div>
+                                <!-- Interface (chỉ hiển thị khi toType = interface) -->
+                                <div class="form-group hidden" id="toInterfaceFields">
+                                    <select id="toInterface" name="toInterface">
+                                        <option value="" disabled selected>Select Interface</option>
+                                        <option value="eth0">eth0</option>
+                                        <option value="eth1">eth1</option>
+                                        <option value="wlan0">wlan0</option>
+                                        <option value="wlan1">wlan1</option>
+                                    </select>
+                                    <label for="toInterface">Interface</label>
+                                </div>
 
-                            <!-- Port Field (chỉ hiển thị khi checkbox Specific port được chọn) -->
-                            <div class="form-group hidden" id="portFields">
-                                <input type="number" id="port" name="port" min="1" max="65535" placeholder="Enter port...">
-                                <label for="port">Port Number</label>
-                            </div>
+                                <!-- Port Option -->
+                                <div class="form-group checkbox-like">
+                                    <input type="checkbox" id="specificPortCheck" name="specificPortCheck" onchange="togglePortFields()">
+                                    <p for="specificPortCheck">Specific port</p>
+                                </div>
 
-                            <!-- Source (From) -->
-                            <div class="form-group">
-                                <select id="fromType" name="fromType" onchange="toggleFromFields()" required>
-                                    <option value="any">Any</option>
-                                    <option value="ipaddress">IP Address</option>
-                                </select>
-                                <label for="fromType">Source</label>
-                            </div>
+                                <!-- Port Field (chỉ hiển thị khi checkbox Specific port được chọn) -->
+                                <div class="form-group hidden" id="portFields">
+                                    <input type="number" id="port" name="port" min="1" max="65535" placeholder="Enter port...">
+                                    <label for="port">Port Number</label>
+                                </div>
 
-                            <!-- Source IP Address (chỉ hiển thị khi fromType = ipaddress) -->
-                            <div class="form-group hidden" id="fromIpFields">
-                                <input type="text" id="fromIp" name="fromIp" placeholder=" ">
-                                <label for="fromIp">Source IP</label>
-                            </div>
-                        </form>
-                        <!-- Submit Button -->
-                        <button type="submit" class="btn" onclick="document.getElementById('dynamicForm').submit()">Add Rule</button>
+                                <!-- Source (From) -->
+                                <div class="form-group">
+                                    <select id="fromType" name="fromType" onchange="toggleFromFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="ipaddress">IP Address</option>
+                                    </select>
+                                    <label for="fromType">Source</label>
+                                </div>
+
+                                <!-- Source IP Address (chỉ hiển thị khi fromType = ipaddress) -->
+                                <div class="form-group hidden" id="fromIpFields">
+                                    <input type="text" id="fromIp" name="fromIp" placeholder=" ">
+                                    <label for="fromIp">Source IP</label>
+                                </div>
+                            </form>
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn" onclick="document.getElementById('dynamicForm').submit()">Add Rule</button>
+                        </div>
+
+
+
+
                     </div>
+                </div>
 
-
-
+                <div th:case="'terminal'" class="section" id="terminal-section">
 
                 </div>
-            </div>
 
-            <div th:case="'login'" class="section" id="login-section">
+                <div th:case="'signup'" class="section" id="signup-section">
 
-            </div>
-
-            <div th:case="'signup'" class="section" id="signup-section">
-
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
+        <script>
 
-        // Check if an IP address is valid
-        function validateIpAddress(ip) {
-            const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-            if (!ipRegex.test(ip))
-                return false;
-            const parts = ip.split('.');
-            return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
-        }
-
-        // Validate the firewall rule form
-        function validateRuleForm() {
-            const action = document.getElementById('action')?.value;
-            const toType = document.getElementById('toType')?.value;
-            const fromType = document.getElementById('fromType')?.value;
-
-            const portChecked = document.getElementById('portCheck')?.checked
-                    || document.getElementById('specificPortCheck')?.checked;
-
-            if (!action || !toType || !fromType) {
-                alert('Please fill out all required fields');
-                return false;
+            // Check if an IP address is valid
+            function validateIpAddress(ip) {
+                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                if (!ipRegex.test(ip))
+                    return false;
+                const parts = ip.split('.');
+                return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
             }
 
-            // Destination: IP address
-            if (toType === 'ipaddress') {
-                const toIp = document.getElementById('toIp')?.value;
-                if (!toIp || !validateIpAddress(toIp)) {
-                    alert('Please enter a valid destination IP address');
+            // Validate the firewall rule form
+            function validateRuleForm() {
+                const action = document.getElementById('action')?.value;
+                const toType = document.getElementById('toType')?.value;
+                const fromType = document.getElementById('fromType')?.value;
+
+                const portChecked = document.getElementById('portCheck')?.checked
+                        || document.getElementById('specificPortCheck')?.checked;
+
+                if (!action || !toType || !fromType) {
+                    alert('Please fill out all required fields');
                     return false;
                 }
-            }
 
-            // Destination: Range
-            if (toType === 'range') {
-                const rangeStart = document.getElementById('rangeStart')?.value;
-                const rangeEnd = document.getElementById('rangeEnd')?.value;
-                if (!rangeStart || !rangeEnd ||
-                        !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
-                    alert('Please enter a valid IP range');
-                    return false;
+                // Destination: IP address
+                if (toType === 'ipaddress') {
+                    const toIp = document.getElementById('toIp')?.value;
+                    if (!toIp || !validateIpAddress(toIp)) {
+                        alert('Please enter a valid destination IP address');
+                        return false;
+                    }
                 }
-            }
 
-            // Destination: App
-            if (toType === 'app') {
-                const appName = document.getElementById('toApp')?.value;
-                if (!appName) {
-                    alert('Please select an application');
-                    return false;
+                // Destination: Range
+                if (toType === 'range') {
+                    const rangeStart = document.getElementById('rangeStart')?.value;
+                    const rangeEnd = document.getElementById('rangeEnd')?.value;
+                    if (!rangeStart || !rangeEnd ||
+                            !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
+                        alert('Please enter a valid IP range');
+                        return false;
+                    }
                 }
-            }
 
-            // If user checked "Specific port" or "Out coming" portCheck
-            if (portChecked) {
-                const port = document.getElementById('port')?.value;
-                if (!port || isNaN(port) || port < 1 || port > 65535) {
-                    alert('Please enter a valid port number (1-65535)');
-                    return false;
+                // Destination: App
+                if (toType === 'app') {
+                    const appName = document.getElementById('toApp')?.value;
+                    if (!appName) {
+                        alert('Please select an application');
+                        return false;
+                    }
                 }
-            }
 
-            // Source: IP address
-            if (fromType === 'ipaddress') {
-                const fromIp = document.getElementById('fromIp')?.value;
-                if (!fromIp || !validateIpAddress(fromIp)) {
-                    alert('Please enter a valid source IP address');
-                    return false;
+                // If user checked "Specific port" or "Out coming" portCheck
+                if (portChecked) {
+                    const port = document.getElementById('port')?.value;
+                    if (!port || isNaN(port) || port < 1 || port > 65535) {
+                        alert('Please enter a valid port number (1-65535)');
+                        return false;
+                    }
                 }
-            }
 
-            return true;
-        }
-
-        /*
-         * 2) --- Show/Hide Fields ---
-         */
-        // Destination fields
-        function toggleToFields() {
-            const toType = document.getElementById('toType')?.value;
-            const toIpFields = document.getElementById('toIpFields');
-            const toRangeFields = document.getElementById('toRangeFields');
-            const toRangeEndFields = document.getElementById('toRangeEndFields');
-            const toAppFields = document.getElementById('toAppFields');
-            const toInterfaceFields = document.getElementById('toInterfaceFields');
-
-            // Hide all first
-            toIpFields?.classList.add('hidden');
-            toRangeFields?.classList.add('hidden');
-            toRangeEndFields?.classList.add('hidden');
-            toAppFields?.classList.add('hidden');
-            toInterfaceFields?.classList.add('hidden');
-
-            if (toType === 'ipaddress') {
-                toIpFields?.classList.remove('hidden');
-            } else if (toType === 'range') {
-                toRangeFields?.classList.remove('hidden');
-                toRangeEndFields?.classList.remove('hidden');
-            } else if (toType === 'app') {
-                toAppFields?.classList.remove('hidden');
-            } else if (toType === 'interface') {
-                toInterfaceFields?.classList.remove('hidden');
-            }
-        }
-
-        // Specific port fields
-        function togglePortFields() {
-            const specificPortCheckbox = document.getElementById('specificPortCheck');
-            const portFields = document.getElementById('portFields');
-            if (specificPortCheckbox && portFields) {
-                if (specificPortCheckbox.checked) {
-                    portFields.classList.remove('hidden');
-                } else {
-                    portFields.classList.add('hidden');
-                }
-            }
-        }
-
-
-        function toggleFromFields() {
-            const fromType = document.getElementById('fromType')?.value;
-            const fromIpFields = document.getElementById('fromIpFields');
-            if (fromIpFields) {
+                // Source: IP address
                 if (fromType === 'ipaddress') {
-                    fromIpFields.classList.remove('hidden');
-                } else {
-                    fromIpFields.classList.add('hidden');
+                    const fromIp = document.getElementById('fromIp')?.value;
+                    if (!fromIp || !validateIpAddress(fromIp)) {
+                        alert('Please enter a valid source IP address');
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            /*
+             * 2) --- Show/Hide Fields ---
+             */
+            // Destination fields
+            function toggleToFields() {
+                const toType = document.getElementById('toType')?.value;
+                const toIpFields = document.getElementById('toIpFields');
+                const toRangeFields = document.getElementById('toRangeFields');
+                const toRangeEndFields = document.getElementById('toRangeEndFields');
+                const toAppFields = document.getElementById('toAppFields');
+                const toInterfaceFields = document.getElementById('toInterfaceFields');
+
+                // Hide all first
+                toIpFields?.classList.add('hidden');
+                toRangeFields?.classList.add('hidden');
+                toRangeEndFields?.classList.add('hidden');
+                toAppFields?.classList.add('hidden');
+                toInterfaceFields?.classList.add('hidden');
+
+                if (toType === 'ipaddress') {
+                    toIpFields?.classList.remove('hidden');
+                } else if (toType === 'range') {
+                    toRangeFields?.classList.remove('hidden');
+                    toRangeEndFields?.classList.remove('hidden');
+                } else if (toType === 'app') {
+                    toAppFields?.classList.remove('hidden');
+                } else if (toType === 'interface') {
+                    toInterfaceFields?.classList.remove('hidden');
                 }
             }
-        }
 
-        function toggleFirewall(element) {
-            const pcName = element.getAttribute('data-pc-name');
-            if (!pcName) {
-                console.error("data-pc-name attribute is missing or empty");
-                alert("Error: Computer name not found");
-                return;
-            }
-
-            const isChecked = element.checked;
-            const url = '/machine/' + pcName + '/toggle-firewall';
-
-            // Disable toggle while processing
-            element.disabled = true;
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: 'enable=' + isChecked
-            })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.status);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Re-enable the toggle
-                        element.disabled = false;
-
-                        if (data.success) {
-                            document.querySelector('.toggle-label').textContent =
-                                    isChecked ? 'Firewall: ON' : 'Firewall: OFF';
-
-                            const firewallRulesTable = document.getElementById('firewallRulesTable');
-                            if (firewallRulesTable) {
-                                firewallRulesTable.style.display = isChecked ? 'block' : 'none';
-                            }
-                            console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
-                        } else {
-                            console.error('Failed to toggle firewall:', data.message);
-                            alert('Failed to toggle firewall: ' + data.message);
-                            element.checked = !isChecked; // revert
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error: ' + error.message);
-                        element.checked = !isChecked; // revert
-                        element.disabled = false;
-                    });
-        }
-
-        function setupFormValidations() {
-            const ruleForm = document.getElementById('dynamicForm');
-            if (ruleForm) {
-                ruleForm.addEventListener('submit', function (e) {
-                    // If not valid, prevent submit
-                    if (!validateRuleForm()) {
-                        e.preventDefault();
-                    }
-                });
-            }
-
-            // If you have other forms (login, signup), you can attach their validations here as well.
-        }
-
-        /*
-         * 5) --- Reinitialize Forms after AJAX content load ---
-         *     (Attaches fetch-based submission if you want purely AJAX form submissions)
-         */
-        function reinitializeForms() {
-            // Re-run validations setup
-            setupFormValidations();
-
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(this);
-                    const action = this.getAttribute('action');
-
-                    fetch(action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                }
-                                return response.text();
-                            })
-                            .then(html => {
-                                document.getElementById('content-area').innerHTML = html;
-                                reinitializeForms(); // re-init again for newly loaded content
-                            })
-                            .catch(error => {
-                                console.error('Form submission error:', error);
-                                document.getElementById('content-area').innerHTML =
-                                        '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
-                            });
-                });
-            });
-        }
-
-        /*
-         * 6) --- Initialize Rule Form (checkboxes, etc.) ---
-         */
-        function initializeRuleForm() {
-            const outgoingCheckbox = document.getElementById('outgoingCheckbox');
-            if (outgoingCheckbox) {
-                outgoingCheckbox.addEventListener('change', function () {
-                    const directionField = document.getElementById('direction');
-                    if (directionField) {
-                        directionField.value = this.checked ? 'out' : 'in';
-                    }
-                });
-            }
-
-            document.getElementById('toType')?.addEventListener('change', toggleToFields);
-            document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
-
-
-            document.getElementById('portCheck')?.addEventListener('change', function () {
-
+            // Specific port fields
+            function togglePortFields() {
+                const specificPortCheckbox = document.getElementById('specificPortCheck');
                 const portFields = document.getElementById('portFields');
-                if (portFields) {
-                    if (this.checked) {
+                if (specificPortCheckbox && portFields) {
+                    if (specificPortCheckbox.checked) {
                         portFields.classList.remove('hidden');
                     } else {
                         portFields.classList.add('hidden');
                     }
                 }
-            });
+            }
 
-            document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
-        }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // 7.1) Handle the side menu AJAX loading
-            const menuButtons = document.querySelectorAll('.menu-btn');
-            const contentArea = document.getElementById('content-area');
-            let activeButton = document.querySelector('.menu-btn.active');
-
-            // Determine initial content to load
-            const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
-            const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
-            const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
-
-            // Fetch initial fragment
-            fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok: ' + response.statusText);
-                        }
-                        return response.text();
-                    })
-                    .then(html => {
-                        contentArea.innerHTML = html;
-                        contentArea.style.opacity = '1';
-                        reinitializeForms();
-                    })
-                    .catch(error => {
-                        console.error('Initial fetch error:', error);
-                        contentArea.innerHTML =
-                                '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                        contentArea.style.opacity = '1';
-                    });
-
-            // 7.2) Menu button clicks => AJAX navigation
-            menuButtons.forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const menuOption = this.getAttribute('data-menu');
-                    const pcName = this.getAttribute('data-pcname') || 'wsl';
-                    const url = `/machine/${pcName}/${menuOption}`;
-
-                    window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
-
-                    if (activeButton) {
-                        activeButton.classList.remove('active');
+            function toggleFromFields() {
+                const fromType = document.getElementById('fromType')?.value;
+                const fromIpFields = document.getElementById('fromIpFields');
+                if (fromIpFields) {
+                    if (fromType === 'ipaddress') {
+                        fromIpFields.classList.remove('hidden');
+                    } else {
+                        fromIpFields.classList.add('hidden');
                     }
-                    this.classList.add('active');
-                    activeButton = this;
+                }
+            }
 
-                    contentArea.style.opacity = '0';
+            function toggleFirewall(element) {
+                const pcName = element.getAttribute('data-pc-name');
+                if (!pcName) {
+                    console.error("data-pc-name attribute is missing or empty");
+                    alert("Error: Computer name not found");
+                    return;
+                }
 
-                    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
+                const isChecked = element.checked;
+                const url = '/machine/' + pcName + '/toggle-firewall';
+
+                // Disable toggle while processing
+                element.disabled = true;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'enable=' + isChecked
+                })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Re-enable the toggle
+                            element.disabled = false;
+
+                            if (data.success) {
+                                document.querySelector('.toggle-label').textContent =
+                                        isChecked ? 'Firewall: ON' : 'Firewall: OFF';
+
+                                const firewallRulesTable = document.getElementById('firewallRulesTable');
+                                if (firewallRulesTable) {
+                                    firewallRulesTable.style.display = isChecked ? 'block' : 'none';
                                 }
-                                return response.text();
-                            })
-                            .then(html => {
-                                setTimeout(() => {
+                                console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                            } else {
+                                console.error('Failed to toggle firewall:', data.message);
+                                alert('Failed to toggle firewall: ' + data.message);
+                                element.checked = !isChecked; // revert
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error: ' + error.message);
+                            element.checked = !isChecked; // revert
+                            element.disabled = false;
+                        });
+            }
+
+            function setupFormValidations() {
+                const ruleForm = document.getElementById('dynamicForm');
+                if (ruleForm) {
+                    ruleForm.addEventListener('submit', function (e) {
+                        // If not valid, prevent submit
+                        if (!validateRuleForm()) {
+                            e.preventDefault();
+                        }
+                    });
+                }
+            }
+
+            /*
+             * 5) --- Reinitialize Forms after AJAX content load ---
+             *     (Attaches fetch-based submission if you want purely AJAX form submissions)
+             */
+            function reinitializeForms() {
+                // Re-run validations setup
+                setupFormValidations();
+
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        const action = this.getAttribute('action');
+
+                        fetch(action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok: ' + response.statusText);
+                                    }
+                                    return response.text();
+                                })
+                                .then(html => {
+                                    document.getElementById('content-area').innerHTML = html;
+                                    reinitializeForms(); // re-init again for newly loaded content
+                                })
+                                .catch(error => {
+                                    console.error('Form submission error:', error);
+                                    document.getElementById('content-area').innerHTML =
+                                            '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
+                                });
+                    });
+                });
+            }
+
+            /*
+             * 6) --- Initialize Rule Form (checkboxes, etc.) ---
+             */
+            function initializeRuleForm() {
+                const outgoingCheckbox = document.getElementById('outgoingCheckbox');
+                if (outgoingCheckbox) {
+                    outgoingCheckbox.addEventListener('change', function () {
+                        const directionField = document.getElementById('direction');
+                        if (directionField) {
+                            directionField.value = this.checked ? 'out' : 'in';
+                        }
+                    });
+                }
+
+                document.getElementById('toType')?.addEventListener('change', toggleToFields);
+                document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
+
+
+                document.getElementById('portCheck')?.addEventListener('change', function () {
+
+                    const portFields = document.getElementById('portFields');
+                    if (portFields) {
+                        if (this.checked) {
+                            portFields.classList.remove('hidden');
+                        } else {
+                            portFields.classList.add('hidden');
+                        }
+                    }
+                });
+
+                document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // 7.1) Handle the side menu AJAX loading
+                const menuButtons = document.querySelectorAll('.menu-btn');
+                const contentArea = document.getElementById('content-area');
+                let activeButton = document.querySelector('.menu-btn.active');
+
+                // Determine initial content to load
+                const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
+                const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
+                const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
+
+                // Fetch initial fragment
+                fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            }
+                            return response.text();
+                        })
+                        .then(html => {
+                            contentArea.innerHTML = html;
+                            contentArea.style.opacity = '1';
+                            reinitializeForms();
+                        })
+                        .catch(error => {
+                            console.error('Initial fetch error:', error);
+                            contentArea.innerHTML =
+                                    '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                            contentArea.style.opacity = '1';
+                        });
+
+                // 7.2) Menu button clicks => AJAX navigation
+                menuButtons.forEach(button => {
+                    button.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const menuOption = this.getAttribute('data-menu');
+                        const pcName = this.getAttribute('data-pcname') || 'wsl';
+                        const url = `/machine/${pcName}/${menuOption}`;
+
+                        // Cập nhật lịch sử trình duyệt
+                        window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
+
+                        // Cập nhật trạng thái active cho nút menu
+                        if (activeButton) {
+                            activeButton.classList.remove('active');
+                        }
+                        this.classList.add('active');
+                        activeButton = this;
+
+                        // Hiệu ứng chuyển mờ nội dung
+                        contentArea.style.opacity = '0';
+
+                        fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                                    }
+                                    return response.text();
+                                })
+                                .then(html => {
+                                    // Đợi 200ms để hiệu ứng chuyển mờ hoàn thành
+                                    setTimeout(() => {
+                                        contentArea.innerHTML = html;
+                                        contentArea.style.opacity = '1';
+                                        reinitializeForms();
+
+                                        // Nếu menu hiện tại là "terminal", khởi tạo terminal
+                                        if (menuOption.toLowerCase() === 'terminal') {
+                                            initializeTerminal();
+                                        }
+                                    }, 200);
+                                })
+                                .catch(error => {
+                                    console.error('Fetch error:', error);
+                                    contentArea.innerHTML =
+                                            `<div class="error-message">Error loading content: ${error.message}</div>`;
+                                    contentArea.style.opacity = '1';
+                                });
+                    });
+                });
+
+                window.addEventListener('popstate', function (event) {
+                    const state = event.state;
+                    if (state) {
+                        const menuOption = state.menu || 'information';
+                        const pcName = state.pcName ||
+                                activeButton?.getAttribute('data-pcname') ||
+                                'wsl';
+                        const url = `/machine/${pcName}/${menuOption}`;
+
+                        contentArea.style.opacity = '0';
+
+                        fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok: ' + response.statusText);
+                                    }
+                                    return response.text();
+                                })
+                                .then(html => {
                                     contentArea.innerHTML = html;
                                     contentArea.style.opacity = '1';
                                     reinitializeForms();
-                                }, 200);
-                            })
-                            .catch(error => {
-                                console.error('Fetch error:', error);
-                                contentArea.innerHTML =
-                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                contentArea.style.opacity = '1';
-                            });
-                });
-            });
 
-            window.addEventListener('popstate', function (event) {
-                const state = event.state;
-                if (state) {
-                    const menuOption = state.menu || 'information';
-                    const pcName = state.pcName ||
-                            activeButton?.getAttribute('data-pcname') ||
-                            'wsl';
-                    const url = `/machine/${pcName}/${menuOption}`;
-
-                    contentArea.style.opacity = '0';
-
-                    fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
-                                }
-                                return response.text();
-                            })
-                            .then(html => {
-                                contentArea.innerHTML = html;
-                                contentArea.style.opacity = '1';
-                                reinitializeForms();
-
-                                menuButtons.forEach(btn => {
-                                    btn.classList.remove('active');
-                                    if (btn.getAttribute('data-menu') === menuOption) {
-                                        btn.classList.add('active');
-                                        activeButton = btn;
-                                    }
+                                    menuButtons.forEach(btn => {
+                                        btn.classList.remove('active');
+                                        if (btn.getAttribute('data-menu') === menuOption) {
+                                            btn.classList.add('active');
+                                            activeButton = btn;
+                                        }
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Popstate fetch error:', error);
+                                    contentArea.innerHTML =
+                                            '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                    contentArea.style.opacity = '1';
                                 });
-                            })
-                            .catch(error => {
-                                console.error('Popstate fetch error:', error);
-                                contentArea.innerHTML =
-                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                contentArea.style.opacity = '1';
-                            });
-                }
+                    }
+                });
+
+                // 7.4) Run initial setups
+                setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
+                reinitializeForms();    // attach AJAX submission to forms
+                initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
             });
 
-            // 7.4) Run initial setups
-            setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
-            reinitializeForms();    // attach AJAX submission to forms
-            initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
-        });
-    </script>
+            function initializeTerminal() {
+                const terminalSection = document.getElementById('terminal-section');
+                if (!terminalSection) {
+                    console.error('Không tìm thấy phần tử chứa terminal');
+                    return;
+                }
 
-</body>
+                // Khởi tạo terminal với một số tùy chọn (có thể điều chỉnh)
+                const terminal = new Terminal({
+                    cursorBlink: true,
+                    rows: 20,
+                    cols: 80
+                });
+                terminal.open(terminalSection);
+
+                // Thiết lập kết nối WebSocket tới backend (điều chỉnh URL theo cấu hình của bạn)
+                const socket = new WebSocket("ws://yourserver/ssh");
+
+                // Khi nhận dữ liệu từ server, in ra terminal
+                socket.onmessage = function (event) {
+                    terminal.write(event.data);
+                };
+
+                // Khi người dùng nhập dữ liệu, gửi qua WebSocket đến server
+                terminal.onData(function (data) {
+                    socket.send(data);
+                });
+
+                // (Tùy chọn) Ghi log kết nối WebSocket
+                socket.onopen = () => console.log("WebSocket connected for terminal!");
+                socket.onclose = () => console.log("WebSocket closed!");
+                socket.onerror = (err) => console.error("WebSocket error:", err);
+            }
+        </script>
+
+    </body>
 </html>
