@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <link rel="icon" th:href="@{/images/favicon.png}"/>
-        <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
-        <title>Machine Management</title>
         <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
-        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
+        <title>Machine Management</title>
+
+        <!--<script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
         <style>
             /* Reset mặc định */
             * {
@@ -673,8 +673,8 @@
                     <button class="menu-btn" th:classappend="${currentMenu == 'rule'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='rule'"
                             th:text="'FIREWALL RULES'"></button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'login'} ? 'active' : ''" 
-                            th:attr="data-pcname=${computer.pcName},data-menu='login'"
+                    <button class="menu-btn" th:classappend="${currentMenu == 'logging'} ? 'active' : ''" 
+                            th:attr="data-pcname=${computer.pcName},data-menu='logging'"
                             th:text="'LOGGING'"></button>
                     <button class="menu-btn" th:classappend="${currentMenu == 'terminal'} ? 'active' : ''" 
                             th:attr="data-pcname=${computer.pcName},data-menu='terminal'"
@@ -900,11 +900,27 @@
                 </div>
 
                 <div th:case="'logging'" class="section" id="logging-section">
-                    
-                </div>
-                <div th:case="'terminal'" class="section" id="terminal-section">
+                    <h2>Logging Firewall</h2>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" 
+                                   id="loggingfirewallToggle" 
+                                   th:checked="${loggingStatus == 'on'}" 
+                                   th:attr="data-pc-name=${computer.pcName}"
+                                   onchange="toggleLogging(this)">
+                            <span class="slider"></span>
+                        </label>
 
+                        <span class="toggle-label" 
+                              th:text="${loggingStatus == 'on' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
+                        </span>                        
+                    </div>
                 </div>
+                
+                
+                <!--                <div th:case="'terminal'" class="section" id="terminal-section">
+                
+                                </div>-->
 
             </div>
         </div>
@@ -1085,6 +1101,61 @@
                             } else {
                                 console.error('Failed to toggle firewall:', data.message);
                                 alert('Failed to toggle firewall: ' + data.message);
+                                element.checked = !isChecked; // revert
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error: ' + error.message);
+                            element.checked = !isChecked; // revert
+                            element.disabled = false;
+                        });
+            }
+
+            function toggleLogging(element) {
+                const pcName = element.getAttribute('data-pc-name');
+                if (!pcName) {
+                    console.error("data-pc-name attribute is missing or empty");
+                    alert("Error: Computer name not found");
+                    return;
+                }
+
+                const isChecked = element.checked;
+                const url = '/machine/' + pcName + '/toggle-logging';
+
+                // Disable toggle while processing
+                element.disabled = true;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'enable=' + isChecked
+                })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Re-enable the toggle
+                            element.disabled = false;
+
+                            if (data.success) {
+                                document.querySelector('.toggle-label').textContent =
+                                        isChecked ? 'Logging: ON' : 'Logging: OFF';
+
+                                const loggingTable = document.getElementById('loggingTable');
+                                if (loggingTable) {
+                                    loggingTable.style.display = isChecked ? 'block' : 'none';
+                                }
+                                console.log('Firewall logging successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                            } else {
+                                console.error('Failed to toggle logging firewall:', data.message);
+                                alert('Failed to toggle logging firewall: ' + data.message);
                                 element.checked = !isChecked; // revert
                             }
                         })

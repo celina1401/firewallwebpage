@@ -344,4 +344,116 @@ public class MachineController {
         }
         return response;
     }
+
+    @GetMapping("/machine/{pcName}/logging")
+    public String getFirewallLogging(@PathVariable("pcName") String pcName,
+            Model model,
+            HttpSession session,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
+
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            model.addAttribute("error", "Please login your account");
+            return "redirect:/";
+        }
+
+        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (computerOptional.isEmpty()) {
+            model.addAttribute("error", "Computer " + pcName + " notfound");
+            model.addAttribute("currentMenu", "logging");
+        }
+
+        PC computer = computerOptional.get();
+        model.addAttribute("computer", computer);
+        model.addAttribute("currentMenu", "logging");
+
+        try {
+            Session sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword()
+            );
+            String command = "echo '" + computer.getPassword() + "' |  sudo -S ufw status verbose";
+            String ufwVerbose = ubuntuInfo.executeCommand(sshSession, command);
+            System.out.println(ufwVerbose);
+
+            String loggingStatus = "unknown";
+            if (ufwVerbose != null) {
+                for (String line : ufwVerbose.split("\\n")) {
+                    if (line.contains("Logging:")) {
+                        // Tách phần sau ":" và chia từ
+                        String[] words = line.split(":")[1].trim().split("\\s+");
+                        loggingStatus = words[0];
+                        break;
+                    }
+                    System.out.println(loggingStatus);
+                }
+            }
+            model.addAttribute("loggingStatus", loggingStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if ("XMLHttpRequest".equals(requestedWith)) {
+            return "machine :: section(menuOption='logging')";
+        }
+        return "machine";
+    }
+
+    @PostMapping("/machine/{pcName}/toggle-logging")
+    @ResponseBody
+    public Map<String, Object> toggleLogging(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("enable") boolean enable,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
+        }
+
+        try {
+            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+            if (computerOptional.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Computer " + pcName + " not found");
+                return response;
+            }
+
+            PC computer = computerOptional.get();
+            Session sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword()
+            );
+
+            // Chạy lệnh bật/tắt logging của UFW
+            String command = enable
+                    ? "echo '" + computer.getPassword() + "' | sudo -S ufw logging on"
+                    : "echo '" + computer.getPassword() + "' | sudo -S ufw logging off";
+            String result = ubuntuInfo.executeCommand(sshSession, command);
+            System.out.println("Toggle logging result: " + result);
+
+            // Lấy trạng thái logging sau khi thực thi lệnh
+            String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status verbose";
+            String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
+            boolean isLoggingOn = statusOutput != null && statusOutput.contains("Logging: on");
+
+            response.put("success", true);
+            response.put("message", "Logging " + (enable ? "enabled" : "disabled"));
+            response.put("loggingStatus", isLoggingOn ? "active" : "inactive");
+        } catch (JSchException e) {
+            response.put("success", false);
+            response.put("message", "SSH connection failed: " + e.getMessage());
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error toggling logging: " + e.getMessage());
+            e.printStackTrace(); // In ra log chi tiết cho mục đích debug
+        }
+        return response;
+    }
+
 }

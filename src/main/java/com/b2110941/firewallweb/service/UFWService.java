@@ -41,21 +41,6 @@ public class UFWService {
             String output = ubuntuInfo.executeCommand(sshSession, command);
             System.out.println("Command Output: " + output);
 
-//            // Xử lý trạng thái firewall
-//            if (output != null && output.contains("Status: active")) {
-//                model.put("firewallStatus", "active");
-//            } else {
-//                model.put("firewallStatus", "inactive");
-//            }
-//
-//            // Xử lý và phân tích kết quả
-//            if (output == null || output.trim().isEmpty()) {
-//                model.put("error", "Không thể lấy kết quả hoặc dịch vụ chưa được kích hoạt.");
-//            } else {
-//                List<Map<String, String>> firewallRules = parseUFWOutput(output);
-//                model.put("firewallRules", firewallRules);
-//            }
-
         } catch (JSchException e) {
             model.put("error", "Không thể kết nối SSH tới " + pcName + ": " + e.getMessage());
             model.put("firewallStatus", "inactive");
@@ -78,5 +63,7 @@ public class UFWService {
         //Phan tich output cua UFW de tra danh sach rule
         return List.of();
     }
+    
+//    public void loggingStatus(PC computer, String )
 
 }
