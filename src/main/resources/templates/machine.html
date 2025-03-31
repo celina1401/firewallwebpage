@@ -3,10 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <link rel="icon" th:href="@{/images/favicon.png}"/>
-        <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
+        <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
         <title>Machine Management</title>
 
-        <!--<script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
+        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
         <style>
             /* Reset mặc định */
             * {
@@ -257,6 +257,41 @@
             }
 
             .rule-table td {
+                font-size: 16px;
+                color: #333;
+            }
+
+            /*logging table*/
+            .logging-table-container {
+                margin-bottom: 30px;
+                overflow-x: auto;
+            }
+
+            .logging-table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #ffffff;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
+
+            .logging-table th, .logging-table td {
+                padding: 12px 15px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .logging-table th {
+                background-color: #2c3e50;
+                color: white;
+                font-weight: 600;
+            }
+
+            .logging-table tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            .logging-table td {
                 font-size: 16px;
                 color: #333;
             }
@@ -892,15 +927,11 @@
                             <!-- Submit Button -->
                             <button type="submit" class="btn" onclick="document.getElementById('dynamicForm').submit()">Add Rule</button>
                         </div>
-
-
-
-
                     </div>
                 </div>
 
                 <div th:case="'logging'" class="section" id="logging-section">
-                    <h2>Logging Firewall</h2>
+                    <h1 class="section-title">Logging Firewall</h1>
                     <div class="toggle-container">
                         <label class="switch">
                             <input type="checkbox" 
@@ -915,502 +946,542 @@
                               th:text="${loggingStatus == 'on' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
                         </span>                        
                     </div>
+
+                    <div class="logging-content" id="loggingTable" th:style="${loggingStatus == 'on' ? 'display: block' : 'display: none'}"> 
+                        <!-- Bảng hiển thị danh sách quy tắc firewall -->
+                        <div class="logging-table-container">
+                            <table class="logging-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>Interface</th>
+                                        <th>Source IP</th>
+                                        <th>Source Port</th>
+                                        <th>Destination IP</th>
+                                        <th>Destination Port</th>
+                                        <th>Protocol</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="logEntry : ${ufwLogs}">
+                                        <td th:text="${logEntry.timestamp}">Timestamp</td>
+                                        <td th:text="${logEntry.action}">Action</td>
+                                        <td th:text="${logEntry.interface}">Interface</td>
+                                        <td th:text="${logEntry.sourceIp}">Source IP</td>
+                                        <td th:text="${logEntry.sourcePort}">Source Port</td>
+                                        <td th:text="${logEntry.destinationIp}">Destination IP</td>
+                                        <td th:text="${logEntry.destinationPort}">Destination Port</td>
+                                        <td th:text="${logEntry.protocol}">Protocol</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(ufwLogs)}">
+                                        <td colspan="8" style="text-align: center;">No log entries found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+
+                    </div>
                 </div>
                 
-                
-                <!--                <div th:case="'terminal'" class="section" id="terminal-section">
-                
-                                </div>-->
+                <div th:case="'terminal'" class="section" id="terminal-section" data-pcname="${computer.pcName}">
 
+                </div>
             </div>
-        </div>
 
-        <script>
+            <script>
 
-            // Check if an IP address is valid
-            function validateIpAddress(ip) {
-                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                if (!ipRegex.test(ip))
-                    return false;
-                const parts = ip.split('.');
-                return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
-            }
-
-            // Validate the firewall rule form
-            function validateRuleForm() {
-                const action = document.getElementById('action')?.value;
-                const toType = document.getElementById('toType')?.value;
-                const fromType = document.getElementById('fromType')?.value;
-
-                const portChecked = document.getElementById('portCheck')?.checked
-                        || document.getElementById('specificPortCheck')?.checked;
-
-                if (!action || !toType || !fromType) {
-                    alert('Please fill out all required fields');
-                    return false;
+                // Check if an IP address is valid
+                function validateIpAddress(ip) {
+                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                    if (!ipRegex.test(ip))
+                        return false;
+                    const parts = ip.split('.');
+                    return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
                 }
 
-                // Destination: IP address
-                if (toType === 'ipaddress') {
-                    const toIp = document.getElementById('toIp')?.value;
-                    if (!toIp || !validateIpAddress(toIp)) {
-                        alert('Please enter a valid destination IP address');
+                // Validate the firewall rule form
+                function validateRuleForm() {
+                    const action = document.getElementById('action')?.value;
+                    const toType = document.getElementById('toType')?.value;
+                    const fromType = document.getElementById('fromType')?.value;
+
+                    const portChecked = document.getElementById('portCheck')?.checked
+                            || document.getElementById('specificPortCheck')?.checked;
+
+                    if (!action || !toType || !fromType) {
+                        alert('Please fill out all required fields');
                         return false;
                     }
-                }
 
-                // Destination: Range
-                if (toType === 'range') {
-                    const rangeStart = document.getElementById('rangeStart')?.value;
-                    const rangeEnd = document.getElementById('rangeEnd')?.value;
-                    if (!rangeStart || !rangeEnd ||
-                            !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
-                        alert('Please enter a valid IP range');
-                        return false;
+                    // Destination: IP address
+                    if (toType === 'ipaddress') {
+                        const toIp = document.getElementById('toIp')?.value;
+                        if (!toIp || !validateIpAddress(toIp)) {
+                            alert('Please enter a valid destination IP address');
+                            return false;
+                        }
                     }
-                }
 
-                // Destination: App
-                if (toType === 'app') {
-                    const appName = document.getElementById('toApp')?.value;
-                    if (!appName) {
-                        alert('Please select an application');
-                        return false;
+                    // Destination: Range
+                    if (toType === 'range') {
+                        const rangeStart = document.getElementById('rangeStart')?.value;
+                        const rangeEnd = document.getElementById('rangeEnd')?.value;
+                        if (!rangeStart || !rangeEnd ||
+                                !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
+                            alert('Please enter a valid IP range');
+                            return false;
+                        }
                     }
-                }
 
-                // If user checked "Specific port" or "Out coming" portCheck
-                if (portChecked) {
-                    const port = document.getElementById('port')?.value;
-                    if (!port || isNaN(port) || port < 1 || port > 65535) {
-                        alert('Please enter a valid port number (1-65535)');
-                        return false;
+                    // Destination: App
+                    if (toType === 'app') {
+                        const appName = document.getElementById('toApp')?.value;
+                        if (!appName) {
+                            alert('Please select an application');
+                            return false;
+                        }
                     }
-                }
 
-                // Source: IP address
-                if (fromType === 'ipaddress') {
-                    const fromIp = document.getElementById('fromIp')?.value;
-                    if (!fromIp || !validateIpAddress(fromIp)) {
-                        alert('Please enter a valid source IP address');
-                        return false;
+                    // If user checked "Specific port" or "Out coming" portCheck
+                    if (portChecked) {
+                        const port = document.getElementById('port')?.value;
+                        if (!port || isNaN(port) || port < 1 || port > 65535) {
+                            alert('Please enter a valid port number (1-65535)');
+                            return false;
+                        }
                     }
-                }
 
-                return true;
-            }
-
-            /*
-             * 2) --- Show/Hide Fields ---
-             */
-            // Destination fields
-            function toggleToFields() {
-                const toType = document.getElementById('toType')?.value;
-                const toIpFields = document.getElementById('toIpFields');
-                const toRangeFields = document.getElementById('toRangeFields');
-                const toRangeEndFields = document.getElementById('toRangeEndFields');
-                const toAppFields = document.getElementById('toAppFields');
-                const toInterfaceFields = document.getElementById('toInterfaceFields');
-
-                // Hide all first
-                toIpFields?.classList.add('hidden');
-                toRangeFields?.classList.add('hidden');
-                toRangeEndFields?.classList.add('hidden');
-                toAppFields?.classList.add('hidden');
-                toInterfaceFields?.classList.add('hidden');
-
-                if (toType === 'ipaddress') {
-                    toIpFields?.classList.remove('hidden');
-                } else if (toType === 'range') {
-                    toRangeFields?.classList.remove('hidden');
-                    toRangeEndFields?.classList.remove('hidden');
-                } else if (toType === 'app') {
-                    toAppFields?.classList.remove('hidden');
-                } else if (toType === 'interface') {
-                    toInterfaceFields?.classList.remove('hidden');
-                }
-            }
-
-            // Specific port fields
-            function togglePortFields() {
-                const specificPortCheckbox = document.getElementById('specificPortCheck');
-                const portFields = document.getElementById('portFields');
-                if (specificPortCheckbox && portFields) {
-                    if (specificPortCheckbox.checked) {
-                        portFields.classList.remove('hidden');
-                    } else {
-                        portFields.classList.add('hidden');
-                    }
-                }
-            }
-
-
-            function toggleFromFields() {
-                const fromType = document.getElementById('fromType')?.value;
-                const fromIpFields = document.getElementById('fromIpFields');
-                if (fromIpFields) {
+                    // Source: IP address
                     if (fromType === 'ipaddress') {
-                        fromIpFields.classList.remove('hidden');
-                    } else {
-                        fromIpFields.classList.add('hidden');
+                        const fromIp = document.getElementById('fromIp')?.value;
+                        if (!fromIp || !validateIpAddress(fromIp)) {
+                            alert('Please enter a valid source IP address');
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                /*
+                 * 2) --- Show/Hide Fields ---
+                 */
+                // Destination fields
+                function toggleToFields() {
+                    const toType = document.getElementById('toType')?.value;
+                    const toIpFields = document.getElementById('toIpFields');
+                    const toRangeFields = document.getElementById('toRangeFields');
+                    const toRangeEndFields = document.getElementById('toRangeEndFields');
+                    const toAppFields = document.getElementById('toAppFields');
+                    const toInterfaceFields = document.getElementById('toInterfaceFields');
+
+                    // Hide all first
+                    toIpFields?.classList.add('hidden');
+                    toRangeFields?.classList.add('hidden');
+                    toRangeEndFields?.classList.add('hidden');
+                    toAppFields?.classList.add('hidden');
+                    toInterfaceFields?.classList.add('hidden');
+
+                    if (toType === 'ipaddress') {
+                        toIpFields?.classList.remove('hidden');
+                    } else if (toType === 'range') {
+                        toRangeFields?.classList.remove('hidden');
+                        toRangeEndFields?.classList.remove('hidden');
+                    } else if (toType === 'app') {
+                        toAppFields?.classList.remove('hidden');
+                    } else if (toType === 'interface') {
+                        toInterfaceFields?.classList.remove('hidden');
                     }
                 }
-            }
 
-            function toggleFirewall(element) {
-                const pcName = element.getAttribute('data-pc-name');
-                if (!pcName) {
-                    console.error("data-pc-name attribute is missing or empty");
-                    alert("Error: Computer name not found");
-                    return;
-                }
-
-                const isChecked = element.checked;
-                const url = '/machine/' + pcName + '/toggle-firewall';
-
-                // Disable toggle while processing
-                element.disabled = true;
-
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'enable=' + isChecked
-                })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok: ' + response.status);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            // Re-enable the toggle
-                            element.disabled = false;
-
-                            if (data.success) {
-                                document.querySelector('.toggle-label').textContent =
-                                        isChecked ? 'Firewall: ON' : 'Firewall: OFF';
-
-                                const firewallRulesTable = document.getElementById('firewallRulesTable');
-                                if (firewallRulesTable) {
-                                    firewallRulesTable.style.display = isChecked ? 'block' : 'none';
-                                }
-                                console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
-                            } else {
-                                console.error('Failed to toggle firewall:', data.message);
-                                alert('Failed to toggle firewall: ' + data.message);
-                                element.checked = !isChecked; // revert
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Error: ' + error.message);
-                            element.checked = !isChecked; // revert
-                            element.disabled = false;
-                        });
-            }
-
-            function toggleLogging(element) {
-                const pcName = element.getAttribute('data-pc-name');
-                if (!pcName) {
-                    console.error("data-pc-name attribute is missing or empty");
-                    alert("Error: Computer name not found");
-                    return;
-                }
-
-                const isChecked = element.checked;
-                const url = '/machine/' + pcName + '/toggle-logging';
-
-                // Disable toggle while processing
-                element.disabled = true;
-
-                fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: 'enable=' + isChecked
-                })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok: ' + response.status);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            // Re-enable the toggle
-                            element.disabled = false;
-
-                            if (data.success) {
-                                document.querySelector('.toggle-label').textContent =
-                                        isChecked ? 'Logging: ON' : 'Logging: OFF';
-
-                                const loggingTable = document.getElementById('loggingTable');
-                                if (loggingTable) {
-                                    loggingTable.style.display = isChecked ? 'block' : 'none';
-                                }
-                                console.log('Firewall logging successfully ' + (isChecked ? 'enabled' : 'disabled'));
-                            } else {
-                                console.error('Failed to toggle logging firewall:', data.message);
-                                alert('Failed to toggle logging firewall: ' + data.message);
-                                element.checked = !isChecked; // revert
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Error: ' + error.message);
-                            element.checked = !isChecked; // revert
-                            element.disabled = false;
-                        });
-            }
-
-            function setupFormValidations() {
-                const ruleForm = document.getElementById('dynamicForm');
-                if (ruleForm) {
-                    ruleForm.addEventListener('submit', function (e) {
-                        // If not valid, prevent submit
-                        if (!validateRuleForm()) {
-                            e.preventDefault();
-                        }
-                    });
-                }
-            }
-
-            /*
-             * 5) --- Reinitialize Forms after AJAX content load ---
-             *     (Attaches fetch-based submission if you want purely AJAX form submissions)
-             */
-            function reinitializeForms() {
-                // Re-run validations setup
-                setupFormValidations();
-
-                const forms = document.querySelectorAll('form');
-                forms.forEach(form => {
-                    form.addEventListener('submit', function (e) {
-                        e.preventDefault();
-                        const formData = new FormData(this);
-                        const action = this.getAttribute('action');
-
-                        fetch(action, {
-                            method: 'POST',
-                            body: formData,
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error('Network response was not ok: ' + response.statusText);
-                                    }
-                                    return response.text();
-                                })
-                                .then(html => {
-                                    document.getElementById('content-area').innerHTML = html;
-                                    reinitializeForms(); // re-init again for newly loaded content
-                                })
-                                .catch(error => {
-                                    console.error('Form submission error:', error);
-                                    document.getElementById('content-area').innerHTML =
-                                            '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
-                                });
-                    });
-                });
-            }
-
-            /*
-             * 6) --- Initialize Rule Form (checkboxes, etc.) ---
-             */
-            function initializeRuleForm() {
-                const outgoingCheckbox = document.getElementById('outgoingCheckbox');
-                if (outgoingCheckbox) {
-                    outgoingCheckbox.addEventListener('change', function () {
-                        const directionField = document.getElementById('direction');
-                        if (directionField) {
-                            directionField.value = this.checked ? 'out' : 'in';
-                        }
-                    });
-                }
-
-                document.getElementById('toType')?.addEventListener('change', toggleToFields);
-                document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
-
-
-                document.getElementById('portCheck')?.addEventListener('change', function () {
-
+                // Specific port fields
+                function togglePortFields() {
+                    const specificPortCheckbox = document.getElementById('specificPortCheck');
                     const portFields = document.getElementById('portFields');
-                    if (portFields) {
-                        if (this.checked) {
+                    if (specificPortCheckbox && portFields) {
+                        if (specificPortCheckbox.checked) {
                             portFields.classList.remove('hidden');
                         } else {
                             portFields.classList.add('hidden');
                         }
                     }
-                });
+                }
 
-                document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
-            }
 
-            document.addEventListener('DOMContentLoaded', function () {
-                // 7.1) Handle the side menu AJAX loading
-                const menuButtons = document.querySelectorAll('.menu-btn');
-                const contentArea = document.getElementById('content-area');
-                let activeButton = document.querySelector('.menu-btn.active');
-
-                // Determine initial content to load
-                const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
-                const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
-                const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
-
-                // Fetch initial fragment
-                fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            }
-                            return response.text();
-                        })
-                        .then(html => {
-                            contentArea.innerHTML = html;
-                            contentArea.style.opacity = '1';
-                            reinitializeForms();
-                        })
-                        .catch(error => {
-                            console.error('Initial fetch error:', error);
-                            contentArea.innerHTML =
-                                    '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                            contentArea.style.opacity = '1';
-                        });
-
-                // 7.2) Menu button clicks => AJAX navigation
-                menuButtons.forEach(button => {
-                    button.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        const menuOption = this.getAttribute('data-menu');
-                        const pcName = this.getAttribute('data-pcname') || 'wsl';
-                        const url = `/machine/${pcName}/${menuOption}`;
-
-                        // Cập nhật lịch sử trình duyệt
-                        window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
-
-                        // Cập nhật trạng thái active cho nút menu
-                        if (activeButton) {
-                            activeButton.classList.remove('active');
+                function toggleFromFields() {
+                    const fromType = document.getElementById('fromType')?.value;
+                    const fromIpFields = document.getElementById('fromIpFields');
+                    if (fromIpFields) {
+                        if (fromType === 'ipaddress') {
+                            fromIpFields.classList.remove('hidden');
+                        } else {
+                            fromIpFields.classList.add('hidden');
                         }
-                        this.classList.add('active');
-                        activeButton = this;
+                    }
+                }
 
-                        // Hiệu ứng chuyển mờ nội dung
-                        contentArea.style.opacity = '0';
+                function toggleFirewall(element) {
+                    const pcName = element.getAttribute('data-pc-name');
+                    if (!pcName) {
+                        console.error("data-pc-name attribute is missing or empty");
+                        alert("Error: Computer name not found");
+                        return;
+                    }
 
-                        fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                    const isChecked = element.checked;
+                    const url = '/machine/' + pcName + '/toggle-firewall';
+
+                    // Disable toggle while processing
+                    element.disabled = true;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: 'enable=' + isChecked
+                    })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.status);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Re-enable the toggle
+                                element.disabled = false;
+
+                                if (data.success) {
+                                    document.querySelector('.toggle-label').textContent =
+                                            isChecked ? 'Firewall: ON' : 'Firewall: OFF';
+
+                                    const firewallRulesTable = document.getElementById('firewallRulesTable');
+                                    if (firewallRulesTable) {
+                                        firewallRulesTable.style.display = isChecked ? 'block' : 'none';
                                     }
-                                    return response.text();
-                                })
-                                .then(html => {
-                                    // Đợi 200ms để hiệu ứng chuyển mờ hoàn thành
-                                    setTimeout(() => {
+                                    console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                                } else {
+                                    console.error('Failed to toggle firewall:', data.message);
+                                    alert('Failed to toggle firewall: ' + data.message);
+                                    element.checked = !isChecked; // revert
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Error: ' + error.message);
+                                element.checked = !isChecked; // revert
+                                element.disabled = false;
+                            });
+                }
+
+                function toggleLogging(element) {
+                    const pcName = element.getAttribute('data-pc-name');
+                    if (!pcName) {
+                        console.error("data-pc-name attribute is missing or empty");
+                        alert("Error: Computer name not found");
+                        return;
+                    }
+
+                    const isChecked = element.checked;
+                    const url = '/machine/' + pcName + '/toggle-logging';
+
+                    // Disable toggle while processing
+                    element.disabled = true;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: 'enable=' + isChecked
+                    })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.status);
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Re-enable the toggle
+                                element.disabled = false;
+
+                                if (data.success) {
+                                    document.querySelector('.toggle-label').textContent =
+                                            isChecked ? 'Logging: ON' : 'Logging: OFF';
+
+                                    const loggingTable = document.getElementById('loggingTable');
+                                    if (loggingTable) {
+                                        loggingTable.style.display = isChecked ? 'block' : 'none';
+                                    }
+                                    console.log('Firewall logging successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                                } else {
+                                    console.error('Failed to toggle logging firewall:', data.message);
+                                    alert('Failed to toggle logging firewall: ' + data.message);
+                                    element.checked = !isChecked; // revert
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Error: ' + error.message);
+                                element.checked = !isChecked; // revert
+                                element.disabled = false;
+                            });
+                }
+
+                function setupFormValidations() {
+                    const ruleForm = document.getElementById('dynamicForm');
+                    if (ruleForm) {
+                        ruleForm.addEventListener('submit', function (e) {
+                            // If not valid, prevent submit
+                            if (!validateRuleForm()) {
+                                e.preventDefault();
+                            }
+                        });
+                    }
+                }
+
+                /*
+                 * 5) --- Reinitialize Forms after AJAX content load ---
+                 *     (Attaches fetch-based submission if you want purely AJAX form submissions)
+                 */
+                function reinitializeForms() {
+                    // Re-run validations setup
+                    setupFormValidations();
+
+                    const forms = document.querySelectorAll('form');
+                    forms.forEach(form => {
+                        form.addEventListener('submit', function (e) {
+                            e.preventDefault();
+                            const formData = new FormData(this);
+                            const action = this.getAttribute('action');
+
+                            fetch(action, {
+                                method: 'POST',
+                                body: formData,
+                                headers: {'X-Requested-With': 'XMLHttpRequest'}
+                            })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok: ' + response.statusText);
+                                        }
+                                        return response.text();
+                                    })
+                                    .then(html => {
+                                        document.getElementById('content-area').innerHTML = html;
+                                        reinitializeForms(); // re-init again for newly loaded content
+                                    })
+                                    .catch(error => {
+                                        console.error('Form submission error:', error);
+                                        document.getElementById('content-area').innerHTML =
+                                                '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
+                                    });
+                        });
+                    });
+                }
+
+                /*
+                 * 6) --- Initialize Rule Form (checkboxes, etc.) ---
+                 */
+                function initializeRuleForm() {
+                    const outgoingCheckbox = document.getElementById('outgoingCheckbox');
+                    if (outgoingCheckbox) {
+                        outgoingCheckbox.addEventListener('change', function () {
+                            const directionField = document.getElementById('direction');
+                            if (directionField) {
+                                directionField.value = this.checked ? 'out' : 'in';
+                            }
+                        });
+                    }
+
+                    document.getElementById('toType')?.addEventListener('change', toggleToFields);
+                    document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
+
+
+                    document.getElementById('portCheck')?.addEventListener('change', function () {
+
+                        const portFields = document.getElementById('portFields');
+                        if (portFields) {
+                            if (this.checked) {
+                                portFields.classList.remove('hidden');
+                            } else {
+                                portFields.classList.add('hidden');
+                            }
+                        }
+                    });
+
+                    document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    // 7.1) Handle the side menu AJAX loading
+                    const menuButtons = document.querySelectorAll('.menu-btn');
+                    const contentArea = document.getElementById('content-area');
+                    let activeButton = document.querySelector('.menu-btn.active');
+
+                    // Determine initial content to load
+                    const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
+                    const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
+                    const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
+
+                    // Fetch initial fragment
+                    fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                }
+                                return response.text();
+                            })
+                            .then(html => {
+                                contentArea.innerHTML = html;
+                                contentArea.style.opacity = '1';
+                                reinitializeForms();
+                            })
+                            .catch(error => {
+                                console.error('Initial fetch error:', error);
+                                contentArea.innerHTML =
+                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                contentArea.style.opacity = '1';
+                            });
+
+                    // 7.2) Menu button clicks => AJAX navigation
+                    menuButtons.forEach(button => {
+                        button.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            const menuOption = this.getAttribute('data-menu');
+                            const pcName = this.getAttribute('data-pcname') || 'wsl';
+                            const url = `/machine/${pcName}/${menuOption}`;
+
+                            // Cập nhật lịch sử trình duyệt
+                            window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
+
+                            // Cập nhật trạng thái active cho nút menu
+                            if (activeButton) {
+                                activeButton.classList.remove('active');
+                            }
+                            this.classList.add('active');
+                            activeButton = this;
+
+                            // Hiệu ứng chuyển mờ nội dung
+                            contentArea.style.opacity = '0';
+
+                            fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                                        }
+                                        return response.text();
+                                    })
+                                    .then(html => {
+                                        // Đợi 200ms để hiệu ứng chuyển mờ hoàn thành
+                                        setTimeout(() => {
+                                            contentArea.innerHTML = html;
+                                            contentArea.style.opacity = '1';
+                                            reinitializeForms();
+
+                                            // Nếu menu hiện tại là "terminal", khởi tạo terminal
+                                            if (menuOption.toLowerCase() === 'terminal') {
+                                                initializeTerminal();
+                                            }
+                                        }, 200);
+                                    })
+                                    .catch(error => {
+                                        console.error('Fetch error:', error);
+                                        contentArea.innerHTML =
+                                                `<div class="error-message">Error loading content: ${error.message}</div>`;
+                                        contentArea.style.opacity = '1';
+                                    });
+                        });
+                    });
+
+                    window.addEventListener('popstate', function (event) {
+                        const state = event.state;
+                        if (state) {
+                            const menuOption = state.menu || 'information';
+                            const pcName = state.pcName ||
+                                    activeButton?.getAttribute('data-pcname') ||
+                                    'wsl';
+                            const url = `/machine/${pcName}/${menuOption}`;
+
+                            contentArea.style.opacity = '0';
+
+                            fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error('Network response was not ok: ' + response.statusText);
+                                        }
+                                        return response.text();
+                                    })
+                                    .then(html => {
                                         contentArea.innerHTML = html;
                                         contentArea.style.opacity = '1';
                                         reinitializeForms();
 
-                                        // Nếu menu hiện tại là "terminal", khởi tạo terminal
-                                        if (menuOption.toLowerCase() === 'terminal') {
-                                            initializeTerminal();
-                                        }
-                                    }, 200);
-                                })
-                                .catch(error => {
-                                    console.error('Fetch error:', error);
-                                    contentArea.innerHTML =
-                                            `<div class="error-message">Error loading content: ${error.message}</div>`;
-                                    contentArea.style.opacity = '1';
-                                });
-                    });
-                });
-
-                window.addEventListener('popstate', function (event) {
-                    const state = event.state;
-                    if (state) {
-                        const menuOption = state.menu || 'information';
-                        const pcName = state.pcName ||
-                                activeButton?.getAttribute('data-pcname') ||
-                                'wsl';
-                        const url = `/machine/${pcName}/${menuOption}`;
-
-                        contentArea.style.opacity = '0';
-
-                        fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error('Network response was not ok: ' + response.statusText);
-                                    }
-                                    return response.text();
-                                })
-                                .then(html => {
-                                    contentArea.innerHTML = html;
-                                    contentArea.style.opacity = '1';
-                                    reinitializeForms();
-
-                                    menuButtons.forEach(btn => {
-                                        btn.classList.remove('active');
-                                        if (btn.getAttribute('data-menu') === menuOption) {
-                                            btn.classList.add('active');
-                                            activeButton = btn;
-                                        }
+                                        menuButtons.forEach(btn => {
+                                            btn.classList.remove('active');
+                                            if (btn.getAttribute('data-menu') === menuOption) {
+                                                btn.classList.add('active');
+                                                activeButton = btn;
+                                            }
+                                        });
+                                    })
+                                    .catch(error => {
+                                        console.error('Popstate fetch error:', error);
+                                        contentArea.innerHTML =
+                                                '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                        contentArea.style.opacity = '1';
                                     });
-                                })
-                                .catch(error => {
-                                    console.error('Popstate fetch error:', error);
-                                    contentArea.innerHTML =
-                                            '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                    contentArea.style.opacity = '1';
-                                });
-                    }
+                        }
+                    });
+
+                    // 7.4) Run initial setups
+                    setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
+                    reinitializeForms();    // attach AJAX submission to forms
+                    initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
                 });
 
-                // 7.4) Run initial setups
-                setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
-                reinitializeForms();    // attach AJAX submission to forms
-                initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
-            });
+                function initializeTerminal() {
+                    const terminalSection = document.getElementById('terminal-section');
+                    if (!terminalSection) {
+                        console.error('Không tìm thấy phần tử chứa terminal');
+                        return;
+                    }
+                    // Lấy pcName từ thuộc tính data
+                    const pcName = terminalSection.getAttribute('data-pcname');
+                    if (!pcName) {
+                        console.error('Không tìm thấy thuộc tính data-pcname trên terminal-section');
+                        return;
+                    }
 
-            function initializeTerminal() {
-                const terminalSection = document.getElementById('terminal-section');
-                if (!terminalSection) {
-                    console.error('Không tìm thấy phần tử chứa terminal');
-                    return;
+                    // Khởi tạo terminal với xterm.js
+                    const terminal = new Terminal({
+                        cursorBlink: true,
+                        rows: 20,
+                        cols: 80
+                    });
+                    terminal.open(terminalSection);
+
+                    // Xây dựng URL WebSocket dựa trên pcName
+                    const socketUrl = "ws://localhost:1402/machine/" + encodeURIComponent(pcName) + "/terminal";
+                    const socket = new WebSocket(socketUrl);
+
+                    socket.onopen = () => console.log("WebSocket connected for terminal!");
+                    socket.onmessage = function (event) {
+                        terminal.write(event.data);
+                    };
+                    socket.onerror = (err) => console.error("WebSocket error:", err);
+                    socket.onclose = () => console.log("WebSocket closed!");
+
+                    // Gửi dữ liệu từ terminal lên server khi người dùng nhập
+                    terminal.onData(function (data) {
+                        socket.send(data);
+                    });
                 }
 
-                // Khởi tạo terminal với một số tùy chọn (có thể điều chỉnh)
-                const terminal = new Terminal({
-                    cursorBlink: true,
-                    rows: 20,
-                    cols: 80
-                });
-                terminal.open(terminalSection);
 
-                // Thiết lập kết nối WebSocket tới backend (điều chỉnh URL theo cấu hình của bạn)
-                const socket = new WebSocket("ws://yourserver/ssh");
-
-                // Khi nhận dữ liệu từ server, in ra terminal
-                socket.onmessage = function (event) {
-                    terminal.write(event.data);
-                };
-
-                // Khi người dùng nhập dữ liệu, gửi qua WebSocket đến server
-                terminal.onData(function (data) {
-                    socket.send(data);
-                });
-
-                // (Tùy chọn) Ghi log kết nối WebSocket
-                socket.onopen = () => console.log("WebSocket connected for terminal!");
-                socket.onclose = () => console.log("WebSocket closed!");
-                socket.onerror = (err) => console.error("WebSocket error:", err);
-            }
-        </script>
+            </script>
 
     </body>

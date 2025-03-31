@@ -405,6 +405,7 @@ public class MachineController {
     public Map<String, Object> toggleLogging(
             @PathVariable("pcName") String pcName,
             @RequestParam("enable") boolean enable,
+            Model model,
             HttpSession session) {
         Map<String, Object> response = new HashMap<>();
         String ownerUsername = (String) session.getAttribute("username");
@@ -445,6 +446,12 @@ public class MachineController {
             response.put("success", true);
             response.put("message", "Logging " + (enable ? "enabled" : "disabled"));
             response.put("loggingStatus", isLoggingOn ? "active" : "inactive");
+
+            String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tail -n 20 /var/log/ufw.log";
+            String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+            List<Map<String, String>> ufwLogs = parseUfwLogs(logsOutput);
+            
+            model.addAttribute("ufwLogs", ufwLogs);
         } catch (JSchException e) {
             response.put("success", false);
             response.put("message", "SSH connection failed: " + e.getMessage());
@@ -454,6 +461,62 @@ public class MachineController {
             e.printStackTrace(); // In ra log chi tiết cho mục đích debug
         }
         return response;
+    }
+
+    private List<Map<String, String>> parseUfwLogs(String logsOutput) {
+        List<Map<String, String>> logs = new ArrayList<>();
+        if (logsOutput == null || logsOutput.trim().isEmpty()) {
+            return logs;
+        }
+
+        // Ví dụ log của UFW thường có dạng:
+        // "Jan  1 12:34:56 hostname kernel: [UFW BLOCK] IN=eth0 OUT= MAC=... SRC=1.2.3.4 DST=5.6.7.8 LEN=60 ..."
+        String[] lines = logsOutput.split("\n");
+        for (String line : lines) {
+            Map<String, String> logEntry = new HashMap<>();
+
+            // Tách theo khoảng trắng để lấy các token
+            String[] tokens = line.split("\\s+");
+            if (tokens.length >= 6) {
+                // Giả sử 3 token đầu là timestamp: Month, Day, Time
+                String timestamp = tokens[0] + " " + tokens[1] + " " + tokens[2];
+                logEntry.put("timestamp", timestamp);
+
+                // Token chứa hành động thường nằm ở vị trí chứa "[UFW" hoặc "[UFW BLOCK]"
+                String action = "";
+                for (String token : tokens) {
+                    if (token.startsWith("[UFW")) {
+                        action = token.replaceAll("\\[|\\]", "");
+                        break;
+                    }
+                }
+                logEntry.put("action", action);
+
+                // Duyệt qua các token để tìm các thông tin cần thiết
+                for (String token : tokens) {
+                    if (token.startsWith("IN=")) {
+                        logEntry.put("interface", token.substring(3));
+                    }
+                    if (token.startsWith("SRC=")) {
+                        logEntry.put("sourceIp", token.substring(4));
+                    }
+                    if (token.startsWith("SPT=")) {
+                        logEntry.put("sourcePort", token.substring(4));
+                    }
+                    if (token.startsWith("DST=")) {
+                        logEntry.put("destinationIp", token.substring(4));
+                    }
+                    if (token.startsWith("DPT=")) {
+                        logEntry.put("destinationPort", token.substring(4));
+                    }
+                    if (token.startsWith("PROTO=")) {
+                        logEntry.put("protocol", token.substring(6));
+                    }
+                }
+                logs.add(logEntry);
+            }
+        }
+        return logs;
     }
 
 }
