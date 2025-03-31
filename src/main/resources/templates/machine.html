@@ -683,13 +683,12 @@
 
                 <div class="footer">
                     <div class="power-button" 
-                         th:onclick="|if(confirm('Do you truly intend to exit?')) { window.location.href='@{/home_{username}(username=${username})}'; }|">
+                         th:onclick="|if(confirm('Do you truly intend to exit?')) { window.location.href='@{/home_{username}(username=${session.username})}'; }|">
                         <img class="exit-icon" src="/images/exit.png" alt="exit"/>
                         <p>EXIT</p>
-
-                        <a th:href="@{/home_{username}(username=${username})}">Home</a>
                     </div>
                 </div>
+
             </div>
 
             <div class="content" id="content-area">
@@ -900,13 +899,13 @@
                     </div>
                 </div>
 
+                <div th:case="'logging'" class="section" id="logging-section">
+                    
+                </div>
                 <div th:case="'terminal'" class="section" id="terminal-section">
 
                 </div>
 
-                <div th:case="'signup'" class="section" id="signup-section">
-
-                </div>
             </div>
         </div>
 
@@ -1344,4 +1343,3 @@
         </script>
 
     </body>
-</html>
