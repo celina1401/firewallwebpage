@@ -447,11 +447,12 @@ public class MachineController {
             response.put("message", "Logging " + (enable ? "enabled" : "disabled"));
             response.put("loggingStatus", isLoggingOn ? "active" : "inactive");
 
-            String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tail -n 20 /var/log/ufw.log";
+            String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tac /var/log/ufw.log | head -n 10";
             String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
             List<Map<String, String>> ufwLogs = parseUfwLogs(logsOutput);
             
             model.addAttribute("ufwLogs", ufwLogs);
+            
         } catch (JSchException e) {
             response.put("success", false);
             response.put("message", "SSH connection failed: " + e.getMessage());
@@ -469,8 +470,6 @@ public class MachineController {
             return logs;
         }
 
-        // Ví dụ log của UFW thường có dạng:
-        // "Jan  1 12:34:56 hostname kernel: [UFW BLOCK] IN=eth0 OUT= MAC=... SRC=1.2.3.4 DST=5.6.7.8 LEN=60 ..."
         String[] lines = logsOutput.split("\n");
         for (String line : lines) {
             Map<String, String> logEntry = new HashMap<>();

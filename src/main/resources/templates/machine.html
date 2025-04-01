@@ -3,10 +3,13 @@
     <head>
         <meta charset="UTF-8">
         <link rel="icon" th:href="@{/images/favicon.png}"/>
-        <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
+        <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.min.css" />
         <title>Machine Management</title>
 
-        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
+        <!--        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
+        <script src="https://cdn.jsdelivr.net/npm/xterm@4.19.0/lib/xterm.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
         <style>
             /* Reset mặc định */
             * {
@@ -980,38 +983,53 @@
                                 </tbody>
                             </table>
                         </div>
-
-
                     </div>
                 </div>
-                
-                <div th:case="'terminal'" class="section" id="terminal-section" data-pcname="${computer.pcName}">
 
+                <div th:case="'terminal'" class="section" id="terminal-section" 
+                     th:with="pcName=${computer?.pcName != null ? computer.pcName : 'unknown'}" 
+                     th:attr="data-pcname=${pcName}">
+                    <h1 class="section-title">Terminal</h1>
+                    <div id="terminal-status" style="margin-bottom: 10px; color: #dc3545;">
+                        Connecting to WebSocket...
+                    </div>
+                    <!-- Debug: Display the pcName -->
+                    <div th:if="${pcName == 'unknown'}" style="color: red;">
+                        Error: Could not resolve pcName. Check server logs.
+                    </div>
                 </div>
             </div>
 
             <script>
-
-                // Check if an IP address is valid
+                // Kiểm tra địa chỉ IP hợp lệ
                 function validateIpAddress(ip) {
                     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                    if (!ipRegex.test(ip))
+                    if (!ipRegex.test(ip)) {
                         return false;
+                    }
                     const parts = ip.split('.');
-                    return parts.every(part => parseInt(part) >= 0 && parseInt(part) <= 255);
+                    return parts.every((part, index) => {
+                        const num = parseInt(part);
+                        // Kiểm tra số không bắt đầu bằng 0 (trừ khi là 0.0.0.0)
+                        if (part.length > 1 && part.startsWith('0')) {
+                            return false;
+                        }
+                        return num >= 0 && num <= 255;
+                    });
                 }
 
-                // Validate the firewall rule form
+                // Xác thực form firewall rule
                 function validateRuleForm() {
                     const action = document.getElementById('action')?.value;
                     const toType = document.getElementById('toType')?.value;
                     const fromType = document.getElementById('fromType')?.value;
 
-                    const portChecked = document.getElementById('portCheck')?.checked
-                            || document.getElementById('specificPortCheck')?.checked;
+                    const portChecked = document.getElementById('portCheck')?.checked ||
+                            document.getElementById('specificPortCheck')?.checked;
 
+                    // Kiểm tra các trường bắt buộc
                     if (!action || !toType || !fromType) {
-                        alert('Please fill out all required fields');
+                        alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type');
                         return false;
                     }
 
@@ -1019,7 +1037,7 @@
                     if (toType === 'ipaddress') {
                         const toIp = document.getElementById('toIp')?.value;
                         if (!toIp || !validateIpAddress(toIp)) {
-                            alert('Please enter a valid destination IP address');
+                            alert('Vui lòng nhập địa chỉ IP đích hợp lệ (ví dụ: 192.168.1.1)');
                             return false;
                         }
                     }
@@ -1028,9 +1046,8 @@
                     if (toType === 'range') {
                         const rangeStart = document.getElementById('rangeStart')?.value;
                         const rangeEnd = document.getElementById('rangeEnd')?.value;
-                        if (!rangeStart || !rangeEnd ||
-                                !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
-                            alert('Please enter a valid IP range');
+                        if (!rangeStart || !rangeEnd || !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
+                            alert('Vui lòng nhập dải IP hợp lệ (ví dụ: 192.168.1.1 - 192.168.1.10)');
                             return false;
                         }
                     }
@@ -1039,16 +1056,16 @@
                     if (toType === 'app') {
                         const appName = document.getElementById('toApp')?.value;
                         if (!appName) {
-                            alert('Please select an application');
+                            alert('Vui lòng chọn một ứng dụng');
                             return false;
                         }
                     }
 
-                    // If user checked "Specific port" or "Out coming" portCheck
+                    // Kiểm tra port nếu được chọn
                     if (portChecked) {
                         const port = document.getElementById('port')?.value;
                         if (!port || isNaN(port) || port < 1 || port > 65535) {
-                            alert('Please enter a valid port number (1-65535)');
+                            alert('Vui lòng nhập số port hợp lệ (1-65535)');
                             return false;
                         }
                     }
@@ -1057,7 +1074,7 @@
                     if (fromType === 'ipaddress') {
                         const fromIp = document.getElementById('fromIp')?.value;
                         if (!fromIp || !validateIpAddress(fromIp)) {
-                            alert('Please enter a valid source IP address');
+                            alert('Vui lòng nhập địa chỉ IP nguồn hợp lệ (ví dụ: 192.168.1.1)');
                             return false;
                         }
                     }
@@ -1065,10 +1082,7 @@
                     return true;
                 }
 
-                /*
-                 * 2) --- Show/Hide Fields ---
-                 */
-                // Destination fields
+                // Hiển thị/ẩn các trường Destination
                 function toggleToFields() {
                     const toType = document.getElementById('toType')?.value;
                     const toIpFields = document.getElementById('toIpFields');
@@ -1077,13 +1091,12 @@
                     const toAppFields = document.getElementById('toAppFields');
                     const toInterfaceFields = document.getElementById('toInterfaceFields');
 
-                    // Hide all first
-                    toIpFields?.classList.add('hidden');
-                    toRangeFields?.classList.add('hidden');
-                    toRangeEndFields?.classList.add('hidden');
-                    toAppFields?.classList.add('hidden');
-                    toInterfaceFields?.classList.add('hidden');
+                    // Ẩn tất cả trước
+                    [toIpFields, toRangeFields, toRangeEndFields, toAppFields, toInterfaceFields].forEach(field => {
+                        field?.classList.add('hidden');
+                    });
 
+                    // Hiển thị trường tương ứng
                     if (toType === 'ipaddress') {
                         toIpFields?.classList.remove('hidden');
                     } else if (toType === 'range') {
@@ -1096,45 +1109,39 @@
                     }
                 }
 
-                // Specific port fields
+                // Hiển thị/ẩn trường port
                 function togglePortFields() {
                     const specificPortCheckbox = document.getElementById('specificPortCheck');
                     const portFields = document.getElementById('portFields');
                     if (specificPortCheckbox && portFields) {
-                        if (specificPortCheckbox.checked) {
-                            portFields.classList.remove('hidden');
-                        } else {
-                            portFields.classList.add('hidden');
-                        }
+                        portFields.classList.toggle('hidden', !specificPortCheckbox.checked);
                     }
                 }
 
-
+                // Hiển thị/ẩn trường Source
                 function toggleFromFields() {
                     const fromType = document.getElementById('fromType')?.value;
                     const fromIpFields = document.getElementById('fromIpFields');
                     if (fromIpFields) {
-                        if (fromType === 'ipaddress') {
-                            fromIpFields.classList.remove('hidden');
-                        } else {
-                            fromIpFields.classList.add('hidden');
-                        }
+                        fromIpFields.classList.toggle('hidden', fromType !== 'ipaddress');
                     }
                 }
 
+                // Bật/tắt firewall
                 function toggleFirewall(element) {
                     const pcName = element.getAttribute('data-pc-name');
                     if (!pcName) {
                         console.error("data-pc-name attribute is missing or empty");
-                        alert("Error: Computer name not found");
+                        alert("Lỗi: Không tìm thấy tên máy tính");
                         return;
                     }
 
                     const isChecked = element.checked;
                     const url = '/machine/' + pcName + '/toggle-firewall';
 
-                    // Disable toggle while processing
                     element.disabled = true;
+                    const originalLabel = document.querySelector('.toggle-label').textContent;
+                    document.querySelector('.toggle-label').textContent = 'Đang xử lý...';
 
                     fetch(url, {
                         method: 'POST',
@@ -1146,50 +1153,50 @@
                     })
                             .then(response => {
                                 if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.status);
+                                    throw new Error('Phản hồi mạng không ổn: ' + response.status);
                                 }
                                 return response.json();
                             })
                             .then(data => {
-                                // Re-enable the toggle
                                 element.disabled = false;
-
                                 if (data.success) {
-                                    document.querySelector('.toggle-label').textContent =
-                                            isChecked ? 'Firewall: ON' : 'Firewall: OFF';
-
+                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Firewall: BẬT' : 'Firewall: TẮT';
                                     const firewallRulesTable = document.getElementById('firewallRulesTable');
                                     if (firewallRulesTable) {
                                         firewallRulesTable.style.display = isChecked ? 'block' : 'none';
                                     }
-                                    console.log('Firewall successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                                    console.log('Firewall đã được ' + (isChecked ? 'bật' : 'tắt') + ' thành công');
                                 } else {
-                                    console.error('Failed to toggle firewall:', data.message);
-                                    alert('Failed to toggle firewall: ' + data.message);
-                                    element.checked = !isChecked; // revert
+                                    console.error('Không thể bật/tắt firewall:', data.message);
+                                    alert('Không thể bật/tắt firewall: ' + data.message);
+                                    element.checked = !isChecked;
+                                    document.querySelector('.toggle-label').textContent = originalLabel;
                                 }
                             })
                             .catch(error => {
-                                console.error('Error:', error);
-                                alert('Error: ' + error.message);
-                                element.checked = !isChecked; // revert
+                                console.error('Lỗi:', error);
+                                alert('Lỗi: ' + error.message);
+                                element.checked = !isChecked;
                                 element.disabled = false;
+                                document.querySelector('.toggle-label').textContent = originalLabel;
                             });
                 }
 
+                // Bật/tắt logging
                 function toggleLogging(element) {
                     const pcName = element.getAttribute('data-pc-name');
                     if (!pcName) {
                         console.error("data-pc-name attribute is missing or empty");
-                        alert("Error: Computer name not found");
+                        alert("Lỗi: Không tìm thấy tên máy tính");
                         return;
                     }
 
                     const isChecked = element.checked;
                     const url = '/machine/' + pcName + '/toggle-logging';
 
-                    // Disable toggle while processing
                     element.disabled = true;
+                    const originalLabel = document.querySelector('.toggle-label').textContent;
+                    document.querySelector('.toggle-label').textContent = 'Đang xử lý...';
 
                     fetch(url, {
                         method: 'POST',
@@ -1201,42 +1208,40 @@
                     })
                             .then(response => {
                                 if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.status);
+                                    throw new Error('Phản hồi mạng không ổn: ' + response.status);
                                 }
                                 return response.json();
                             })
                             .then(data => {
-                                // Re-enable the toggle
                                 element.disabled = false;
-
                                 if (data.success) {
-                                    document.querySelector('.toggle-label').textContent =
-                                            isChecked ? 'Logging: ON' : 'Logging: OFF';
-
+                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Logging: BẬT' : 'Logging: TẮT';
                                     const loggingTable = document.getElementById('loggingTable');
                                     if (loggingTable) {
                                         loggingTable.style.display = isChecked ? 'block' : 'none';
                                     }
-                                    console.log('Firewall logging successfully ' + (isChecked ? 'enabled' : 'disabled'));
+                                    console.log('Logging firewall đã được ' + (isChecked ? 'bật' : 'tắt') + ' thành công');
                                 } else {
-                                    console.error('Failed to toggle logging firewall:', data.message);
-                                    alert('Failed to toggle logging firewall: ' + data.message);
-                                    element.checked = !isChecked; // revert
+                                    console.error('Không thể bật/tắt logging firewall:', data.message);
+                                    alert('Không thể bật/tắt logging firewall: ' + data.message);
+                                    element.checked = !isChecked;
+                                    document.querySelector('.toggle-label').textContent = originalLabel;
                                 }
                             })
                             .catch(error => {
-                                console.error('Error:', error);
-                                alert('Error: ' + error.message);
-                                element.checked = !isChecked; // revert
+                                console.error('Lỗi:', error);
+                                alert('Lỗi: ' + error.message);
+                                element.checked = !isChecked;
                                 element.disabled = false;
+                                document.querySelector('.toggle-label').textContent = originalLabel;
                             });
                 }
 
+                // Gắn sự kiện xác thực cho form
                 function setupFormValidations() {
                     const ruleForm = document.getElementById('dynamicForm');
                     if (ruleForm) {
                         ruleForm.addEventListener('submit', function (e) {
-                            // If not valid, prevent submit
                             if (!validateRuleForm()) {
                                 e.preventDefault();
                             }
@@ -1244,12 +1249,8 @@
                     }
                 }
 
-                /*
-                 * 5) --- Reinitialize Forms after AJAX content load ---
-                 *     (Attaches fetch-based submission if you want purely AJAX form submissions)
-                 */
+                // Khởi tạo lại form sau khi load nội dung AJAX
                 function reinitializeForms() {
-                    // Re-run validations setup
                     setupFormValidations();
 
                     const forms = document.querySelectorAll('form');
@@ -1266,16 +1267,16 @@
                             })
                                     .then(response => {
                                         if (!response.ok) {
-                                            throw new Error('Network response was not ok: ' + response.statusText);
+                                            throw new Error('Phản hồi mạng không ổn: ' + response.statusText);
                                         }
                                         return response.text();
                                     })
                                     .then(html => {
                                         document.getElementById('content-area').innerHTML = html;
-                                        reinitializeForms(); // re-init again for newly loaded content
+                                        reinitializeForms();
                                     })
                                     .catch(error => {
-                                        console.error('Form submission error:', error);
+                                        console.error('Lỗi gửi form:', error);
                                         document.getElementById('content-area').innerHTML =
                                                 '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
                                     });
@@ -1283,9 +1284,7 @@
                     });
                 }
 
-                /*
-                 * 6) --- Initialize Rule Form (checkboxes, etc.) ---
-                 */
+                // Khởi tạo form firewall rule
                 function initializeRuleForm() {
                     const outgoingCheckbox = document.getElementById('outgoingCheckbox');
                     if (outgoingCheckbox) {
@@ -1300,38 +1299,200 @@
                     document.getElementById('toType')?.addEventListener('change', toggleToFields);
                     document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
 
+                    const portCheck = document.getElementById('portCheck');
+                    const specificPortCheck = document.getElementById('specificPortCheck');
+                    const portFields = document.getElementById('portFields');
 
-                    document.getElementById('portCheck')?.addEventListener('change', function () {
-
-                        const portFields = document.getElementById('portFields');
-                        if (portFields) {
-                            if (this.checked) {
-                                portFields.classList.remove('hidden');
-                            } else {
-                                portFields.classList.add('hidden');
+                    if (portCheck) {
+                        portCheck.addEventListener('change', function () {
+                            if (portFields) {
+                                portFields.classList.toggle('hidden', !this.checked);
                             }
+                        });
+                    }
+
+                    if (specificPortCheck) {
+                        specificPortCheck.addEventListener('change', togglePortFields);
+                    }
+                }
+
+                // Khởi tạo terminal WebSocket
+                // Update this function in your code
+                function initializeTerminal() {
+                    const terminalSection = document.getElementById('terminal-section');
+                    if (!terminalSection) {
+                        console.error('Không tìm thấy phần tử chứa terminal');
+                        return;
+                    }
+
+                    const statusElement = document.getElementById('terminal-status');
+
+                    // Get the PC name (which appears to be 'wsl' from your screenshot)
+                    const pcName = terminalSection.getAttribute('data-pcname');
+                    if (!pcName) {
+                        console.error('Không tìm thấy thuộc tính data-pcname');
+                        if (statusElement) {
+                            statusElement.textContent = "Lỗi: Không tìm thấy tên máy tính";
+                            statusElement.style.color = "#dc3545";
+                        }
+                        return;
+                    }
+
+                    // Make sure you have the Terminal.js library loaded
+                    if (typeof Terminal === 'undefined') {
+                        console.error('Terminal.js không được tải');
+                        if (statusElement) {
+                            statusElement.textContent = "Lỗi: Terminal.js không được tải";
+                            statusElement.style.color = "#dc3545";
+                        }
+                        return;
+                    }
+
+                    const terminal = new Terminal({
+                        cursorBlink: true,
+                        rows: 20,
+                        cols: 80,
+                        theme: {
+                            background: '#000000',
+                            foreground: '#ffffff'
                         }
                     });
 
-                    document.getElementById('specificPortCheck')?.addEventListener('change', togglePortFields);
+                    // Create a container for the terminal if it doesn't exist
+                    let terminalContainer = document.getElementById('terminal-container');
+                    if (!terminalContainer) {
+                        terminalContainer = document.createElement('div');
+                        terminalContainer.id = 'terminal-container';
+                        terminalContainer.style.height = '400px';
+                        terminalSection.appendChild(terminalContainer);
+                    }
+
+                    terminal.open(terminalContainer);
+
+                    // Get auth token from session storage or use a more reliable authentication method
+                    // You might want to implement a proper authentication system
+                    const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken") || "";
+
+                    // Update this URL to match your server configuration
+                    // Use window.location.host to make it work regardless of where it's hosted
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const host = window.location.hostname;
+                    // Use appropriate port - if your backend is served on the same domain, you might not need to specify port
+                    const port = 1402; // Update this to your actual WebSocket server port
+
+                    const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal?token=${encodeURIComponent(token)}`;
+
+                    let socket;
+                    let retryCount = 0;
+                    const maxRetries = 5;
+                    const retryDelay = 3000;
+
+                    function connectWebSocket() {
+                        if (statusElement) {
+                            statusElement.textContent = "Đang kết nối...";
+                            statusElement.style.color = "#ffc107";
+                        }
+
+                        try {
+                            socket = new WebSocket(socketUrl);
+
+                            socket.onopen = () => {
+                                terminal.clear();
+                                terminal.write("\r\n\x1b[32m*** Kết nối WebSocket thành công! ***\x1b[0m\r\n\r\n");
+                                retryCount = 0;
+                                if (statusElement) {
+                                    statusElement.textContent = "Đã kết nối WebSocket";
+                                    statusElement.style.color = "#28A745";
+                                }
+                            };
+
+                            socket.onmessage = function (event) {
+                                terminal.write(event.data);
+                            };
+
+                            socket.onerror = (err) => {
+                                console.error("Lỗi WebSocket:", err);
+                                if (statusElement) {
+                                    statusElement.textContent = "Lỗi WebSocket";
+                                    statusElement.style.color = "#dc3545";
+                                }
+                            };
+
+                            socket.onclose = (event) => {
+                                console.log("WebSocket đã đóng:", event.code, event.reason);
+                                terminal.write("\r\n\x1b[31m*** WebSocket đã đóng! ***\x1b[0m\r\n");
+                                if (statusElement) {
+                                    statusElement.textContent = "WebSocket đã ngắt kết nối";
+                                    statusElement.style.color = "#dc3545";
+                                }
+
+                                if (retryCount < maxRetries) {
+                                    retryCount++;
+                                    terminal.write(`\r\n\x1b[33m*** Đang thử lại kết nối (${retryCount}/${maxRetries})... ***\x1b[0m\r\n`);
+                                    if (statusElement) {
+                                        statusElement.textContent = `Đang thử lại (${retryCount}/${maxRetries})...`;
+                                    }
+                                    setTimeout(connectWebSocket, retryDelay);
+                                } else {
+                                    terminal.write("\r\n\x1b[31m*** Đã đạt số lần thử lại tối đa. Không thể kết nối WebSocket. ***\x1b[0m\r\n");
+                                    if (statusElement) {
+                                        statusElement.innerHTML = 'Không thể kết nối WebSocket <button onclick="initializeTerminal()" class="btn btn-sm btn-primary ml-2">Thử lại</button>';
+                                    }
+                                }
+                            };
+                        } catch (error) {
+                            console.error("Lỗi khi tạo WebSocket:", error);
+                            if (statusElement) {
+                                statusElement.textContent = "Lỗi khi tạo WebSocket: " + error.message;
+                                statusElement.style.color = "#dc3545";
+                            }
+                        }
+                    }
+
+                    terminal.onData(function (data) {
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(data);
+                        } else {
+                            terminal.write("\r\n\x1b[31mKhông thể gửi dữ liệu: WebSocket chưa kết nối.\x1b[0m\r\n");
+                        }
+                    });
+
+                    terminal.onResize(function (size) {
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            // Send terminal resize information to the server
+                            const resizeMessage = JSON.stringify({
+                                type: 'resize',
+                                cols: size.cols,
+                                rows: size.rows
+                            });
+                            socket.send(resizeMessage);
+                        }
+                    });
+
+                    // Make sure to expose initializeTerminal globally if you want to call it from HTML
+                    window.initializeTerminal = initializeTerminal;
+
+                    // Start the connection
+                    connectWebSocket();
+
+                    // Return the terminal instance in case you need to reference it elsewhere
+                    return terminal;
                 }
 
+                // Sự kiện DOMContentLoaded
                 document.addEventListener('DOMContentLoaded', function () {
-                    // 7.1) Handle the side menu AJAX loading
                     const menuButtons = document.querySelectorAll('.menu-btn');
                     const contentArea = document.getElementById('content-area');
                     let activeButton = document.querySelector('.menu-btn.active');
 
-                    // Determine initial content to load
                     const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
                     const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
                     const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
 
-                    // Fetch initial fragment
                     fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
                             .then(response => {
                                 if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                    throw new Error('Phản hồi mạng không ổn: ' + response.statusText);
                                 }
                                 return response.text();
                             })
@@ -1339,15 +1500,17 @@
                                 contentArea.innerHTML = html;
                                 contentArea.style.opacity = '1';
                                 reinitializeForms();
+                                if (initialMenu.toLowerCase() === 'terminal') {
+                                    initializeTerminal();
+                                }
                             })
                             .catch(error => {
-                                console.error('Initial fetch error:', error);
+                                console.error('Lỗi fetch ban đầu:', error);
                                 contentArea.innerHTML =
-                                        '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                        '<div class="error-message">Lỗi khi tải nội dung: ' + error.message + '</div>';
                                 contentArea.style.opacity = '1';
                             });
 
-                    // 7.2) Menu button clicks => AJAX navigation
                     menuButtons.forEach(button => {
                         button.addEventListener('click', function (e) {
                             e.preventDefault();
@@ -1355,43 +1518,38 @@
                             const pcName = this.getAttribute('data-pcname') || 'wsl';
                             const url = `/machine/${pcName}/${menuOption}`;
 
-                            // Cập nhật lịch sử trình duyệt
                             window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
 
-                            // Cập nhật trạng thái active cho nút menu
                             if (activeButton) {
                                 activeButton.classList.remove('active');
                             }
                             this.classList.add('active');
                             activeButton = this;
 
-                            // Hiệu ứng chuyển mờ nội dung
                             contentArea.style.opacity = '0';
 
                             fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
                                     .then(response => {
                                         if (!response.ok) {
-                                            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+                                            throw new Error(`Phản hồi mạng không ổn: ${response.status} ${response.statusText}`);
                                         }
                                         return response.text();
                                     })
                                     .then(html => {
-                                        // Đợi 200ms để hiệu ứng chuyển mờ hoàn thành
                                         setTimeout(() => {
                                             contentArea.innerHTML = html;
                                             contentArea.style.opacity = '1';
                                             reinitializeForms();
 
-                                            // Nếu menu hiện tại là "terminal", khởi tạo terminal
                                             if (menuOption.toLowerCase() === 'terminal') {
                                                 initializeTerminal();
                                             }
                                         }, 200);
                                     })
                                     .catch(error => {
-                                        console.error('Fetch error:', error);
+                                        console.error('Lỗi fetch:', error);
                                         contentArea.innerHTML =
-                                                `<div class="error-message">Error loading content: ${error.message}</div>`;
+                                                `<div class="error-message">Lỗi khi tải nội dung: ${error.message}</div>`;
                                         contentArea.style.opacity = '1';
                                     });
                         });
@@ -1401,9 +1559,7 @@
                         const state = event.state;
                         if (state) {
                             const menuOption = state.menu || 'information';
-                            const pcName = state.pcName ||
-                                    activeButton?.getAttribute('data-pcname') ||
-                                    'wsl';
+                            const pcName = state.pcName || activeButton?.getAttribute('data-pcname') || 'wsl';
                             const url = `/machine/${pcName}/${menuOption}`;
 
                             contentArea.style.opacity = '0';
@@ -1411,7 +1567,7 @@
                             fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
                                     .then(response => {
                                         if (!response.ok) {
-                                            throw new Error('Network response was not ok: ' + response.statusText);
+                                            throw new Error('Phản hồi mạng không ổn: ' + response.statusText);
                                         }
                                         return response.text();
                                     })
@@ -1427,61 +1583,24 @@
                                                 activeButton = btn;
                                             }
                                         });
+
+                                        if (menuOption.toLowerCase() === 'terminal') {
+                                            initializeTerminal();
+                                        }
                                     })
                                     .catch(error => {
-                                        console.error('Popstate fetch error:', error);
+                                        console.error('Lỗi fetch popstate:', error);
                                         contentArea.innerHTML =
-                                                '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                                '<div class="error-message">Lỗi khi tải nội dung: ' + error.message + '</div>';
                                         contentArea.style.opacity = '1';
                                     });
                         }
                     });
 
-                    // 7.4) Run initial setups
-                    setupFormValidations(); // attach validations (like dynamicForm -> validateRuleForm)
-                    reinitializeForms();    // attach AJAX submission to forms
-                    initializeRuleForm();   // attach toggles for port, toType, fromType, etc.
+                    setupFormValidations();
+                    reinitializeForms();
+                    initializeRuleForm();
                 });
-
-                function initializeTerminal() {
-                    const terminalSection = document.getElementById('terminal-section');
-                    if (!terminalSection) {
-                        console.error('Không tìm thấy phần tử chứa terminal');
-                        return;
-                    }
-                    // Lấy pcName từ thuộc tính data
-                    const pcName = terminalSection.getAttribute('data-pcname');
-                    if (!pcName) {
-                        console.error('Không tìm thấy thuộc tính data-pcname trên terminal-section');
-                        return;
-                    }
-
-                    // Khởi tạo terminal với xterm.js
-                    const terminal = new Terminal({
-                        cursorBlink: true,
-                        rows: 20,
-                        cols: 80
-                    });
-                    terminal.open(terminalSection);
-
-                    // Xây dựng URL WebSocket dựa trên pcName
-                    const socketUrl = "ws://localhost:1402/machine/" + encodeURIComponent(pcName) + "/terminal";
-                    const socket = new WebSocket(socketUrl);
-
-                    socket.onopen = () => console.log("WebSocket connected for terminal!");
-                    socket.onmessage = function (event) {
-                        terminal.write(event.data);
-                    };
-                    socket.onerror = (err) => console.error("WebSocket error:", err);
-                    socket.onclose = () => console.log("WebSocket closed!");
-
-                    // Gửi dữ liệu từ terminal lên server khi người dùng nhập
-                    terminal.onData(function (data) {
-                        socket.send(data);
-                    });
-                }
-
-
             </script>
 
     </body>

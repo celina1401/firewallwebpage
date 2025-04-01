@@ -1,12 +1,11 @@
 package com.b2110941.firewallweb.service;
 
 import com.b2110941.firewallweb.model.PC;
-import com.b2110941.firewallweb.service.ConnectSSH;
-import com.b2110941.firewallweb.service.PCService;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -14,32 +13,52 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+@Component
 public class TerminalWebSocketHandler extends TextWebSocketHandler {
 
-    @Autowired
-    private PCService pcService;  // Dịch vụ tra cứu thông tin PC
+    private final PCService pcService;
+    private final ConnectSSH connectSSH;
 
     @Autowired
-    private ConnectSSH connectSSH;  // Dịch vụ thiết lập kết nối SSH
+    public TerminalWebSocketHandler(PCService pcService, ConnectSSH connectSSH) {
+        this.pcService = pcService;
+        this.connectSSH = connectSSH;
+    }
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // Lấy pcName từ attributes (đã được thêm trong HandshakeInterceptor)
+        // Retrieve pcName and username from session attributes
         String pcName = (String) session.getAttributes().get("pcName");
-        System.out.println("WebSocket connection established for PC: " + pcName);
+        String username = (String) session.getAttributes().get("username");
 
-        // Tra cứu thông tin PC theo pcName (đảm bảo pcService có phương thức này)
-        PC computer = pcService.findByPcName(pcName);
-        if (computer == null) {
-            session.sendMessage(new TextMessage("PC not found: " + pcName));
-            session.close();
+        if (pcName == null || username == null) {
+            sendErrorAndClose(session, "Error: pcName or username is missing in session attributes.", CloseStatus.BAD_DATA);
             return;
         }
 
-        // Thiết lập kết nối SSH tới máy chủ của PC đó
+        System.out.println("WebSocket connection established for PC: " + pcName + ", user: " + username);
+
+        // Find the PC using pcName and validate user access
+        PC computer = pcService.findByPcName(pcName);
+//        if (computer == null) {
+//            sendErrorAndClose(session, "PC not found: " + pcName, CloseStatus.NOT_FOUND);
+//            return;
+//        }
+
+        // Validate that the user has access to this PC
+        if (!username.equals(computer.getOwnerUsername())) {
+            sendErrorAndClose(session, "Access denied: User " + username + " does not own PC " + pcName, CloseStatus.POLICY_VIOLATION);
+            return;
+        }
+
+        // Establish SSH connection to the target machine
         Session sshSession = null;
         ChannelShell channel = null;
+        OutputStream sshOutput = null;
+        InputStream sshInput = null;
+
         try {
             sshSession = connectSSH.establishSSH(
                     computer.getIpAddress(),
@@ -47,73 +66,107 @@ public class TerminalWebSocketHandler extends TextWebSocketHandler {
                     computer.getPcUsername(),
                     computer.getPassword()
             );
-            // Mở kênh shell và bật pty để tạo môi trường terminal
             channel = (ChannelShell) sshSession.openChannel("shell");
-            channel.setPty(true);
-            OutputStream sshOutput = channel.getOutputStream();
-            InputStream sshInput = channel.getInputStream();
+            channel.setPty(true); // Enable pseudo-terminal for shell
+            sshOutput = channel.getOutputStream();
+            sshInput = channel.getInputStream();
             channel.connect();
 
-            // Lưu các đối tượng SSH vào WebSocket session attributes để dùng sau này
+            // Store SSH objects in session attributes
             session.getAttributes().put("sshSession", sshSession);
             session.getAttributes().put("channel", channel);
             session.getAttributes().put("sshOutput", sshOutput);
+            session.getAttributes().put("sshInput", sshInput);
 
-            // Tạo thread để đọc dữ liệu từ SSH và gửi về client qua WebSocket
-            new Thread(() -> {
-                byte[] buffer = new byte[1024];
-                int read;
-                try {
-                    while ((read = sshInput.read(buffer)) != -1) {
-                        String output = new String(buffer, 0, read);
-                        synchronized (session) {
-                            if (session.isOpen()) {
-                                session.sendMessage(new TextMessage(output));
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    try {
-                        session.sendMessage(new TextMessage("Error reading SSH output: " + e.getMessage()));
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            }).start();
+            // Send a welcome message to the client
+            session.sendMessage(new TextMessage("Connected to terminal on " + pcName + "\r\n"));
+
+            // Start a thread to read SSH output and send it to the WebSocket client
+            startSshOutputReader(session, sshInput);
 
         } catch (JSchException e) {
             e.printStackTrace();
-            session.sendMessage(new TextMessage("SSH connection error: " + e.getMessage()));
-            session.close();
+            sendErrorAndClose(session, "SSH connection error: " + e.getMessage(), CloseStatus.SERVER_ERROR);
+            cleanupSshResources(sshSession, channel);
         }
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String input = message.getPayload();
-        // Lấy đối tượng sshOutput từ session attributes
+        // Retrieve the SSH output stream from session attributes
         OutputStream sshOutput = (OutputStream) session.getAttributes().get("sshOutput");
-        if (sshOutput != null) {
-            sshOutput.write(input.getBytes());
-            sshOutput.flush();
-        } else {
-            session.sendMessage(new TextMessage("SSH output stream not found."));
+        if (sshOutput == null) {
+            session.sendMessage(new TextMessage("Error: SSH output stream not found.\r\n"));
+            return;
         }
+
+        // Send the client's input to the SSH session
+        String input = message.getPayload();
+        sshOutput.write(input.getBytes());
+        sshOutput.flush();
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        // Đóng channel và session SSH khi WebSocket đóng kết nối
+        // Clean up SSH resources
         ChannelShell channel = (ChannelShell) session.getAttributes().get("channel");
         Session sshSession = (Session) session.getAttributes().get("sshSession");
+        cleanupSshResources(sshSession, channel);
+        System.out.println("WebSocket connection closed for session " + session.getId() + ", status: " + status);
+        super.afterConnectionClosed(session, status);
+    }
+
+    @Override
+    public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
+        System.err.println("WebSocket transport error for session " + session.getId() + ": " + exception.getMessage());
+        session.sendMessage(new TextMessage("Error: " + exception.getMessage() + "\r\n"));
+    }
+
+    private void sendErrorAndClose(WebSocketSession session, String errorMessage, CloseStatus status) throws Exception {
+        if (session.isOpen()) {
+            session.sendMessage(new TextMessage(errorMessage + "\r\n"));
+            session.close(status);
+        }
+    }
+
+    private void cleanupSshResources(Session sshSession, ChannelShell channel) {
         if (channel != null && channel.isConnected()) {
             channel.disconnect();
         }
         if (sshSession != null && sshSession.isConnected()) {
             sshSession.disconnect();
         }
-        super.afterConnectionClosed(session, status);
+    }
+
+    private void startSshOutputReader(WebSocketSession session, InputStream sshInput) {
+        AtomicBoolean isRunning = new AtomicBoolean(true);
+        session.getAttributes().put("readerRunning", isRunning);
+
+        new Thread(() -> {
+            byte[] buffer = new byte[1024];
+            int read;
+            try {
+                while (isRunning.get() && (read = sshInput.read(buffer)) != -1) {
+                    String output = new String(buffer, 0, read);
+                    synchronized (session) {
+                        if (session.isOpen()) {
+                            session.sendMessage(new TextMessage(output));
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                try {
+                    if (session.isOpen()) {
+                        session.sendMessage(new TextMessage("Error reading SSH output: " + e.getMessage() + "\r\n"));
+                    }
+                } catch (Exception ex) {
+                    System.err.println("Error sending SSH output error message: " + ex.getMessage());
+                }
+            } finally {
+                isRunning.set(false);
+            }
+        }).start();
     }
 }
