@@ -1,682 +1,869 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" th:href="@{/images/favicon.png}"/>
-        <title>Control Rule</title>
 
-        <style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" th:href="@{/images/favicon.png}" />
+    <title>Control Rule</title>
 
-            body {
-                font-family: Arial, sans-serif;
-                display: flex;
-                margin: 0;
-                height: 100vh;
-            }
-            .sidebar {
-                width: 25vw;
-                background: #444;
-                color: white;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding-top: 20px;
-            }
-            .profile-icon img{
-                width: 10vw;
-                margin-bottom: 20px;
-            }
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            .name{
-                margin: 30px 60px;
-                font-weight: bold;
-                font-size: 150%;
-                text-transform: uppercase;
-            }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            margin: 0;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            /* overflow: hidden; */
+        }
 
-            .menu-btn {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 18px;
-                margin: 5px 0;
-                padding: 10px;
-                width: 100%;
-                text-align: center;
-                cursor: pointer;
-            }
-            /*        .menu-btn.active {
-                        background: #555;
-                    }*/
+        .sidebar {
+            width: 22vw;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
 
-            .menu-btn:hover, .gear-icon:hover, .power-icon:hover{
-                background: #555;
-            }
-            .settings {
-                width: 25vw;
-                margin-top: auto;
-                padding-bottom: 20px;
-            }
-            .gear-icon, .power-icon {
-                display: flex;
-                font-size: 18px;
-                cursor: pointer;
-                width: 100%;
-                justify-content: center;
-                align-items: center;
-                gap: 5%
-            }
+        .profile-icon img {
+            width: 10vw;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            transition: transform 0.3s ease;
+        }
 
-            .setting-icon, .logout-icon{
-                width: 24px;
-                height: 24px;
-            }
+        .profile-icon img:hover {
+            transform: scale(1.05);
+        }
 
-            .computer {
-                width: 12vw;
-                height: 30vh;
-                background: white;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                border-radius: 10px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            }
-            .computer img {
-                width: 80px;
-                margin-bottom: 20px;
-                transition: transform 0.2s ease-in-out;
-            }
+        .computer {
+            width: 12vw;
+            height: 30vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
 
-            .computer img:hover {
-                transform: scale(1.1); /* Phóng to nhẹ khi hover */
-            }
-            .add-computer {
-                width: 12vw;
-                height: 30vh;
-                border: 2px dashed #4A4A4A;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-                color: #4A4A4A;
-                cursor: pointer;
-                border-radius: 10px;
-            }
+        .computer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
 
-            /* Modal styles */
-            .modal {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                justify-content: center;
-                align-items: center;
-            }
-            .modal-content {
-                background: white;
-                border-radius: 30px;
-                display: flex;
-                width: 60%;
-                height: 80%;
-            }
-            .modal-left {
-                flex: 1;
-                padding: 20px;
-            }
-            .modal-right {
-                width: 45%;
-                background-color: #FF8400;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                color: white;
-                font-size: 25px;
-                font-weight: bold;
-                border-radius: 0 30px 30px 0;
-            }
 
-            .modal-right img{
-                position: absolute;
-                top: 10%;
-                right: 20%;
-                /*            width: 24px;  
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            /* transform: none; */
+            transform: rotate(30deg);
+
+            /* Remove translateX to prevent shifting */
+        }
+
+        .computer {
+            width: 12vw;
+            height: 30vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            /* Add this */
+        }
+
+        .computer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn_add_computer {
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 24px;
+            margin: 20px 0;
+            width: 40%;
+            background: linear-gradient(45deg, #28A745, #34ce57);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            /* Add this */
+        }
+
+        .btn_add_computer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .name {
+            margin: 30px 60px;
+            font-weight: bold;
+            font-size: 150%;
+            text-transform: uppercase;
+        }
+
+        .menu-btn:hover,
+        .gear-icon:hover,
+        .power-icon:hover {
+            background: rgba(85, 113, 139, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .menu-btn.active {
+            background: rgba(85, 113, 139, 0.5);
+            font-weight: bold;
+        }
+
+        /* Update power button hover state to match */
+        .power-button:hover {
+            background: rgba(85, 113, 139, 0.5);
+        }
+
+        .settings {
+            width: 22vw;
+            margin-top: auto;
+            padding-bottom: 20px;
+        }
+
+        .gear-icon,
+        .power-icon {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 5px 0;
+            background: none;
+            border: none;
+            width: 100%;
+        }
+
+        .menu-btn img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .menu-btn p {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .menu-btn:hover {
+            background: rgba(85, 113, 139, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .menu-btn.active {
+            background: rgba(85, 113, 139, 0.5);
+        }
+
+        /* Remove the rotation effect */
+        .menu-btn:hover img {
+            transform: none;
+        }
+
+        .gear-icon img {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .gear-icon:hover img {
+            transform: rotate(30deg);
+        }
+
+        .gear-icon p {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .setting-icon,
+        .logout-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .computer {
+            width: 12vw;
+            height: 30vh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .computer img {
+            width: 80px;
+            margin-bottom: 20px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .computer img:hover {
+            transform: scale(1.1);
+            /* Phóng to nhẹ khi hover */
+        }
+
+        .add-computer {
+            width: 12vw;
+            height: 30vh;
+            border: 2px dashed #4A4A4A;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #4A4A4A;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 30px;
+            display: flex;
+            width: 60%;
+            height: 80%;
+        }
+
+        .modal-left {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .modal-right {
+            width: 45%;
+            background-color: #FF8400;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 25px;
+            font-weight: bold;
+            border-radius: 0 30px 30px 0;
+        }
+
+        .modal-right img {
+            position: absolute;
+            top: 10%;
+            right: 20%;
+            /*            width: 24px;  
                             height: 24px;*/
-                cursor: pointer;
-                transition: transform 0.2s ease-in-out;
-            }
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
 
-            .modal-right img:hover {
-                transform: scale(1.2); /* Hiệu ứng phóng to khi hover */
-            }
+        .modal-right img:hover {
+            transform: scale(1.2);
+            /* Hiệu ứng phóng to khi hover */
+        }
 
-            .input-contain {
-                position: relative;
-                margin: 10px 0;
-                width: 80%;
-            }
+        .input-contain {
+            position: relative;
+            margin: 10px 0;
+            width: 80%;
+        }
 
-            .input-field {
-                width: 90%;
-                font-size: 16px;
-                padding: 20px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                outline: none;
-            }
+        .input-field {
+            width: 90%;
+            font-size: 16px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
 
-            .input-field:focus {
-                border-color: #0e51ff;
-            }
+        .input-field:focus {
+            border-color: #0e51ff;
+        }
 
-            label {
-                position: absolute;
-                left: 10px;
-                top: 50%;
-                transform: translateY(-50%);
-                transition: all 0.3s ease;
-                pointer-events: none;
-                color: #999;
-                font-size: 16px;
-                background: white;
-                padding: 0 5px;
-            }
+        label {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            color: #999;
+            font-size: 16px;
+            background: white;
+            padding: 0 5px;
+        }
 
-            .input-field:focus + label,
-            .input-field.has-content + label {
-                top: 0;
-                font-size: 12px;
-                color: #0e51ff;
-                transform: translateY(-50%);
-            }
+        .input-field:focus+label,
+        .input-field.has-content+label {
+            top: 0;
+            font-size: 12px;
+            color: #0e51ff;
+            transform: translateY(-50%);
+        }
 
 
-            form{
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                height: 100%;
-                justify-content: center;
-            }
-            .btn_add_computer {
-                padding: 15px 20px;
-                border-radius: 8px;
-                font-size: 24px;
-                margin: 20px 0;
-                width: 40%;
-                background: #28A745;
-                color: white;
-                border: none;
-                cursor: pointer;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                transition: background 0.3s, box-shadow 0.3s;
-            }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            justify-content: center;
+        }
 
-            .btn_add_computer:hover {
-                background: #218838;
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            }
+        .btn_add_computer {
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 24px;
+            margin: 20px 0;
+            width: 40%;
+            background: #28A745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
 
-            /*khi nhan*/
-            .btn_add_computer:active {
-                background: #1e7e34;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
+        .btn_add_computer:hover {
+            background: #218838;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
 
-            /* Menu navigation */
-            .menu {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                flex-grow: 1;
-            }
+        /*khi nhan*/
+        .btn_add_computer:active {
+            background: #1e7e34;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
-            .menu-btn {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 18px;
-                margin: 5px 0;
-                padding: 10px;
-                width: 100%;
-                text-align: center;
-                cursor: pointer;
-                transition: background 0.2s ease;
-            }
+        /* Menu navigation */
+        .menu {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-grow: 1;
+        }
 
-            .menu-btn:hover {
-                background: #555;
-            }
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            margin: 5px 0;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-            .menu-btn.active {
-                background: #555;
-            }
+        .menu-btn img {
+            width: 24px;
+            height: 24px;
+        }
 
-            /* Footer section */
-            .footer {
-                width: 100%;
-                margin-top: auto;
-                padding-bottom: 20px;
-            }
 
-            .power-button {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-size: 18px;
-                cursor: pointer;
-                padding: 10px;
-                width: 100%;
-                gap: 5%;
-                transition: background 0.2s ease;
-            }
+        /* Footer section */
+        .footer {
+            width: 100%;
+            margin-top: auto;
+            padding-bottom: 20px;
+        }
 
-            .power-button:hover {
-                background: #555;
-            }
+        .power-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            gap: 5%;
+            transition: background 0.2s ease;
+        }
 
-            .exit-icon {
-                width: 24px;
-                height: 24px;
-            }
+        .power-button:hover {
+            background: #555;
+        }
 
-            .power-button p {
-                color: white;
-            }
+        .exit-icon {
+            width: 24px;
+            height: 24px;
+        }
 
-            /* Content area */
-            #content-area{
-                width: 100%;
-                margin: 2% 3%;
-            }
+        .power-button p {
+            color: white;
+        }
 
-            .section {
-                display: flex;
-                height: 100%;
-                flex-wrap: wrap;
-                gap: 20px;
-            }
+        /* Content area */
+        #content-area {
+            width: 100%;
+            margin: 2% 3%;
+        }
 
-            .section h1 {
-                margin-bottom: 20px;
-                color: #333;
-            }
+        .section {
+            display: flex;
+            height: 100%;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
 
-            .section-title {
-                font-size: 28px;
-                color: #2c3e50;
-                text-align: center;
-                margin-bottom: 20px;
-                font-weight: bold;
-            }
+        .section h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
 
-            .info-container {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-around;
-                gap: 20px;
-            }
-            .info-content {
-                background: #ffffff;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                width: 50%;
-                text-align: left;
-                border-left: 5px solid #3498db;
-            }
-            .info-content p {
-                font-size: 18px;
-                color: #333;
-                margin: 10px 0;
-            }
-            .info-content strong {
-                color: #2c3e50;
-                font-weight: 600;
-            }
-            .info-content:hover {
-                transform: translateY(-3px);
-                transition: 0.3s ease-in-out;
-                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-            }
+        .section-title {
+            font-size: 28px;
+            color: #2c3e50;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
 
-            .info-form{
-                background: #ffffff;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                width: 50%;
-                text-align: left;
-                border-left: 5px solid #e67e22;
-            }
-            .info-form input{
-                font-size: 16px;
-                padding: 12px;
-                border-radius: 15px;
-                margin: auto 10px;
-            }
+        .info-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin: 30px 0;
+        }
 
-            .info-form strong{
-                color: #2c3e50;
-                font-weight: 600;
-            }
+        .info-content,
+        .info-form {
+            background: #ffffff;
+            padding: 15px 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
 
-            .info-form p{
-                font-size: 18px;
-            }
+        .info-content {
+            border-left: 5px solid #3498db;
+        }
 
-            .info-actions button{
-                margin-top: 20px;
-                padding: 12px;
-                font-size: 20px;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 600;
+        .info-form {
+            border-left: 5px solid #e67e22;
+        }
 
-                background: #28a745;
-                color: white;
-            }
+        .info-content p,
+        .info-form p {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 20px;
+            margin: 20px 0;
+            align-items: center;
+        }
 
-            .info-actions button:hover{
-                background: #218838;
-            }
+        .info-content strong,
+        .info-form strong {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 18px;
+        }
 
-            .error-message {
-                color: white;
-                padding: 10px;
-                margin-bottom: 20px;
-                background-color: #dc3545;
-                border-radius: 5px;
-                text-align: center;
-            }
-            input[readonly] {
-                background-color: #e9ecef;
-                color: #6c757d;
-                cursor: not-allowed;
-                border: 1px solid #ced4da;
-            }
+        .info-content span {
+            color: #34495e;
+            font-size: 18px;
+            word-break: break-word;
+        }
 
-            input[readonly]:focus {
-                outline: none;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="sidebar">
-            <div class="profile-icon">
-                <img src="/images/avt.png" alt=""/>
+        .info-form input {
+            padding: 12px 15px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            width: 95%;
+        }
+
+        .info-form input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+        }
+
+        .info-form input[readonly] {
+            background-color: #f7f9fc;
+            border-color: #dde1e7;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .info-actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+
+        }
+
+        .info-actions button {
+            padding: 12px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            color: white;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        #editBtn {
+            background: #3498db;
+        }
+
+        #saveBtn {
+            background: #2ecc71;
+        }
+
+        #cancelBtn {
+            background: #e74c3c;
+        }
+
+        .info-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn_add_computer {
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 24px;
+            margin: 20px 0;
+            width: 40%;
+            background: linear-gradient(45deg, #28A745, #34ce57);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .btn_add_computer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="profile-icon">
+            <img src="/images/avt.png" alt="" />
+        </div>
+        <div id="user-name" class="name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;">
+            <h1>User</h1>
+        </div>
+        <nav class="menu">
+            <button class="menu-btn" th:classappend="${currentMenu == 'information'} ? 'active' : ''"
+                data-menu="information">
+                <img class="menu-icon" src="/images/info.png" alt="information" />
+                <p>INFORMATION</p>
+            </button>
+            <button class="menu-btn" th:classappend="${currentMenu == 'manage_system'} ? 'active' : ''"
+                data-menu="manageSystem">
+                <img class="menu-icon" src="/images/manage.png" alt="manage" />
+                <p>MANAGE SYSTEMS</p>
+            </button>
+        </nav>
+        <div class="settings">
+            <div class="gear-icon">
+                <img class="setting-icon" src="/images/setting_icon.png" alt="setting" />
+                <p>DARK MODE</p>
             </div>
-            <div id="user-name" class ="name" th:text="${username}" style="text-transform: uppercase; font-weight: bold;"><h1>User</h1></div>
-            <nav class="menu">
-                <button class="menu-btn" 
-                        th:classappend="${currentMenu == 'information'} ? 'active' : ''"
-                        data-menu="information"
-                        th:text="'INFORMATION'"></button>
-                <button class="menu-btn" 
-                        th:classappend="${currentMenu == 'manage_system'} ? 'active' : ''"
-                        data-menu="manageSystem"
-                        th:text="'MANAGE SYSTEMS'"></button>
-            </nav>
-            <div class="settings">
-                <div class="gear-icon">
-                    <img class="setting-icon" src="/images/setting_icon.png" alt="setting"/>
-                    <p>DARK MODE</p>
-                </div>
-                <div class="power-icon">
-                    <img class="logout-icon" src="/images/logout_icon.png" alt="logout"/>
-                    <p>LOG OUT</p>
-                </div>
+            <div class="power-icon">
+                <img class="logout-icon" src="/images/logout_icon.png" alt="logout" />
+                <p>LOG OUT</p>
             </div>
         </div>
-        <div class="main-content" id="content-area">
-            <div class="success-message" th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div> <br>
-            <div th:fragment="section(menuOption)" th:remove="tag">
-                <div th:switch="${menuOption}">
+    </div>
+    <div class="main-content" id="content-area">
+        <div class="success-message" th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;">
+        </div> <br>
+        <div th:fragment="section(menuOption)" th:remove="tag">
+            <div th:switch="${menuOption}">
 
-                    <div th:case="'information'" id="information-section">
-                        <h1 class="section-title">User Infomation</h1>
-                        <div class="info-container">
-                            <div class="info-content">
-                                <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
-                                <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
-                                <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
-                            </div>
-                        </div>
-
-                        <h1 class="section-title">Edit your Infomation</h1>
-                        <form th:action="@{'/home_' + ${userInfo.username} + '/information'}" method="post">
-                            <div class="info-form">
-                                <p>
-                                    <strong>Full Name:</strong>
-                                    <input type="text" th:value="${userInfo.fullname}" name="fullname" disabled />
-                                </p>
-                                <p>
-                                    <strong>Username:</strong>
-                                    <input type="text" th:value="${userInfo.username}" name="username" readonly />
-                                </p>
-                                <p>
-                                    <strong>Email:</strong>
-                                    <input type="email" th:value="${userInfo.email}" name="email" disabled />
-                                </p>
-                                <p>
-                                    <strong>Password:</strong>
-                                    <input type="password" th:value="${userInfo.password}" name="password" disabled />
-                                </p>
-                            </div>
-                            <div class="info-actions">
-                                <button type="button" id="editBtn" onclick="enableEditing()">Edit</button>
-                                <button type="submit" id="saveBtn" style="display:none;">Save</button>
-                                <button type="button" id="cancelBtn" style="display:none;" onclick="disableEditing()">Cancel</button>
-                            </div>
-                        </form>
-
-
-                    </div>
-                    <div th:case="*" class="section">
-                        <div th:each="computer : ${computers}" class="computer" 
-                             th:data-pcname="${computer.pcName}" 
-                             th:onclick="redirectToMachine(this)" style="cursor: pointer;">
-                            <img src="/images/computer.png" alt="Computer">
-                            <span th:text="${computer.pcName}">Computer 1</span>
-                        </div>
-                        <div class="add-computer" onclick="openModal()">
-                            <img src="/images/add_icon.png" alt="add_icon"/>
+                <div th:case="'information'" id="information-section">
+                    <h1 class="section-title">User Infomation</h1>
+                    <div class="info-container">
+                        <div class="info-content">
+                            <p><strong>Full Name:</strong> <span th:text="${userInfo.fullname}">N/A</span></p>
+                            <p><strong>Username:</strong> <span th:text="${userInfo.username}">N/A</span></p>
+                            <p><strong>Email:</strong> <span th:text="${userInfo.email}">N/A</span></p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-
-        <!-- Modal for adding a computer -->
-        <div id="computerModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-left">
-                    <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
-                    <form th:action="@{/home_{username}(username=${username})}" method="post">
-                        <div class="input-contain">
-                            <input type="text" class="input-field" name="pcName" required>
-                            <label for="pcName">Computer Name</label>
+                    <h1 class="section-title">Edit your Infomation</h1>
+                    <form th:action="@{'/home_' + ${userInfo.username} + '/information'}" method="post">
+                        <div class="info-form">
+                            <p>
+                                <strong>Full Name:</strong>
+                                <input type="text" th:value="${userInfo.fullname}" name="fullname" disabled />
+                            </p>
+                            <p>
+                                <strong>Username:</strong>
+                                <input type="text" th:value="${userInfo.username}" name="username" readonly />
+                            </p>
+                            <p>
+                                <strong>Email:</strong>
+                                <input type="email" th:value="${userInfo.email}" name="email" disabled />
+                            </p>
+                            <p>
+                                <strong>Password:</strong>
+                                <input type="password" th:value="${userInfo.password}" name="password" disabled />
+                            </p>
                         </div>
-                        <div class="input-contain">
-                            <input type="text" class="input-field" name="pcUsername" required>
-                            <label for="pcUsername">Ubuntu Username</label>
+                        <div class="info-actions">
+                            <button type="button" id="editBtn" onclick="enableEditing()">Edit</button>
+                            <button type="submit" id="saveBtn" style="display:none;">Save</button>
+                            <button type="button" id="cancelBtn" style="display:none;"
+                                onclick="disableEditing()">Cancel</button>
                         </div>
-                        <div class="input-contain">
-                            <input type="text" class="input-field" name="ipAddress" required>
-                            <label for="ipAddress">IP Address</label>
-                        </div>
-                        <div class="input-contain">
-                            <input type="number" class="input-field" name="port" min="0" required>
-                            <label for="port">Port</label>
-                        </div>
-                        <div class="input-contain">
-                            <input type="password" class="input-field" name="password" required>
-                            <label for="password">Password</label>
-                        </div>
-                        <button type="submit" class="btn_add_computer">Done</button>
                     </form>
+
+
                 </div>
-                <div class="modal-right" >
-                    <h2>ADD <br> YOUR COMPUTER</h2>
-                    <div>
-                        <img src="/images/close.png" alt="Close" onclick="closeModal()">
+                <div th:case="*" class="section">
+                    <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}"
+                        th:onclick="redirectToMachine(this)" style="cursor: pointer;">
+                        <img src="/images/computer.png" alt="Computer">
+                        <span th:text="${computer.pcName}">Computer 1</span>
+                    </div>
+                    <div class="add-computer" onclick="openModal()">
+                        <img src="/images/add_icon.png" alt="add_icon" />
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!--Modal for edit pcName-->
 
-        <script>
-            const menuButtons = document.querySelectorAll('.menu-btn');
-            const contentArea = document.getElementById('content-area');
-            let activeButton = document.querySelector('.menu-btn.active');
-            const username = document.getElementById('user-name').textContent;
+    <!-- Modal for adding a computer -->
+    <div id="computerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-left">
+                <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
+                <form th:action="@{/home_{username}(username=${username})}" method="post">
+                    <div class="input-contain">
+                        <input type="text" class="input-field" name="pcName" required>
+                        <label for="pcName">Computer Name</label>
+                    </div>
+                    <div class="input-contain">
+                        <input type="text" class="input-field" name="pcUsername" required>
+                        <label for="pcUsername">Ubuntu Username</label>
+                    </div>
+                    <div class="input-contain">
+                        <input type="text" class="input-field" name="ipAddress" required>
+                        <label for="ipAddress">IP Address</label>
+                    </div>
+                    <div class="input-contain">
+                        <input type="number" class="input-field" name="port" min="0" required>
+                        <label for="port">Port</label>
+                    </div>
+                    <div class="input-contain">
+                        <input type="password" class="input-field" name="password" required>
+                        <label for="password">Password</label>
+                    </div>
+                    <button type="submit" class="btn_add_computer">Done</button>
+                </form>
+            </div>
+            <div class="modal-right">
+                <h2>ADD <br> YOUR COMPUTER</h2>
+                <div>
+                    <img src="/images/close.png" alt="Close" onclick="closeModal()">
+                </div>
+            </div>
+        </div>
+    </div>
 
-            function openModal() {
-                document.getElementById("computerModal").style.display = "flex";
-            }
+    <!--Modal for edit pcName-->
 
-            function closeModal() {
-                document.getElementById("computerModal").style.display = "none";
-            }
+    <script>
+        const menuButtons = document.querySelectorAll('.menu-btn');
+        const contentArea = document.getElementById('content-area');
+        let activeButton = document.querySelector('.menu-btn.active');
+        const username = document.getElementById('user-name').textContent;
 
-            function redirectToMachine(element) {
-                let pcName = element.getAttribute("data-pcname") || 'defaultPC';
-                window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
-            }
+        function openModal() {
+            document.getElementById("computerModal").style.display = "flex";
+        }
 
-            document.addEventListener("DOMContentLoaded", function () {
-                let inputs = document.querySelectorAll(".input-field");
-                inputs.forEach(input => {
-                    input.addEventListener("blur", function () {
-                        if (this.value.trim() !== "") {
-                            this.classList.add("has-content");
-                        } else {
-                            this.classList.remove("has-content");
-                        }
-                    });
-                    if (input.value.trim() !== "") {
-                        input.classList.add("has-content");
+        function closeModal() {
+            document.getElementById("computerModal").style.display = "none";
+        }
+
+        function redirectToMachine(element) {
+            let pcName = element.getAttribute("data-pcname") || 'defaultPC';
+            window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            let inputs = document.querySelectorAll(".input-field");
+            inputs.forEach(input => {
+                input.addEventListener("blur", function () {
+                    if (this.value.trim() !== "") {
+                        this.classList.add("has-content");
+                    } else {
+                        this.classList.remove("has-content");
                     }
                 });
-                if (activeButton)
-                    activeButton.click();
-            });
-
-            // Xử lý click vào menu
-            menuButtons.forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const menuOption = this.getAttribute('data-menu');
-                    const pcName = this.getAttribute('data-pcname');
-                    const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-
-                    if (activeButton)
-                        activeButton.classList.remove('active');
-                    this.classList.add('active');
-                    activeButton = this;
-
-                    if (contentArea) {
-                        contentArea.style.opacity = '0';
-                        window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
-
-                        fetch(url, {
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        })
-                                .then(response => {
-                                    if (!response.ok)
-                                        throw new Error('Network response was not ok: ' + response.statusText);
-                                    return response.text();
-                                })
-                                .then(html => {
-                                    setTimeout(() => {
-                                        contentArea.innerHTML = html;
-                                        contentArea.style.opacity = '1';
-                                    }, 200);
-                                })
-                                .catch(error => {
-                                    console.error('Fetch error:', error);
-                                    contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                    contentArea.style.opacity = '1';
-                                });
-                    } else {
-                        console.error('Content area not found!');
-                    }
-                });
-            });
-
-            // Xử lý nút back/forward của browser
-            window.addEventListener('popstate', function (event) {
-                const state = event.state;
-                if (state) {
-                    const menuOption = state.menu || 'information';
-                    const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-
-                    if (contentArea) {
-                        contentArea.style.opacity = '0';
-                        fetch(url, {
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        })
-                                .then(response => {
-                                    if (!response.ok)
-                                        throw new Error('Network response was not ok: ' + response.statusText);
-                                    return response.text();
-                                })
-                                .then(html => {
-                                    contentArea.innerHTML = html;
-                                    contentArea.style.opacity = '1';
-                                    menuButtons.forEach(btn => {
-                                        btn.classList.remove('active');
-                                        if (btn.getAttribute('data-menu') === menuOption &&
-                                                btn.getAttribute('data-pcname') === state.pcName) {
-                                            btn.classList.add('active');
-                                            activeButton = btn;
-                                        }
-                                    });
-                                })
-                                .catch(error => {
-                                    console.error('Popstate fetch error:', error);
-                                    contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                    contentArea.style.opacity = '1';
-                                });
-                    } else {
-                        console.error('Content area not found!');
-                    }
+                if (input.value.trim() !== "") {
+                    input.classList.add("has-content");
                 }
             });
+            if (activeButton)
+                activeButton.click();
+        });
 
-            function enableEditing() {
-                // Kích hoạt tất cả các input trong section
-                document.querySelectorAll("#information-section input").forEach(function (input) {
-                    input.disabled = false;
-                });
-                // Ẩn nút Edit, hiển thị nút Save và Cancel
-                document.getElementById("editBtn").style.display = "none";
-                document.getElementById("saveBtn").style.display = "inline-block";
-                document.getElementById("cancelBtn").style.display = "inline-block";
+        // Xử lý click vào menu
+        menuButtons.forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const menuOption = this.getAttribute('data-menu');
+                const pcName = this.getAttribute('data-pcname');
+                const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
+
+                if (activeButton)
+                    activeButton.classList.remove('active');
+                this.classList.add('active');
+                activeButton = this;
+
+                if (contentArea) {
+                    contentArea.style.opacity = '0';
+                    window.history.pushState({ menu: menuOption, pcName: pcName }, '', url);
+
+                    fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(response => {
+                            if (!response.ok)
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            return response.text();
+                        })
+                        .then(html => {
+                            setTimeout(() => {
+                                contentArea.innerHTML = html;
+                                contentArea.style.opacity = '1';
+                            }, 200);
+                        })
+                        .catch(error => {
+                            console.error('Fetch error:', error);
+                            contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                            contentArea.style.opacity = '1';
+                        });
+                } else {
+                    console.error('Content area not found!');
+                }
+            });
+        });
+
+        // Xử lý nút back/forward của browser
+        window.addEventListener('popstate', function (event) {
+            const state = event.state;
+            if (state) {
+                const menuOption = state.menu || 'information';
+                const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
+
+                if (contentArea) {
+                    contentArea.style.opacity = '0';
+                    fetch(url, {
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(response => {
+                            if (!response.ok)
+                                throw new Error('Network response was not ok: ' + response.statusText);
+                            return response.text();
+                        })
+                        .then(html => {
+                            contentArea.innerHTML = html;
+                            contentArea.style.opacity = '1';
+                            menuButtons.forEach(btn => {
+                                btn.classList.remove('active');
+                                if (btn.getAttribute('data-menu') === menuOption &&
+                                    btn.getAttribute('data-pcname') === state.pcName) {
+                                    btn.classList.add('active');
+                                    activeButton = btn;
+                                }
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Popstate fetch error:', error);
+                            contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                            contentArea.style.opacity = '1';
+                        });
+                } else {
+                    console.error('Content area not found!');
+                }
             }
+        });
 
-            function disableEditing() {
-                // Vô hiệu hóa các input trong section
-                document.querySelectorAll("#information-section input").forEach(function (input) {
-                    input.disabled = true;
-                });
-                // Hiển thị lại nút Edit, ẩn nút Save và Cancel
-                document.getElementById("editBtn").style.display = "inline-block";
-                document.getElementById("saveBtn").style.display = "none";
-                document.getElementById("cancelBtn").style.display = "none";
-            }
+        function enableEditing() {
+            // Kích hoạt tất cả các input trong section
+            document.querySelectorAll("#information-section input").forEach(function (input) {
+                input.disabled = false;
+            });
+            // Ẩn nút Edit, hiển thị nút Save và Cancel
+            document.getElementById("editBtn").style.display = "none";
+            document.getElementById("saveBtn").style.display = "inline-block";
+            document.getElementById("cancelBtn").style.display = "inline-block";
+        }
+
+        function disableEditing() {
+            // Vô hiệu hóa các input trong section
+            document.querySelectorAll("#information-section input").forEach(function (input) {
+                input.disabled = true;
+            });
+            // Hiển thị lại nút Edit, ẩn nút Save và Cancel
+            document.getElementById("editBtn").style.display = "inline-block";
+            document.getElementById("saveBtn").style.display = "none";
+            document.getElementById("cancelBtn").style.display = "none";
+        }
 
 
 
-        </script>
-    </body>
+    </script>
+</body>
+
 </html>

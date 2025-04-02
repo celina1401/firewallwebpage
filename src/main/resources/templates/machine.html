@@ -935,22 +935,23 @@
 
                 <div th:case="'logging'" class="section" id="logging-section">
                     <h1 class="section-title">Logging Firewall</h1>
+                    
                     <div class="toggle-container">
                         <label class="switch">
                             <input type="checkbox" 
                                    id="loggingfirewallToggle" 
-                                   th:checked="${loggingStatus == 'on'}" 
+                                   th:checked="${loggingStatus == 'ON'}" 
                                    th:attr="data-pc-name=${computer.pcName}"
                                    onchange="toggleLogging(this)">
                             <span class="slider"></span>
                         </label>
 
                         <span class="toggle-label" 
-                              th:text="${loggingStatus == 'on' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
+                              th:text="${loggingStatus == 'ON' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
                         </span>                        
                     </div>
 
-                    <div class="logging-content" id="loggingTable" th:style="${loggingStatus == 'on' ? 'display: block' : 'display: none'}"> 
+                    <div class="logging-content" id="loggingTable" th:style="${loggingStatus == 'ON' ? 'display: block' : 'display: none'}"> 
                         <!-- Bảng hiển thị danh sách quy tắc firewall -->
                         <div class="logging-table-container">
                             <table class="logging-table">
@@ -1001,6 +1002,7 @@
             </div>
 
             <script>
+                // Utility Functions
                 // Kiểm tra địa chỉ IP hợp lệ
                 function validateIpAddress(ip) {
                     const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
@@ -1008,9 +1010,8 @@
                         return false;
                     }
                     const parts = ip.split('.');
-                    return parts.every((part, index) => {
+                    return parts.every((part) => {
                         const num = parseInt(part);
-                        // Kiểm tra số không bắt đầu bằng 0 (trừ khi là 0.0.0.0)
                         if (part.length > 1 && part.startsWith('0')) {
                             return false;
                         }
@@ -1018,22 +1019,19 @@
                     });
                 }
 
+                // Form Validation Functions
                 // Xác thực form firewall rule
                 function validateRuleForm() {
                     const action = document.getElementById('action')?.value;
                     const toType = document.getElementById('toType')?.value;
                     const fromType = document.getElementById('fromType')?.value;
+                    const portChecked = document.getElementById('portCheck')?.checked || document.getElementById('specificPortCheck')?.checked;
 
-                    const portChecked = document.getElementById('portCheck')?.checked ||
-                            document.getElementById('specificPortCheck')?.checked;
-
-                    // Kiểm tra các trường bắt buộc
                     if (!action || !toType || !fromType) {
                         alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type');
                         return false;
                     }
 
-                    // Destination: IP address
                     if (toType === 'ipaddress') {
                         const toIp = document.getElementById('toIp')?.value;
                         if (!toIp || !validateIpAddress(toIp)) {
@@ -1042,7 +1040,6 @@
                         }
                     }
 
-                    // Destination: Range
                     if (toType === 'range') {
                         const rangeStart = document.getElementById('rangeStart')?.value;
                         const rangeEnd = document.getElementById('rangeEnd')?.value;
@@ -1052,7 +1049,6 @@
                         }
                     }
 
-                    // Destination: App
                     if (toType === 'app') {
                         const appName = document.getElementById('toApp')?.value;
                         if (!appName) {
@@ -1061,7 +1057,6 @@
                         }
                     }
 
-                    // Kiểm tra port nếu được chọn
                     if (portChecked) {
                         const port = document.getElementById('port')?.value;
                         if (!port || isNaN(port) || port < 1 || port > 65535) {
@@ -1070,7 +1065,6 @@
                         }
                     }
 
-                    // Source: IP address
                     if (fromType === 'ipaddress') {
                         const fromIp = document.getElementById('fromIp')?.value;
                         if (!fromIp || !validateIpAddress(fromIp)) {
@@ -1091,12 +1085,10 @@
                     const toAppFields = document.getElementById('toAppFields');
                     const toInterfaceFields = document.getElementById('toInterfaceFields');
 
-                    // Ẩn tất cả trước
                     [toIpFields, toRangeFields, toRangeEndFields, toAppFields, toInterfaceFields].forEach(field => {
                         field?.classList.add('hidden');
                     });
 
-                    // Hiển thị trường tương ứng
                     if (toType === 'ipaddress') {
                         toIpFields?.classList.remove('hidden');
                     } else if (toType === 'range') {
@@ -1127,6 +1119,7 @@
                     }
                 }
 
+                // Toggle Functions
                 // Bật/tắt firewall
                 function toggleFirewall(element) {
                     const pcName = element.getAttribute('data-pc-name');
@@ -1137,8 +1130,7 @@
                     }
 
                     const isChecked = element.checked;
-                    const url = '/machine/' + pcName + '/toggle-firewall';
-
+                    const url = `/machine/${pcName}/toggle-firewall`;
                     element.disabled = true;
                     const originalLabel = document.querySelector('.toggle-label').textContent;
                     document.querySelector('.toggle-label').textContent = 'Đang xử lý...';
@@ -1149,7 +1141,7 @@
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: 'enable=' + isChecked
+                        body: `enable=${isChecked}`
                     })
                             .then(response => {
                                 if (!response.ok) {
@@ -1160,12 +1152,12 @@
                             .then(data => {
                                 element.disabled = false;
                                 if (data.success) {
-                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Firewall: BẬT' : 'Firewall: TẮT';
+                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Firewall: ON' : 'Firewall: OFF';
                                     const firewallRulesTable = document.getElementById('firewallRulesTable');
                                     if (firewallRulesTable) {
                                         firewallRulesTable.style.display = isChecked ? 'block' : 'none';
                                     }
-                                    console.log('Firewall đã được ' + (isChecked ? 'bật' : 'tắt') + ' thành công');
+                                    console.log(`Firewall đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
                                 } else {
                                     console.error('Không thể bật/tắt firewall:', data.message);
                                     alert('Không thể bật/tắt firewall: ' + data.message);
@@ -1181,7 +1173,6 @@
                                 document.querySelector('.toggle-label').textContent = originalLabel;
                             });
                 }
-
                 // Bật/tắt logging
                 function toggleLogging(element) {
                     const pcName = element.getAttribute('data-pc-name');
@@ -1192,9 +1183,8 @@
                     }
 
                     const isChecked = element.checked;
-                    const url = '/machine/' + pcName + '/toggle-logging';
-
-                    element.disabled = true;
+                    const url = `/machine/${pcName}/toggle-logging`;
+                    element.disabled = true; // Vô hiệu hóa toggle trong khi xử lý
                     const originalLabel = document.querySelector('.toggle-label').textContent;
                     document.querySelector('.toggle-label').textContent = 'Đang xử lý...';
 
@@ -1204,7 +1194,7 @@
                             'Content-Type': 'application/x-www-form-urlencoded',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: 'enable=' + isChecked
+                        body: `enable=${isChecked}`
                     })
                             .then(response => {
                                 if (!response.ok) {
@@ -1213,53 +1203,81 @@
                                 return response.json();
                             })
                             .then(data => {
-                                element.disabled = false;
+                                element.disabled = false; // Kích hoạt lại toggle
                                 if (data.success) {
-                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Logging: BẬT' : 'Logging: TẮT';
+                                    // Cập nhật nhãn và giao diện dựa trên phản hồi từ backend
+                                    document.querySelector('.toggle-label').textContent = isChecked ? 'Logging: ON' : 'Logging: OFF';
                                     const loggingTable = document.getElementById('loggingTable');
                                     if (loggingTable) {
                                         loggingTable.style.display = isChecked ? 'block' : 'none';
                                     }
-                                    console.log('Logging firewall đã được ' + (isChecked ? 'bật' : 'tắt') + ' thành công');
+//                                    console.log(`Logging đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
                                 } else {
-                                    console.error('Không thể bật/tắt logging firewall:', data.message);
-                                    alert('Không thể bật/tắt logging firewall: ' + data.message);
-                                    element.checked = !isChecked;
+                                    // Xử lý lỗi từ backend
+                                    console.error('Không thể bật/tắt logging:', data.message);
+                                    alert('Không thể bật/tắt logging: ' + data.message);
+                                    element.checked = !isChecked; // Khôi phục trạng thái ban đầu
                                     document.querySelector('.toggle-label').textContent = originalLabel;
                                 }
                             })
                             .catch(error => {
+                                // Xử lý lỗi mạng hoặc lỗi khác
                                 console.error('Lỗi:', error);
                                 alert('Lỗi: ' + error.message);
-                                element.checked = !isChecked;
+                                element.checked = !isChecked; // Khôi phục trạng thái ban đầu
                                 element.disabled = false;
                                 document.querySelector('.toggle-label').textContent = originalLabel;
                             });
                 }
 
-                // Gắn sự kiện xác thực cho form
-                function setupFormValidations() {
-                    const ruleForm = document.getElementById('dynamicForm');
-                    if (ruleForm) {
-                        ruleForm.addEventListener('submit', function (e) {
-                            if (!validateRuleForm()) {
-                                e.preventDefault();
-                            }
-                        });
+                // Firewall Rule Management Functions
+                // Chỉnh sửa firewall rule
+                function editRule(element) {
+                    const ruleId = element.getAttribute('data-rule-id');
+                    console.log('Editing rule with ID:', ruleId);
+                    // TODO: Thêm logic để mở form chỉnh sửa quy tắc
+                    alert(`Chỉnh sửa quy tắc với ID: ${ruleId} (Chưa triển khai)`);
+                }
+
+                // Xóa firewall rule
+                function deleteRule(element) {
+                    const ruleId = element.getAttribute('data-rule-id');
+                    if (confirm('Bạn có chắc chắn muốn xóa quy tắc này?')) {
+                        fetch(`/machine/deleteRule?ruleId=${ruleId}`, {
+                            method: 'DELETE',
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Phản hồi mạng không ổn: ' + response.status);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    if (data.success) {
+                                        alert('Xóa quy tắc thành công');
+                                        window.location.reload();
+                                    } else {
+                                        alert('Lỗi khi xóa quy tắc: ' + data.message);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Lỗi:', error);
+                                    alert('Lỗi: ' + error.message);
+                                });
                     }
                 }
 
+                // Form Initialization Functions
                 // Khởi tạo lại form sau khi load nội dung AJAX
                 function reinitializeForms() {
                     setupFormValidations();
-
                     const forms = document.querySelectorAll('form');
                     forms.forEach(form => {
                         form.addEventListener('submit', function (e) {
                             e.preventDefault();
                             const formData = new FormData(this);
                             const action = this.getAttribute('action');
-
                             fetch(action, {
                                 method: 'POST',
                                 body: formData,
@@ -1284,6 +1302,12 @@
                     });
                 }
 
+                // Thiết lập xác thực form
+                function setupFormValidations() {
+                    console.log("Setting up form validations...");
+                    // TODO: Thêm logic xác thực form nếu cần
+                }
+
                 // Khởi tạo form firewall rule
                 function initializeRuleForm() {
                     const outgoingCheckbox = document.getElementById('outgoingCheckbox');
@@ -1298,7 +1322,6 @@
 
                     document.getElementById('toType')?.addEventListener('change', toggleToFields);
                     document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
-
                     const portCheck = document.getElementById('portCheck');
                     const specificPortCheck = document.getElementById('specificPortCheck');
                     const portFields = document.getElementById('portFields');
@@ -1316,8 +1339,8 @@
                     }
                 }
 
+                // Terminal Functions
                 // Khởi tạo terminal WebSocket
-                // Update this function in your code
                 function initializeTerminal() {
                     const terminalSection = document.getElementById('terminal-section');
                     if (!terminalSection) {
@@ -1326,8 +1349,6 @@
                     }
 
                     const statusElement = document.getElementById('terminal-status');
-
-                    // Get the PC name (which appears to be 'wsl' from your screenshot)
                     const pcName = terminalSection.getAttribute('data-pcname');
                     if (!pcName) {
                         console.error('Không tìm thấy thuộc tính data-pcname');
@@ -1338,7 +1359,6 @@
                         return;
                     }
 
-                    // Make sure you have the Terminal.js library loaded
                     if (typeof Terminal === 'undefined') {
                         console.error('Terminal.js không được tải');
                         if (statusElement) {
@@ -1358,7 +1378,6 @@
                         }
                     });
 
-                    // Create a container for the terminal if it doesn't exist
                     let terminalContainer = document.getElementById('terminal-container');
                     if (!terminalContainer) {
                         terminalContainer = document.createElement('div');
@@ -1368,20 +1387,11 @@
                     }
 
                     terminal.open(terminalContainer);
-
-                    // Get auth token from session storage or use a more reliable authentication method
-                    // You might want to implement a proper authentication system
                     const token = sessionStorage.getItem("authToken") || localStorage.getItem("authToken") || "";
-
-                    // Update this URL to match your server configuration
-                    // Use window.location.host to make it work regardless of where it's hosted
                     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                     const host = window.location.hostname;
-                    // Use appropriate port - if your backend is served on the same domain, you might not need to specify port
-                    const port = 1402; // Update this to your actual WebSocket server port
-
+                    const port = 1402;
                     const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal?token=${encodeURIComponent(token)}`;
-
                     let socket;
                     let retryCount = 0;
                     const maxRetries = 5;
@@ -1395,7 +1405,6 @@
 
                         try {
                             socket = new WebSocket(socketUrl);
-
                             socket.onopen = () => {
                                 terminal.clear();
                                 terminal.write("\r\n\x1b[32m*** Kết nối WebSocket thành công! ***\x1b[0m\r\n\r\n");
@@ -1405,11 +1414,9 @@
                                     statusElement.style.color = "#28A745";
                                 }
                             };
-
                             socket.onmessage = function (event) {
                                 terminal.write(event.data);
                             };
-
                             socket.onerror = (err) => {
                                 console.error("Lỗi WebSocket:", err);
                                 if (statusElement) {
@@ -1417,7 +1424,6 @@
                                     statusElement.style.color = "#dc3545";
                                 }
                             };
-
                             socket.onclose = (event) => {
                                 console.log("WebSocket đã đóng:", event.code, event.reason);
                                 terminal.write("\r\n\x1b[31m*** WebSocket đã đóng! ***\x1b[0m\r\n");
@@ -1459,7 +1465,6 @@
 
                     terminal.onResize(function (size) {
                         if (socket && socket.readyState === WebSocket.OPEN) {
-                            // Send terminal resize information to the server
                             const resizeMessage = JSON.stringify({
                                 type: 'resize',
                                 cols: size.cols,
@@ -1469,22 +1474,18 @@
                         }
                     });
 
-                    // Make sure to expose initializeTerminal globally if you want to call it from HTML
                     window.initializeTerminal = initializeTerminal;
-
-                    // Start the connection
                     connectWebSocket();
-
-                    // Return the terminal instance in case you need to reference it elsewhere
                     return terminal;
                 }
 
-                // Sự kiện DOMContentLoaded
+                // Main Initialization
                 document.addEventListener('DOMContentLoaded', function () {
                     const menuButtons = document.querySelectorAll('.menu-btn');
                     const contentArea = document.getElementById('content-area');
                     let activeButton = document.querySelector('.menu-btn.active');
 
+                    // Tải nội dung ban đầu
                     const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
                     const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
                     const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
@@ -1511,6 +1512,7 @@
                                 contentArea.style.opacity = '1';
                             });
 
+                    // Xử lý sự kiện click trên menu
                     menuButtons.forEach(button => {
                         button.addEventListener('click', function (e) {
                             e.preventDefault();
@@ -1527,7 +1529,6 @@
                             activeButton = this;
 
                             contentArea.style.opacity = '0';
-
                             fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
                                     .then(response => {
                                         if (!response.ok) {
@@ -1540,7 +1541,6 @@
                                             contentArea.innerHTML = html;
                                             contentArea.style.opacity = '1';
                                             reinitializeForms();
-
                                             if (menuOption.toLowerCase() === 'terminal') {
                                                 initializeTerminal();
                                             }
@@ -1555,6 +1555,7 @@
                         });
                     });
 
+                    // Xử lý sự kiện popstate
                     window.addEventListener('popstate', function (event) {
                         const state = event.state;
                         if (state) {
@@ -1563,7 +1564,6 @@
                             const url = `/machine/${pcName}/${menuOption}`;
 
                             contentArea.style.opacity = '0';
-
                             fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
                                     .then(response => {
                                         if (!response.ok) {
@@ -1597,6 +1597,7 @@
                         }
                     });
 
+                    // Khởi tạo các hàm cần thiết
                     setupFormValidations();
                     reinitializeForms();
                     initializeRuleForm();
