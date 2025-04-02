@@ -20,11 +20,10 @@
             margin: 0;
             min-height: 100vh;
             background-color: #f5f5f5;
-            /* overflow: hidden; */
         }
 
         .sidebar {
-            width: 22vw;
+            width: 20vw;
             min-height: 100vh;
             background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
             color: white;
@@ -33,6 +32,75 @@
             align-items: center;
             padding-top: 20px;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 5vw;
+        }
+
+        .sidebar.collapsed .name {
+            display: none;
+        }
+
+        .sidebar.collapsed .profile-icon {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .sidebar.collapsed .profile-icon img {
+            width: 3vw;
+            height: 3vw;
+            margin-bottom: 10px;
+        }
+
+        .sidebar.collapsed .menu-btn p,
+        .sidebar.collapsed .gear-icon p,
+        .sidebar.collapsed .power-icon p {
+            display: none;
+        }
+
+        .sidebar.collapsed .menu-btn,
+        .sidebar.collapsed .gear-icon,
+        .sidebar.collapsed .power-icon {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .menu-btn img,
+        .sidebar.collapsed .gear-icon img,
+        .sidebar.collapsed .power-icon img {
+            margin: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            padding-left: 20px;
+            transition: padding-left 0.3s ease;
+        }
+
+        /* Toggle button */
+        .toggle-btn {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            width: 30px;
+            height: 30px;
+            background: #2c3e50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed .toggle-btn {
+            transform: rotate(180deg);
         }
 
         .profile-icon img {
@@ -45,75 +113,6 @@
 
         .profile-icon img:hover {
             transform: scale(1.05);
-        }
-
-        .computer {
-            width: 12vw;
-            height: 30vh;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .computer:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-
-        .menu-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            /* transform: none; */
-            transform: rotate(30deg);
-
-            /* Remove translateX to prevent shifting */
-        }
-
-        .computer {
-            width: 12vw;
-            height: 30vh;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            /* Add this */
-        }
-
-        .computer:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn_add_computer {
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 24px;
-            margin: 20px 0;
-            width: 40%;
-            background: linear-gradient(45deg, #28A745, #34ce57);
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            position: relative;
-            /* Add this */
-        }
-
-        .btn_add_computer:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .name {
@@ -135,13 +134,12 @@
             font-weight: bold;
         }
 
-        /* Update power button hover state to match */
         .power-button:hover {
             background: rgba(85, 113, 139, 0.5);
         }
 
         .settings {
-            width: 22vw;
+            width: 100%;
             margin-top: auto;
             padding-bottom: 20px;
         }
@@ -162,8 +160,7 @@
         }
 
         .menu-btn img {
-            width: 24px;
-            height: 24px;
+            width: 32px;
         }
 
         .menu-btn p {
@@ -182,7 +179,6 @@
             background: rgba(85, 113, 139, 0.5);
         }
 
-        /* Remove the rotation effect */
         .menu-btn:hover img {
             transform: none;
         }
@@ -211,31 +207,94 @@
         }
 
         .computer {
-            width: 12vw;
-            height: 30vh;
+            width: 15vw;
+            height: 38vh;
             background: white;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            justify-content: space-between;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .computer .pc-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .computer .status {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .computer .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #34495e;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .status-item.connected {
+            color: #27ae60;
+        }
+
+        .status-item.active {
+            color: #2980b9;
+        }
+
+        .computer:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
         .computer img {
-            width: 80px;
-            margin-bottom: 20px;
+            width: 50%;
+            margin-top: 10px;
             transition: transform 0.2s ease-in-out;
         }
 
         .computer img:hover {
             transform: scale(1.1);
-            /* Phóng to nhẹ khi hover */
         }
 
+        .menu {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            margin: 5px 0;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Add these styles for the add computer button and modal */
         .add-computer {
-            width: 12vw;
-            height: 30vh;
+            width: 15vw;
+            height: 38vh;
             border: 2px dashed #4A4A4A;
             display: flex;
             align-items: center;
@@ -244,6 +303,48 @@
             color: #4A4A4A;
             cursor: pointer;
             border-radius: 10px;
+        }
+
+        .btn_add_computer {
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 24px;
+            margin: 20px 0;
+            width: 40%;
+            background: linear-gradient(45deg, #28A745, #34ce57);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn_add_computer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Content area */
+        #content-area {
+            width: 100%;
+            margin: 2%;
+            transition: opacity 0.2s ease;
+        }
+
+        .section {
+            display: flex;
+            height: 100%;
+            flex-wrap: wrap;
+            gap: 50px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            color: #2c3e50;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
         /* Modal styles */
@@ -282,26 +383,24 @@
             font-size: 25px;
             font-weight: bold;
             border-radius: 0 30px 30px 0;
+            position: relative;
         }
 
         .modal-right img {
             position: absolute;
-            top: 10%;
-            right: 20%;
-            /*            width: 24px;  
-                            height: 24px;*/
+            top: 20px;
+            right: 20px;
             cursor: pointer;
             transition: transform 0.2s ease-in-out;
         }
 
         .modal-right img:hover {
             transform: scale(1.2);
-            /* Hiệu ứng phóng to khi hover */
         }
 
         .input-contain {
             position: relative;
-            margin: 10px 0;
+            margin: 20px 0;
             width: 80%;
         }
 
@@ -339,7 +438,6 @@
             transform: translateY(-50%);
         }
 
-
         form {
             display: flex;
             flex-direction: column;
@@ -348,119 +446,7 @@
             justify-content: center;
         }
 
-        .btn_add_computer {
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 24px;
-            margin: 20px 0;
-            width: 40%;
-            background: #28A745;
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        .btn_add_computer:hover {
-            background: #218838;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        /*khi nhan*/
-        .btn_add_computer:active {
-            background: #1e7e34;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Menu navigation */
-        .menu {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            flex-grow: 1;
-        }
-
-        .menu-btn {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 16px;
-            margin: 5px 0;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .menu-btn img {
-            width: 24px;
-            height: 24px;
-        }
-
-
-        /* Footer section */
-        .footer {
-            width: 100%;
-            margin-top: auto;
-            padding-bottom: 20px;
-        }
-
-        .power-button {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 10px;
-            width: 100%;
-            gap: 5%;
-            transition: background 0.2s ease;
-        }
-
-        .power-button:hover {
-            background: #555;
-        }
-
-        .exit-icon {
-            width: 24px;
-            height: 24px;
-        }
-
-        .power-button p {
-            color: white;
-        }
-
-        /* Content area */
-        #content-area {
-            width: 100%;
-            margin: 2% 3%;
-        }
-
-        .section {
-            display: flex;
-            height: 100%;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .section h1 {
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .section-title {
-            font-size: 28px;
-            color: #2c3e50;
-            text-align: center;
-            margin: 15px 0;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
+        /* Information section styles */
         .info-container {
             display: flex;
             justify-content: center;
@@ -474,7 +460,7 @@
             padding: 15px 40px;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            width: 60%;
+            width: 50%;
             max-width: 800px;
             margin: 0 auto;
         }
@@ -535,7 +521,6 @@
             justify-content: center;
             gap: 20px;
             margin: 20px 0;
-
         }
 
         .info-actions button {
@@ -566,30 +551,14 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-
-        .btn_add_computer {
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 24px;
-            margin: 20px 0;
-            width: 40%;
-            background: linear-gradient(45deg, #28A745, #34ce57);
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .btn_add_computer:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
     </style>
 </head>
 
 <body>
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar">
+        <div class="toggle-btn" id="sidebarToggle">
+            <img src="/images/toggle.png" alt="toggle" />
+        </div>
         <div class="profile-icon">
             <img src="/images/avt.png" alt="" />
         </div>
@@ -662,14 +631,21 @@
                                 onclick="disableEditing()">Cancel</button>
                         </div>
                     </form>
-
-
                 </div>
+
                 <div th:case="*" class="section">
                     <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}"
                         th:onclick="redirectToMachine(this)" style="cursor: pointer;">
                         <img src="/images/computer.png" alt="Computer">
-                        <span th:text="${computer.pcName}">Computer 1</span>
+                        <div class="pc-name" th:text="${computer.pcName}">Computer 1</div>
+                        <div class="status">
+                            <div class="status-item connected">
+                                <span>SSH: Connected</span>
+                            </div>
+                            <div class="status-item active">
+                                <span>UFW Status: ON</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="add-computer" onclick="openModal()">
                         <img src="/images/add_icon.png" alt="add_icon" />
@@ -678,7 +654,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Modal for adding a computer -->
     <div id="computerModal" class="modal">
@@ -711,20 +686,16 @@
             </div>
             <div class="modal-right">
                 <h2>ADD <br> YOUR COMPUTER</h2>
-                <div>
-                    <img src="/images/close.png" alt="Close" onclick="closeModal()">
-                </div>
+                <img src="/images/close.png" alt="Close" onclick="closeModal()">
             </div>
         </div>
     </div>
-
-    <!--Modal for edit pcName-->
 
     <script>
         const menuButtons = document.querySelectorAll('.menu-btn');
         const contentArea = document.getElementById('content-area');
         let activeButton = document.querySelector('.menu-btn.active');
-        const username = document.getElementById('user-name').textContent;
+        const username = document.getElementById('user-name').textContent.trim();
 
         function openModal() {
             document.getElementById("computerModal").style.display = "flex";
@@ -740,6 +711,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", function () {
+            // Handle input fields
             let inputs = document.querySelectorAll(".input-field");
             inputs.forEach(input => {
                 input.addEventListener("blur", function () {
@@ -749,15 +721,25 @@
                         this.classList.remove("has-content");
                     }
                 });
+
                 if (input.value.trim() !== "") {
                     input.classList.add("has-content");
                 }
             });
-            if (activeButton)
+
+            // Activate the active menu button if it exists
+            if (activeButton) {
                 activeButton.click();
+            }
+
+            // Restore sidebar state on page load
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                document.getElementById('sidebar').classList.add('collapsed');
+            }
         });
 
-        // Xử lý click vào menu
+        // Menu button click handler
         menuButtons.forEach(button => {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -765,8 +747,9 @@
                 const pcName = this.getAttribute('data-pcname');
                 const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
 
-                if (activeButton)
+                if (activeButton) {
                     activeButton.classList.remove('active');
+                }
                 this.classList.add('active');
                 activeButton = this;
 
@@ -799,7 +782,7 @@
             });
         });
 
-        // Xử lý nút back/forward của browser
+        // Browser back/forward button handler
         window.addEventListener('popstate', function (event) {
             const state = event.state;
             if (state) {
@@ -819,6 +802,7 @@
                         .then(html => {
                             contentArea.innerHTML = html;
                             contentArea.style.opacity = '1';
+
                             menuButtons.forEach(btn => {
                                 btn.classList.remove('active');
                                 if (btn.getAttribute('data-menu') === menuOption &&
@@ -839,30 +823,39 @@
             }
         });
 
+        // User info editing functions
         function enableEditing() {
-            // Kích hoạt tất cả các input trong section
             document.querySelectorAll("#information-section input").forEach(function (input) {
-                input.disabled = false;
+                if (!input.readOnly) {
+                    input.disabled = false;
+                }
             });
-            // Ẩn nút Edit, hiển thị nút Save và Cancel
+
             document.getElementById("editBtn").style.display = "none";
             document.getElementById("saveBtn").style.display = "inline-block";
             document.getElementById("cancelBtn").style.display = "inline-block";
         }
 
         function disableEditing() {
-            // Vô hiệu hóa các input trong section
             document.querySelectorAll("#information-section input").forEach(function (input) {
-                input.disabled = true;
+                if (!input.readOnly) {
+                    input.disabled = true;
+                }
             });
-            // Hiển thị lại nút Edit, ẩn nút Save và Cancel
+
             document.getElementById("editBtn").style.display = "inline-block";
             document.getElementById("saveBtn").style.display = "none";
             document.getElementById("cancelBtn").style.display = "none";
         }
 
+        // Sidebar toggle functionality
+        document.getElementById('sidebarToggle').addEventListener('click', function () {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
 
-
+            // Save state to localStorage
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        });
     </script>
 </body>
 
