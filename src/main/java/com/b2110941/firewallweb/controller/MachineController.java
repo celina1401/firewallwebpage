@@ -404,7 +404,7 @@ public class MachineController {
             // Fetch logs if logging is ON
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S cat /var/log/ufw.log | tail -n 10";
+                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S cat /var/log/ufw.log.1 | tail -n 10";
                 String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
                 System.out.println("Raw logs output in getFirewallLogging: [" + logsOutput + "]");
 
