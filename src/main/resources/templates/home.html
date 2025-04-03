@@ -122,6 +122,22 @@
             text-transform: uppercase;
         }
 
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            margin: 5px 0;
+            width: 100%; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+
         .menu-btn:hover,
         .gear-icon:hover,
         .power-icon:hover {
@@ -173,10 +189,6 @@
         .menu-btn:hover {
             background: rgba(85, 113, 139, 0.5);
             transform: translateY(-2px);
-        }
-
-        .menu-btn.active {
-            background: rgba(85, 113, 139, 0.5);
         }
 
         .menu-btn:hover img {
@@ -276,20 +288,6 @@
             flex-grow: 1;
         }
 
-        .menu-btn {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 12px 20px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 16px;
-            margin: 5px 0;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
 
         /* Add these styles for the add computer button and modal */
         .add-computer {
