@@ -179,12 +179,37 @@ public class HomeController {
         // Sau khi cập nhật, có thể đưa user đã cập nhật vào model
         model.addAttribute("userInfo", user);
 
-        // Có thể redirect về trang thông tin, hoặc trả về template
-        // 1) Redirect để tránh submit form lặp:
         return "redirect:/home_" + username + "/information";
 
-        // 2) Hoặc trả về template trực tiếp (không redirect):
-        // return "user-information";
     }
 
+    @GetMapping("/delete-account/{username}")
+    public String deleteAccount(@PathVariable String username, HttpSession session, Model model) {
+        try {
+            // Check if user exists
+            if (!userRepository.existsByUsername(username)) {
+                model.addAttribute("error", "User not found");
+                return "redirect:/home_" + username + "/information";
+            }
+
+            // Delete all PCs owned by the user
+            List<PC> userPCs = pcRepository.findByOwnerUsername(username);
+            for (PC pc : userPCs) {
+                pcAccountRepository.deleteByUsername(pc.getPcUsername());
+                pcRepository.delete(pc);
+            }
+
+            // Delete user and user account
+            userAccountRepository.deleteByUsername(username);
+            userRepository.deleteByUsername(username);
+
+            // Clear session
+            session.invalidate();
+            
+            return "redirect:/";
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to delete account. Please try again.");
+            return "redirect:/home_" + username + "/information";
+        }
+    }
 }
