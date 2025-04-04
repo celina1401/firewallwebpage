@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" th:href="@{/images/favicon.png}"/>
+    <link rel="icon" th:href="@{/images/favicon.png}" />
     <title>Register</title>
     <style>
         * {
@@ -12,6 +13,7 @@
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
         }
+
         body {
             background: linear-gradient(to right, #6a11cb, #2575fc);
             display: flex;
@@ -19,9 +21,11 @@
             align-items: center;
             height: 100vh;
         }
+
         .register-container {
             text-align: center;
         }
+
         .register-box {
             background: rgba(255, 255, 255, 0.7);
             padding: 30px;
@@ -29,22 +33,25 @@
             box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
             width: 35vw;
         }
+
         .title {
             color: #2575fc;
             /*font-size: 24px;*/
             font-weight: 600;
             margin-bottom: 5px;
         }
+
         .subtitle {
             font-size: 18px;
             color: gray;
             margin-bottom: 20px;
         }
+
         .logo img {
             width: 25%;
-            margin-bottom: 15px;
+            height: auto;
         }
-        
+
         .input-contain {
             position: relative;
             margin: 20px 0;
@@ -78,35 +85,99 @@
             padding: 0 5px;
         }
 
-        .input-field:focus + label,
-        .input-field.has-content + label {
+        .input-field:focus+label,
+        .input-field.has-content+label {
             top: 0;
             font-size: 14px;
             color: #0e51ff;
             transform: translateY(-50%);
         }
-        
+
         .buttons {
             display: flex;
-            justify-content: space-around;
-            gap: 10px;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
         }
+
         .register-btn {
-            padding: 12px;
-            font-size: 20px;
+            padding: 12px 30px;
+            font-size: 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 25px;
             cursor: pointer;
             font-weight: 600;
-            
-            background: #28a745;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .register-btn:first-child {
+            background: linear-gradient(to right, #6a11cb, #2575fc);
             color: white;
         }
+
+        .register-btn:first-child:hover {
+            background: linear-gradient(to right, #5a0fb2, #1e5fc9);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .register-btn:last-child {
+            background: white;
+            color: #6a11cb;
+            border: 2px solid #6a11cb;
+        }
+
+        .register-btn:last-child:hover {
+            background: #f8f9fa;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #2575fc;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e5fc9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .login-text {
+            margin-top: 20px;
+            color: #666;
+            font-size: 15px;
+        }
+
+        .login-text a {
+            color: #2575fc;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-text a:hover {
+            text-decoration: underline;
+        }
+
         .register-btn:hover {
             background: #218838;
         }
     </style>
 </head>
+
 <body>
     <div class="register-container">
         <div class="register-box">
@@ -115,7 +186,7 @@
             <div class="logo">
                 <img th:src="@{/images/logo.png}" alt="Logo">
             </div>
-            
+
             <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
             <form th:action="@{/register}" method="post">
                 <div class="input-contain">
@@ -126,7 +197,7 @@
                     <input type="text" class="input-field" name="username" required>
                     <label for="username">Username</label>
                 </div>
-                 <div class="input-contain">
+                <div class="input-contain">
                     <input type="email" class="input-field" name="email" required>
                     <label for="email">Email</label>
                 </div>
@@ -143,9 +214,12 @@
                     <button type="reset" class="register-btn">Reset</button>
                 </div>
             </form>
+            <p class="login-text">
+                Already have an account? <a th:href="@{/}">Login here</a>
+            </p>
         </div>
     </div>
-    
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // Xử lý hiệu ứng label cho input
@@ -165,4 +239,5 @@
         });
     </script>
 </body>
+
 </html>

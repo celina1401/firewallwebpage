@@ -1,4 +1,4 @@
-package com.b2110941.firewallweb.config; // Move to a config package for better organization
+package com.b2110941.firewallweb.service; // Move to a config package for better organization
 
 import com.b2110941.firewallweb.service.TerminalHandshakeInterceptor;
 import com.b2110941.firewallweb.service.TerminalWebSocketHandler;
