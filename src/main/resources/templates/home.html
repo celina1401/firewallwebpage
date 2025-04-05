@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="icon" th:href="@{/images/favicon.png}" />
     <title>Control Rule</title>
 
@@ -220,7 +221,7 @@
 
         .computer {
             width: 15vw;
-            height: 38vh;
+            height: 42vh;
             background: white;
             display: flex;
             flex-direction: column;
@@ -281,6 +282,34 @@
             transform: scale(1.1);
         }
 
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .check-status-btn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 10%;
+        }
+
+        .check-status-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
         .menu {
             display: flex;
             flex-direction: column;
@@ -292,7 +321,7 @@
         /* Add these styles for the add computer button and modal */
         .add-computer {
             width: 15vw;
-            height: 38vh;
+            height: 42vh;
             border: 2px dashed #4A4A4A;
             display: flex;
             align-items: center;
@@ -650,20 +679,26 @@
                 </div>
 
                 <div th:case="*" class="section">
-                    <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}"
-                        th:onclick="redirectToMachine(this)" style="cursor: pointer;">
+                    <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}" 
+                         th:onclick="redirectToMachine(this)" style="cursor: pointer;">
                         <img src="/images/computer.png" alt="Computer">
-                        <div class="pc-name" th:text="${computer.pcName}">Computer 1</div>
+                        <div class="pc-name" th:text="${computer.pcName}">PC NAME</div>
                         <div class="status">
-                            <div th:class="${computer.sshStatus ? 'status-item connected' : 'status-item'}" 
-                                 th:style="${!computer.sshStatus ? 'color: #e74c3c;' : ''}">
-                                <span th:text="${computer.sshStatus ? 'SSH: Connected' : 'SSH: Disconnected'}">SSH: Connected</span>
+                            <div class="status-item ssh-status" th:classappend="${computer.sshStatus} ? 'connected'"
+                                th:style="${!computer.sshStatus} ? 'color: #e74c3c;' : ''">
+                                <span th:text="${computer.sshStatus} ? 'SSH: Connected' : 'SSH: Disconnected'">SSH:
+                                    Disconnected</span>
                             </div>
                             <div class="status-item active">
                                 <span>UFW Status: ON</span>
                             </div>
                         </div>
+                        <button class="check-status-btn" th:data-pcname="${computer.pcName}"
+                            onclick="checkSSHStatusOne(event, this)">
+                            <i class="fas fa-sync-alt"></i> Check Status
+                        </button>
                     </div>
+
                     <div class="add-computer" onclick="openModal()">
                         <img src="/images/add_icon.png" alt="add_icon" />
                     </div>
@@ -887,6 +922,40 @@
             // Save state to localStorage
             localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
         });
+        
+        function checkSSHStatusOne(event, button) {
+            event.stopPropagation(); // Ngăn click vào máy
+
+            const pcName = button.getAttribute("data-pcname");
+            const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
+            const statusItem = pcDiv.querySelector(".ssh-status");
+            const statusSpan = statusItem.querySelector("span");
+
+            // Show checking...
+            statusSpan.textContent = "SSH: Checking...";
+            statusItem.classList.remove("connected");
+            statusItem.style.color = "#2980b9";
+
+            fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
+                .then(res => res.json())
+                .then(pc => {
+                    if (pc.sshStatus) {
+                        statusSpan.textContent = "SSH: Connected";
+                        statusItem.classList.add("connected");
+                        statusItem.style.color = "";
+                    } else {
+                        statusSpan.textContent = "SSH: Disconnected";
+                        statusItem.classList.remove("connected");
+                        statusItem.style.color = "#e74c3c";
+                    }
+                })
+                .catch(err => {
+                    statusSpan.textContent = "SSH: Error";
+                    statusItem.style.color = "#e74c3c";
+                    console.error("SSH status check failed:", err);
+                });
+        }
+
     </script>
 </body>
 

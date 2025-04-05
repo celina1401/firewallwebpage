@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 public class HomeController {
@@ -219,6 +222,37 @@ public class HomeController {
         }
     }
 
+    @GetMapping("/api/ssh-status/{username}/{pcName}")
+    @ResponseBody
+    public PC checkSinglePCStatus(
+            @PathVariable String username,
+            @PathVariable String pcName,
+            HttpSession session) {
+
+        // Verify user authentication
+        String sessionUsername = (String) session.getAttribute("username");
+        if (sessionUsername == null || !sessionUsername.equals(username)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        // Find the PC
+        Optional<PC> pcOpt = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+        if (pcOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found");
+        }
+
+        PC pc = pcOpt.get();
+        try {
+            Thread.sleep(10000); // Sleep for 5 seconds
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Status check was interrupted: " + e.getMessage());
+        }
+        updateComputerStatus(pc); // Update the status
+
+        return pc; // Return the PC with updated status
+    }
+
     private void updateComputerStatus(PC computer) {
         try {
             Session sshSession = connectSSH.establishSSH(
@@ -226,16 +260,16 @@ public class HomeController {
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword());
-            
+
             boolean isConnected = sshSession != null && sshSession.isConnected();
             computer.setSshStatus(isConnected);
-            
+
             // Update in database
             pcRepository.save(computer);
-            
-            System.out.println("SSH Status for " + computer.getPcName() + ": " + 
+
+            System.out.println("SSH Status for " + computer.getPcName() + ": " +
                     (isConnected ? "Connected" : "Disconnected"));
-            
+
             // Close session if it's open
             if (isConnected) {
                 sshSession.disconnect();
