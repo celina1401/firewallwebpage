@@ -222,6 +222,43 @@ public class HomeController {
         }
     }
 
+    @GetMapping("/delete-pc/{username}/{pcName}")
+    public String deletePC(@PathVariable String username,
+            @PathVariable String pcName,
+            HttpSession session,
+            Model model) {
+        String sessionUsername = (String) session.getAttribute("username");
+
+        // Kiểm tra đăng nhập
+        if (sessionUsername == null || !sessionUsername.equals(username)) {
+            model.addAttribute("error", "Unauthorized access! You can only delete your own PC.");
+            return "error";
+        }
+
+        try {
+            // Tìm máy theo pcName và username
+            Optional<PC> optionalPC = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+            if (optionalPC.isEmpty()) {
+                model.addAttribute("error", "PC not found or does not belong to this user.");
+                return "redirect:/home_" + username;
+            }
+
+            PC pc = optionalPC.get();
+
+            // Xoá tài khoản SSH của máy (nếu có)
+            pcAccountRepository.deleteByUsername(pc.getPcUsername());
+
+            // Xoá máy
+            pcRepository.delete(pc);
+
+            model.addAttribute("message", "PC deleted successfully.");
+        } catch (Exception e) {
+            model.addAttribute("error", "Failed to delete PC. Please try again.");
+        }
+
+        return "redirect:/home_" + username;
+    }
+
     @GetMapping("/api/ssh-status/{username}/{pcName}")
     @ResponseBody
     public PC checkSinglePCStatus(
@@ -243,7 +280,7 @@ public class HomeController {
 
         PC pc = pcOpt.get();
         try {
-            Thread.sleep(10000); // Sleep for 5 seconds
+            Thread.sleep(15000); // Sleep for 5 seconds
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             System.out.println("Status check was interrupted: " + e.getMessage());
