@@ -135,7 +135,7 @@ public class MachineController {
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword()
-            );
+            );            
             System.out.println("Ket noi thanh cong line 139");
 
             Map<String, String> systemInfo = new HashMap<>();
@@ -539,7 +539,6 @@ public class MachineController {
         if (logsOutput == null || logsOutput.trim().isEmpty()) {
             return logs;
         }
-
 // Giả sử logsOutput chứa toàn bộ văn bản log
         String[] lines = logsOutput.split("\n");
 
@@ -548,11 +547,19 @@ public class MachineController {
             System.out.println("Đang xử lý dòng: " + line); // Debug: in ra dòng đang xử lý
 
             // Xử lý timestamp và hostname
-            int timestampEnd = line.indexOf(" kernel:");
+            int timestampEnd = line.indexOf(".");
             if (timestampEnd > 0) {
-                String timestamp = line.substring(0, timestampEnd);
-                logEntry.put("timestamp", timestamp);
+                String fullTimestamp = line.substring(0, timestampEnd);
 
+                // Extract only date and time (format: Dec 29 01:18:53)
+                String[] timestampParts = fullTimestamp.split("\\s+");
+                if (timestampParts.length > 0) {
+                    String timestamp = timestampParts[0].replace('T', ' ');
+                    logEntry.put("timestamp", timestamp);
+                } else {
+                    logEntry.put("timestamp", fullTimestamp); // Fallback to full timestamp if parsing fails
+                }
+                
                 // Tìm phần UFW và ACTION
                 int ufwIndex = line.indexOf("[UFW");
                 if (ufwIndex > 0) {
@@ -592,17 +599,33 @@ public class MachineController {
 
     private static void extractLogInfo(String line, Map<String, String> logEntry, String prefix, String key) {
         int startIndex = line.indexOf(prefix);
+        String value;
         if (startIndex >= 0) {
             startIndex += prefix.length();
             int endIndex = line.indexOf(" ", startIndex);
             if (endIndex > startIndex) {
-                String value = line.substring(startIndex, endIndex);
+                value = line.substring(startIndex, endIndex);
                 logEntry.put(key, value);
             } else {
                 // Nếu đây là thành phần cuối cùng của dòng
-                String value = line.substring(startIndex);
+                value = line.substring(startIndex);
                 logEntry.put(key, value);
             }
+
+            if (prefix.equals("PROTO=")) {
+                switch (value) {
+                    case "2":
+                        value = "IGMP";
+                        break;
+                    case "6":
+                        value = "TCP";
+                        break;
+                    case "17":
+                        value = "UDP";
+                        break;
+                }
+            }
+            logEntry.put(key, value);
         }
     }
 

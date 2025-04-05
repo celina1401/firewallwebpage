@@ -17,7 +17,9 @@ public class PC {
     private int port;
     private String password;
     private String ownerUsername;
-
+    private boolean sshStatus;
+    private boolean ufwStatus;
+    
     public PC() {   
     }
 
@@ -94,6 +96,22 @@ public class PC {
 
     public void setOwnerUsername(String ownerUsername) {
         this.ownerUsername = ownerUsername;
+    }
+
+    public boolean isSshStatus() { // Thay đổi tên getter theo chuẩn Java
+        return sshStatus;
+    }
+
+    public void setSshStatus(boolean sshStatus) {
+        this.sshStatus = sshStatus;
+    }
+
+    public boolean isUfwStatus() { // Getter cho ufwStatus
+        return ufwStatus;
+    }
+
+    public void setUfwStatus(boolean ufwStatus) {
+        this.ufwStatus = ufwStatus;
     }
     
 }

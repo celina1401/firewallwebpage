@@ -21,7 +21,7 @@ public class ConnectSSH {
             session.setPassword(password);
             session.setConfig("StrictHostKeyChecking", "no");
 
-            session.connect(5000); // Timeout 5s
+            session.connect(3000); // Timeout 5s
             System.out.println("SSH Connection Successful!");
 
             session.disconnect();
@@ -41,4 +41,12 @@ public class ConnectSSH {
         return session;
     }
     
+    public boolean checkSSHStatus(Session session) {
+        if (session == null) return false;
+        try {
+            return session.isConnected();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

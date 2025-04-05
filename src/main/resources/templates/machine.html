@@ -1078,12 +1078,8 @@
                             <thead>
                                 <tr>
                                     <th>Timestamp</th>
-                                    <th>Action</th>
-                                    <th>Interface</th>
-                                    <th>Source IP</th>
-                                    <th>Source Port</th>
+                                    <th>Action</th>                                
                                     <th>Destination IP</th>
-                                    <th>Destination Port</th>
                                     <th>Protocol</th>
                                 </tr>
                             </thead>
@@ -1091,11 +1087,7 @@
                                 <tr th:each="logEntry : ${ufwLogs}">
                                     <td th:text="${logEntry.timestamp}">Timestamp</td>
                                     <td th:text="${logEntry.action}">Action</td>
-                                    <td th:text="${logEntry.interface}">Interface</td>
-                                    <td th:text="${logEntry.sourceIp}">Source IP</td>
-                                    <td th:text="${logEntry.sourcePort}">Source Port</td>
                                     <td th:text="${logEntry.destinationIp}">Destination IP</td>
-                                    <td th:text="${logEntry.destinationPort}">Destination Port</td>
                                     <td th:text="${logEntry.protocol}">Protocol</td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(ufwLogs)}">

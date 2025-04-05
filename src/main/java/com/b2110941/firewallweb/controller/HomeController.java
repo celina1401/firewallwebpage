@@ -9,6 +9,8 @@ import com.b2110941.firewallweb.repository.pcRepository;
 import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
@@ -38,7 +40,7 @@ public class HomeController {
 
     @RequestMapping("/home_{username}")
     public String home(@PathVariable String username, Model model, HttpSession session) {
-        //Lay username tu session
+        // Lay username tu session
         String sessionUsername = (String) session.getAttribute("username");
 
         if (sessionUsername == null || !sessionUsername.equals(username)) {
@@ -64,7 +66,7 @@ public class HomeController {
             Model model,
             HttpSession session) {
 
-        //Kiem tra username tu session
+        // Kiem tra username tu session
         String sessionUsername = (String) session.getAttribute("username");
 
         if (sessionUsername == null || !sessionUsername.equals(username)) {
@@ -101,6 +103,7 @@ public class HomeController {
             } else {
                 // Luu vao db
                 PC newPC = new PC(trimmedPcName, trimmedPcUsername, trimmedIpAddress, port, trimmedPassword, username);
+                updateComputerStatus(newPC); // Cập nhật trạng thái cho máy mới thêm
                 pcRepository.save(newPC);
 
                 PCAccount newPCAccount = new PCAccount(trimmedPcUsername, trimmedPassword);
@@ -113,6 +116,7 @@ public class HomeController {
         }
         // Lấy danh sách PCs để hiển thị trên giao diện
         List<PC> computers = pcRepository.findByOwnerUsername(username);
+        updateComputerStatuses(computers); // Cập nhật trạng thái sau khi thêm máy mới
         model.addAttribute("computers", computers);
         model.addAttribute("username", username);
 
@@ -132,11 +136,11 @@ public class HomeController {
             Optional<User> userOpt = userRepository.findByUsername(username);
             userOpt.ifPresentOrElse(
                     user -> model.addAttribute("userInfo", user),
-                    () -> model.addAttribute("error", "User not found")
-            );
+                    () -> model.addAttribute("error", "User not found"));
         } else {
             // Nếu là menu mặc định, ta load danh sách máy tính
             List<PC> computers = pcRepository.findByOwnerUsername(username);
+            updateComputerStatuses(computers); // Cập nhật trạng thái trước khi hiển thị
             model.addAttribute("computers", computers);
         }
 
@@ -169,7 +173,7 @@ public class HomeController {
         user.setFullname(fullname);
         user.setEmail(email);
         user.setPassword(password);
-        
+
         userAcc.setPassword(password);
 
         // Lưu thay đổi vào CSDL
@@ -184,7 +188,9 @@ public class HomeController {
     }
 
     @GetMapping("/delete-account/{username}")
-    public String deleteAccount(@PathVariable String username, HttpSession session, Model model) {
+    public String deleteAccount(@PathVariable String username,
+            HttpSession session,
+            Model model) {
         try {
             // Check if user exists
             if (!userRepository.existsByUsername(username)) {
@@ -205,11 +211,47 @@ public class HomeController {
 
             // Clear session
             session.invalidate();
-            
+
             return "redirect:/";
         } catch (Exception e) {
             model.addAttribute("error", "Failed to delete account. Please try again.");
             return "redirect:/home_" + username + "/information";
+        }
+    }
+
+    private void updateComputerStatus(PC computer) {
+        try {
+            Session sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword());
+            
+            boolean isConnected = sshSession != null && sshSession.isConnected();
+            computer.setSshStatus(isConnected);
+            
+            // Update in database
+            pcRepository.save(computer);
+            
+            System.out.println("SSH Status for " + computer.getPcName() + ": " + 
+                    (isConnected ? "Connected" : "Disconnected"));
+            
+            // Close session if it's open
+            if (isConnected) {
+                sshSession.disconnect();
+            }
+        } catch (Exception e) {
+            System.out.println("Error checking SSH status for " + computer.getPcName() + ": " + e.getMessage());
+            computer.setSshStatus(false);
+            pcRepository.save(computer);
+        }
+    }
+
+    private void updateComputerStatuses(List<PC> computers) {
+        for (PC computer : computers) {
+            updateComputerStatus(computer);
+            System.out.println(computer.getPcName() + ": " + computer.isSshStatus());
+            // Không gọi pcRepository.save(computer) để không lưu trạng thái vào database
         }
     }
 }

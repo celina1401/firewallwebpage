@@ -95,7 +95,7 @@
             justify-content: center;
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            z-index: 100;
+            z-index: 1;
             transition: transform 0.3s ease;
         }
 
@@ -356,6 +356,7 @@
             background: rgba(0, 0, 0, 0.5);
             justify-content: center;
             align-items: center;
+            z-index: 1000;
         }
 
         .modal-content {
@@ -654,8 +655,9 @@
                         <img src="/images/computer.png" alt="Computer">
                         <div class="pc-name" th:text="${computer.pcName}">Computer 1</div>
                         <div class="status">
-                            <div class="status-item connected">
-                                <span>SSH: Connected</span>
+                            <div th:class="${computer.sshStatus ? 'status-item connected' : 'status-item'}" 
+                                 th:style="${!computer.sshStatus ? 'color: #e74c3c;' : ''}">
+                                <span th:text="${computer.sshStatus ? 'SSH: Connected' : 'SSH: Disconnected'}">SSH: Connected</span>
                             </div>
                             <div class="status-item active">
                                 <span>UFW Status: ON</span>
@@ -873,6 +875,12 @@
 
         // Sidebar toggle functionality
         document.getElementById('sidebarToggle').addEventListener('click', function () {
+            // Check if modal is open
+            const computerModal = document.getElementById("computerModal");
+            if (computerModal && window.getComputedStyle(computerModal).display === "flex") {
+                return; // Exit if modal is open
+            }
+
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('collapsed');
 
