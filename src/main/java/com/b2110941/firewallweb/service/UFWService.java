@@ -27,7 +27,8 @@ public class UFWService {
      * @param action       The action (allow, deny, limit)
      * @param isOutgoing   Whether the rule is for outgoing traffic
      * @param protocol     The protocol (tcp, udp, icmp, none)
-     * @param toType       The destination type (any, range, app, ipaddress,interface)
+     * @param toType       The destination type (any, range, app,
+     *                     ipaddress,interface)
      * @param toIp         The destination IP address
      * @param toRangeStart The start of port range
      * @param toRangeEnd   The end of port range
@@ -38,18 +39,17 @@ public class UFWService {
      * @return Result of the operation
      */
     public String addRuleFromForm(PC pc, String action, boolean isOutgoing,
-                                  String protocol, String toType, String toIp,
-                                  String toRangeStart, String toRangeEnd, String port,
-                                  String fromType, String fromIp, String app) {
+            String protocol, String toType, String toIp,
+            String toRangeStart, String toRangeEnd, String port,
+            String fromType, String fromIp, String app) {
 
         StringBuilder outBuilder = new StringBuilder();
         String result;
         String direction = isOutgoing ? "out" : "in";
 
         try {
-            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(), pc.getPcUsername(),
-                    pc.getPassword());
-            System.out.println("Ket noi thanh cong!!!!!");
+            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
 
             StringBuilder cmdBuilder = new StringBuilder("echo '")
@@ -58,56 +58,52 @@ public class UFWService {
                     .append(action).append(" ")
                     .append(direction).append(" ");
 
-            // Source
-            if ("ipaddress".equals(toType) && toIp != null && !toIp.isEmpty()) {
-                cmdBuilder.append("to ").append(toIp).append(" ");
-            } else if (!"app".equals(toType) && !"interface".equals(toType)) {
-                cmdBuilder.append("to any ");
-            }
-
+            // ------------------ Handle FROM clause ------------------
             if ("ipaddress".equals(fromType) && fromIp != null && !fromIp.isEmpty()) {
                 cmdBuilder.append("from ").append(fromIp).append(" ");
             } else {
                 cmdBuilder.append("from any ");
             }
 
-            // Destination
-            if (toType != null) {
-                switch (toType) {
-                    case "ipaddress":
-                        if (toIp != null && !toIp.isEmpty()) {
-                            cmdBuilder.append("to ").append(toIp).append(" ");
-                        }
-                        break;
-                    case "range":
-                        if (toRangeStart != null && !toRangeStart.isEmpty()
-                                && toRangeEnd != null && !toRangeEnd.isEmpty()) {
-                            cmdBuilder.append("to ").append(toRangeStart).append("-").append(toRangeEnd).append(" ");
-                        }
-                        break;
-                    case "app":
-                        if (app != null && !app.isEmpty()) {
-                            cmdBuilder.append("app \"").append(app).append("\" ");
-                        }
-                        break;
-                    case "interface":
-                        cmdBuilder.append("on ").append(app).append(" "); // Assume interface name in `app` param
-                        break;
-                    default:
-                        break;
-                }
+            // ------------------ Handle TO clause ------------------
+            if ("ipaddress".equals(toType) && toIp != null && !toIp.isEmpty()) {
+                cmdBuilder.append("to ").append(toIp).append(" ");
+            } else if ("range".equals(toType) && toRangeStart != null && !toRangeStart.isEmpty()) {
+                // Assume CIDR format input like 192.168.1.0/24
+                cmdBuilder.append("to ").append(toRangeStart).append(" ");
+            } else if (!"app".equals(toType) && !"interface".equals(toType)) {
+                cmdBuilder.append("to any ");
             }
 
-            // Protocol
+            // ------------------ Handle Interface or App ------------------
+            if ("app".equals(toType) && app != null && !app.isEmpty()) {
+                cmdBuilder.append("app \"").append(app).append("\" ");
+            }
+
+            if ("interface".equals(toType) && app != null && !app.isEmpty()) {
+                cmdBuilder.append("on ").append(app).append(" ");
+            }
+
+            // ------------------ Handle Port and Protocol ------------------            
+            // Handle port or port range first
+            if (port != null && !port.isEmpty()) {
+                cmdBuilder.append("port ").append(port).append(" ");
+            } else if (toRangeStart != null && !toRangeStart.isEmpty()
+                    && toRangeEnd != null && !toRangeEnd.isEmpty()) {
+                if ("none".equals(protocol)) {
+                    return "error: Port range requires a protocol (tcp/udp)";
+                }
+                // Make sure we're using the correct format for port range
+                cmdBuilder.append("port ").append(toRangeStart).append(":").append(toRangeEnd).append(" ");
+                logger.info("Adding port range: {}-{}", toRangeStart, toRangeEnd);
+            }
+
+            // Then add protocol (only once)
             if (!"none".equals(protocol)) {
                 cmdBuilder.append("proto ").append(protocol).append(" ");
             }
 
-            // Specific port
-            if (port != null && !port.isEmpty() && !"range".equals(toType)) {
-                cmdBuilder.append("port ").append(port).append(" ");
-            }
-
+            // ------------------ Execute Command ------------------
             String command = cmdBuilder.toString().trim();
             logger.info("Executing UFW command: {}", command);
 

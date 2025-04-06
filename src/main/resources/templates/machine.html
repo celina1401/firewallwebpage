@@ -444,9 +444,9 @@
             top: 53.5%;
             left: 50%;
             width: 27%;
-            margin: 30px auto;
+            margin: 20px auto;
             background: #ffffff;
-            padding: 25px;
+            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
@@ -457,8 +457,8 @@
         }
 
         .add-rule-form h3 {
-            margin-bottom: 25px;
-            font-size: 22px;
+            margin-bottom: 15px;
+            font-size: 25px;
             text-align: center;
             color: #2c3e50;
             font-weight: 600;
@@ -480,7 +480,7 @@
 
         .form-group {
             position: relative;
-            margin-bottom: 22px;
+            margin-bottom: 18px;
         }
 
         .form-group input,
@@ -550,30 +550,48 @@
 
         /* Submit button */
         .add-rule-form .btn {
-            background: #2980b9;
+            background: linear-gradient(to right, #2980b9, #3498db);
             color: #fff;
             border: none;
-            padding: 12px 25px;
+            padding: 14px 25px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
             width: 100%;
-            transition: all 0.3s;
-            margin-top: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
         }
 
         .add-rule-form .btn:hover {
-            background: #3498db;
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(to right, #3498db, #2980b9);
+            box-shadow: 0 6px 15px rgba(41, 128, 185, 0.4);
             transform: translateY(-2px);
         }
 
         .add-rule-form .btn:active {
             background: #1c638d;
             transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-rule-form .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .add-rule-form .btn:hover::before {
+            left: 100%;
         }
 
         /* Responsive adjustments */
@@ -817,6 +835,7 @@
 
 <body>
     <div class="container">
+        
         <div class="sidebar" id="sidebar">
             <div class="sidebar-toggle" id="sidebarToggle">
                 <img src="/images/toggle.png" alt="toggle" />
@@ -950,7 +969,8 @@
                         </div>
                         <div class="add-rule-form">
                             <h3>Add New Firewall Rule</h3>
-                            <form id="dynamicForm" method="post" th:action="@{/machine/{pcName}/rule(pcName=${computer.pcName})}"
+                            <form id="dynamicForm" method="post"
+                                th:action="@{/machine/{pcName}/rule(pcName=${computer.pcName})}"
                                 onsubmit="return validateRuleForm()">
                                 <!-- Hidden field for PC name, will be populated by JavaScript -->
                                 <input type="hidden" name="pcName" id="pcNameField">
@@ -960,7 +980,6 @@
                                     <select id="action" name="action" required>
                                         <option value="allow">allow</option>
                                         <option value="deny">deny</option>
-                                        <option value="limit">limit</option>
                                     </select>
                                     <label for="action">Action</label>
                                 </div>
@@ -977,7 +996,6 @@
                                     <select id="protocol" name="protocol" required>
                                         <option value="tcp">tcp</option>
                                         <option value="udp">udp</option>
-                                        <option value="icmp">icmp</option>
                                         <option value="none">none</option>
                                     </select>
                                     <label for="protocol">Protocol</label>
@@ -987,7 +1005,6 @@
                                 <div class="form-group">
                                     <select id="toType" name="toType" onchange="toggleToFields()" required>
                                         <option value="any">Any</option>
-                                        <option value="range">Range IP</option>
                                         <option value="app">App</option>
                                         <option value="ipaddress">IP Address</option>
                                         <option value="interface">Interface</option>
@@ -999,16 +1016,6 @@
                                 <div class="form-group hidden" id="toIpFields">
                                     <input type="text" id="toIp" name="toIp" placeholder=" ">
                                     <label for="toIp">Destination IP</label>
-                                </div>
-
-                                <!-- IP Range (chỉ hiển thị khi toType = range) -->
-                                <div class="form-group hidden" id="toRangeFields">
-                                    <input type="text" id="rangeStart" name="rangeStart" placeholder=" ">
-                                    <label for="rangeStart">Start IP</label>
-                                </div>
-                                <div class="form-group hidden" id="toRangeEndFields">
-                                    <input type="text" id="rangeEnd" name="rangeEnd" placeholder=" ">
-                                    <label for="rangeEnd">End IP</label>
                                 </div>
 
                                 <!-- Application (chỉ hiển thị khi toType = app) -->
@@ -1035,17 +1042,31 @@
                                 </div>
 
                                 <!-- Port Option -->
-                                <div class="form-group checkbox-like">
-                                    <input type="checkbox" id="specificPortCheck" name="specificPortCheck"
-                                        onchange="togglePortFields()">
-                                    <p for="specificPortCheck">Specific port</p>
+                                <div class="form-group">
+                                    <select id="portType" name="portType" onchange="togglePortTypeFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="specific">Specific Port</option>
+                                        <option value="range">Port Range</option>
+                                    </select>
+                                    <label for="portType">Port Type</label>
                                 </div>
 
-                                <!-- Port Field (chỉ hiển thị khi checkbox Specific port được chọn) -->
+                                <!-- Specific Port Field -->
                                 <div class="form-group hidden" id="portFields">
-                                    <input type="number" id="port" name="port" min="1" max="65535"
-                                        placeholder="Enter port...">
+                                    <input type="number" id="port" name="port" min="1" max="65535" placeholder=" ">
                                     <label for="port">Port Number</label>
+                                </div>
+
+                                <!-- Port Range Fields -->
+                                <div class="form-group hidden" id="portRangeStartFields">
+                                    <input type="number" id="portRangeStart" name="portRangeStart" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="portRangeStart">Start Port</label>
+                                </div>
+                                <div class="form-group hidden" id="portRangeEndFields">
+                                    <input type="number" id="portRangeEnd" name="portRangeEnd" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="portRangeEnd">End Port</label>
                                 </div>
 
                                 <!-- Source (From) -->
@@ -1154,13 +1175,15 @@
                 const action = document.getElementById('action')?.value;
                 const toType = document.getElementById('toType')?.value;
                 const fromType = document.getElementById('fromType')?.value;
-                const portChecked = document.getElementById('portCheck')?.checked || document.getElementById('specificPortCheck')?.checked;
+                const portType = document.getElementById('portType')?.value;
+                const protocol = document.getElementById('protocol')?.value;
 
-                if (!action || !toType || !fromType) {
-                    alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type');
+                if (!action || !toType || !fromType || !portType || !protocol) {
+                    alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type, Port Type, Protocol');
                     return false;
                 }
 
+                // Validate Destination IP
                 if (toType === 'ipaddress') {
                     const toIp = document.getElementById('toIp')?.value;
                     if (!toIp || !validateIpAddress(toIp)) {
@@ -1169,15 +1192,7 @@
                     }
                 }
 
-                if (toType === 'range') {
-                    const rangeStart = document.getElementById('rangeStart')?.value;
-                    const rangeEnd = document.getElementById('rangeEnd')?.value;
-                    if (!rangeStart || !rangeEnd || !validateIpAddress(rangeStart) || !validateIpAddress(rangeEnd)) {
-                        alert('Vui lòng nhập dải IP hợp lệ (ví dụ: 192.168.1.1 - 192.168.1.10)');
-                        return false;
-                    }
-                }
-
+                // Validate App
                 if (toType === 'app') {
                     const appName = document.getElementById('toApp')?.value;
                     if (!appName) {
@@ -1186,14 +1201,36 @@
                     }
                 }
 
-                if (portChecked) {
+                // Validate Port logic
+                if (portType === 'specific') {
                     const port = document.getElementById('port')?.value;
                     if (!port || isNaN(port) || port < 1 || port > 65535) {
                         alert('Vui lòng nhập số port hợp lệ (1-65535)');
                         return false;
                     }
+                    if (protocol === 'none') {
+                        alert('Bạn phải chọn protocol (tcp/udp) nếu sử dụng port.');
+                        return false;
+                    }
                 }
 
+                if (portType === 'range') {
+                    const portStart = document.getElementById('portRangeStart')?.value;
+                    const portEnd = document.getElementById('portRangeEnd')?.value;
+
+                    if (!portStart || !portEnd || isNaN(portStart) || isNaN(portEnd)
+                        || portStart < 1 || portEnd > 65535 || Number(portStart) > Number(portEnd)) {
+                        alert('Vui lòng nhập dải port hợp lệ (1-65535), và Start phải nhỏ hơn hoặc bằng End.');
+                        return false;
+                    }
+
+                    if (protocol == 'none') {
+                        alert('Please select protocol (tcp/udp) if using port range.');
+                        return false;
+                    }
+                }
+
+                // Validate Source IP
                 if (fromType === 'ipaddress') {
                     const fromIp = document.getElementById('fromIp')?.value;
                     if (!fromIp || !validateIpAddress(fromIp)) {
@@ -1205,24 +1242,21 @@
                 return true;
             }
 
+
             // Hiển thị/ẩn các trường Destination
             function toggleToFields() {
                 const toType = document.getElementById('toType')?.value;
                 const toIpFields = document.getElementById('toIpFields');
                 const toRangeFields = document.getElementById('toRangeFields');
-                const toRangeEndFields = document.getElementById('toRangeEndFields');
                 const toAppFields = document.getElementById('toAppFields');
                 const toInterfaceFields = document.getElementById('toInterfaceFields');
 
-                [toIpFields, toRangeFields, toRangeEndFields, toAppFields, toInterfaceFields].forEach(field => {
+                [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
                     field?.classList.add('hidden');
                 });
 
                 if (toType === 'ipaddress') {
                     toIpFields?.classList.remove('hidden');
-                } else if (toType === 'range') {
-                    toRangeFields?.classList.remove('hidden');
-                    toRangeEndFields?.classList.remove('hidden');
                 } else if (toType === 'app') {
                     toAppFields?.classList.remove('hidden');
                 } else if (toType === 'interface') {
@@ -1230,14 +1264,47 @@
                 }
             }
 
-            // Hiển thị/ẩn trường port
-            function togglePortFields() {
-                const specificPortCheckbox = document.getElementById('specificPortCheck');
+            // Hiển thị/ẩn các trường Port Type
+            function togglePortTypeFields() {
+                const portType = document.getElementById('portType')?.value;
+                const protocol = document.getElementById('protocol')?.value;
                 const portFields = document.getElementById('portFields');
-                if (specificPortCheckbox && portFields) {
-                    portFields.classList.toggle('hidden', !specificPortCheckbox.checked);
+                const portRangeStartFields = document.getElementById('portRangeStartFields');
+                const portRangeEndFields = document.getElementById('portRangeEndFields');
+
+                // Ẩn tất cả trước
+                [portFields, portRangeStartFields, portRangeEndFields].forEach(field => {
+                    if (field) field.classList.add('hidden');
+                });
+
+                // Disable các input trước
+                document.getElementById('port')?.setAttribute('disabled', 'true');
+                document.getElementById('portRangeStart')?.setAttribute('disabled', 'true');
+                document.getElementById('portRangeEnd')?.setAttribute('disabled', 'true');
+
+                if (portType === 'specific' && protocol !== 'none') {
+                    if (portFields) {
+                        portFields.classList.remove('hidden');
+                        document.getElementById('port')?.removeAttribute('disabled');
+                    }
+                } else if (portType === 'range') {
+                    if (protocol == 'none') {
+                        alert("Please select protocol (tcp/udp/icmp) if using port range.");
+                        document.getElementById('portType').value = 'any';
+                        return togglePortTypeFields(); // Gọi lại để reset
+                    } else {
+                        portRangeStartFields?.classList.remove('hidden');
+                        portRangeEndFields?.classList.remove('hidden');
+                        document.getElementById('portRangeStart')?.removeAttribute('disabled');
+                        document.getElementById('portRangeEnd')?.removeAttribute('disabled');
+                    }
                 }
+                // Nếu "any", không hiển thị gì
             }
+
+            // Gắn sự kiện khi thay đổi protocol
+            document.getElementById('protocol')?.addEventListener('change', togglePortTypeFields);
+
 
             // Hiển thị/ẩn trường Source
             function toggleFromFields() {

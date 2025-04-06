@@ -4,9 +4,7 @@ import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.service.PCService;
 import com.b2110941.firewallweb.service.UFWService;
 import jakarta.servlet.http.HttpSession;
-
 import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +27,8 @@ public class RuleController {
             @RequestParam String protocol,
             @RequestParam String toType,
             @RequestParam(required = false) String toIp,
-            @RequestParam(required = false) String rangeStart,
-            @RequestParam(required = false) String rangeEnd,
+            @RequestParam(required = false) String portRangeStart, // Sửa tên parameter
+            @RequestParam(required = false) String portRangeEnd, // Sửa tên parameter
             @RequestParam(required = false) String toApp,
             @RequestParam(required = false) String toInterface,
             @RequestParam(required = false) String specificPortCheck,
@@ -60,14 +58,14 @@ public class RuleController {
         boolean isOutgoing = portCheck != null;
         String app = "";
         if ("app".equals(toType)) {
-            app = toApp != null ? toApp : "";
+            app = (toApp != null ? toApp : "");
         } else if ("interface".equals(toType)) {
-            app = toInterface != null ? toInterface : "";
+            app = (toInterface != null ? toInterface : "");
         }
 
-        // Gọi service thêm rule
+        // Gọi service thêm rule; chuyển đúng tên biến cho port range
         String result = ufwService.addRuleFromForm(pc, action, isOutgoing, protocol,
-                toType, toIp, rangeStart, rangeEnd, port, fromType, fromIp, app);
+                toType, toIp, portRangeStart, portRangeEnd, port, fromType, fromIp, app);
 
         // Gửi thông báo phản hồi
         if (result.startsWith("success")) {
