@@ -950,7 +950,7 @@
                         </div>
                         <div class="add-rule-form">
                             <h3>Add New Firewall Rule</h3>
-                            <form id="dynamicForm" method="post" action="/machine/addRule"
+                            <form id="dynamicForm" method="post" th:action="@{/machine/{pcName}/rule(pcName=${computer.pcName})}"
                                 onsubmit="return validateRuleForm()">
                                 <!-- Hidden field for PC name, will be populated by JavaScript -->
                                 <input type="hidden" name="pcName" id="pcNameField">
@@ -1520,7 +1520,7 @@
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
                 const host = window.location.hostname;
                 const port = 1402;
-                const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal?token=${encodeURIComponent(token)}`;
+                const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal`;
                 let socket;
                 let retryCount = 0;
                 const maxRetries = 5;

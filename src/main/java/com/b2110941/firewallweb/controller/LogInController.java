@@ -42,7 +42,7 @@ public class LogInController {
         } else {
             model.addAttribute("message", "Login successful! Welcome, " + normalizedUsername);
             session.setAttribute("username", normalizedUsername); // Lưu username chữ thường vào session
-            return "redirect:/home_" + normalizedUsername; // Redirect với username chữ thường
+            return "redirect:/home_" + normalizedUsername + "/manageSystem"; // Redirect với username chữ thường
         }       
     }
 }
