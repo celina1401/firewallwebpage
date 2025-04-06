@@ -835,7 +835,7 @@
 
 <body>
     <div class="container">
-        
+
         <div class="sidebar" id="sidebar">
             <div class="sidebar-toggle" id="sidebarToggle">
                 <img src="/images/toggle.png" alt="toggle" />
@@ -1438,8 +1438,11 @@
             // Xóa firewall rule
             function deleteRule(element) {
                 const ruleId = element.getAttribute('data-rule-id');
+                // Get pcName from the current URL
+                const pcName = window.location.pathname.split('/')[2];
+
                 if (confirm('Bạn có chắc chắn muốn xóa quy tắc này?')) {
-                    fetch(`/machine/deleteRule?ruleId=${ruleId}`, {
+                    fetch(`/machine/deleteRule?ruleId=${ruleId}&pcName=${pcName}`, {
                         method: 'DELETE',
                         headers: { 'X-Requested-With': 'XMLHttpRequest' }
                     })

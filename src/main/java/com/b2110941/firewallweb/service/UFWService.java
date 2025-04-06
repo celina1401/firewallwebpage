@@ -160,9 +160,7 @@ public class UFWService {
                     pc.getPcUsername(), pc.getPassword());
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
 
-            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw delete " + ruleId;
-            logger.info("Executing UFW delete command for rule ID: {}", ruleId);
-
+            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw --force delete " + ruleId;
             channel.setCommand(command);
             InputStream in = channel.getInputStream();
             channel.connect();

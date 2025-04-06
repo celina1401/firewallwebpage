@@ -311,64 +311,6 @@ public class MachineController {
     /**
      * Handle form submission for deleting a firewall rule
      */
-    @PostMapping("/machine/{pcName}/deleteRule")
-    @ResponseBody
-    public Map<String, Object> deleteFirewallRule(
-            @PathVariable("pcName") String pcName,
-            @RequestParam("ruleId") String ruleId,
-            HttpSession session) {
-        
-        Map<String, Object> response = new HashMap<>();
-        String ownerUsername = (String) session.getAttribute("username");
-        
-        if (ownerUsername == null) {
-            response.put("success", false);
-            response.put("message", "User not logged in");
-            return response;
-        }
-        
-        try {
-            // Validate PC exists and belongs to user
-            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-            if (computerOptional.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Computer " + pcName + " not found");
-                return response;
-            }
-            
-            PC computer = computerOptional.get();
-            
-            // Call UFW service to delete the rule
-            String result = ufwService.deleteRule(computer, ruleId);
-            
-            if (result.equals("success")) {
-                response.put("success", true);
-                response.put("message", "Firewall rule deleted successfully");
-                
-                // Get updated rules list
-                String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
-                Session sshSession = connectSSH.establishSSH(
-                    computer.getIpAddress(),
-                    computer.getPort(),
-                    computer.getPcUsername(),
-                    computer.getPassword()
-                );
-                String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
-                List<Map<String, String>> updatedRules = parseUfwOutput(statusOutput);
-                response.put("firewallRules", updatedRules);
-            } else {
-                response.put("success", false);
-                response.put("message", "Failed to delete rule: " + result);
-            }
-            
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error deleting firewall rule: " + e.getMessage());
-            e.printStackTrace();
-        }
-        
-        return response;
-    }
 
     private List<Map<String, String>> parseUfwOutput(String ufwOutput) {
         List<Map<String, String>> firewallRules = new ArrayList<>();

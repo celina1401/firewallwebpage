@@ -4,6 +4,8 @@ import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.service.PCService;
 import com.b2110941.firewallweb.service.UFWService;
 import jakarta.servlet.http.HttpSession;
+
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -75,5 +77,37 @@ public class RuleController {
         }
 
         return "redirect:/machine/" + pcName + "/rule";
+    }
+
+
+    @DeleteMapping("/machine/deleteRule")
+    @ResponseBody
+    public Object deleteFirewallRule(
+            @RequestParam String ruleId,
+            @RequestParam String pcName,
+            HttpSession session) {
+
+        // Check login
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            return Map.of("success", false, "message", "Please login your account!");
+        }
+
+        // Find the computer
+        Optional<PC> pcOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (pcOptional.isEmpty()) {
+            return Map.of("success", false, "message", "Computer " + pcName + " not found");
+        }
+
+        PC pc = pcOptional.get();
+
+        // Call service to delete rule
+        String result = ufwService.deleteRule(pc, ruleId);
+
+        if (result.startsWith("success")) {
+            return Map.of("success", true, "message", "Rule deleted successfully");
+        } else {
+            return Map.of("success", false, "message", result);
+        }
     }
 }
