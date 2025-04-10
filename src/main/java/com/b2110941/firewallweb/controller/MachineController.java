@@ -222,96 +222,7 @@ public class MachineController {
         }
         return "machine";
     }
-
-    // @PostMapping("/machine/addRule")
-    // @ResponseBody
-    // public Map<String, Object> addFirewallRule(
-    //         @RequestParam("pcName") String pcName,
-    //         @RequestParam("action") String action,
-    //         @RequestParam(value = "portCheck", required = false) Boolean isOutgoing,
-    //         @RequestParam(value = "protocol", required = false, defaultValue = "none") String protocol,
-    //         @RequestParam(value = "toType", required = false, defaultValue = "any") String toType,
-    //         @RequestParam(value = "toIp", required = false) String toIp,
-    //         @RequestParam(value = "toRangeStart", required = false, defaultValue = "0") Integer toRangeStart,
-    //         @RequestParam(value = "toRangeEnd", required = false, defaultValue = "0") Integer toRangeEnd,
-    //         @RequestParam(value = "port", required = false) String port,
-    //         @RequestParam(value = "fromType", required = false, defaultValue = "any") String fromType,
-    //         @RequestParam(value = "fromIp", required = false) String fromIp,
-    //         @RequestParam(value = "app", required = false) String app,
-    //         HttpSession session) {
-        
-    //     Map<String, Object> response = new HashMap<>();
-    //     String ownerUsername = (String) session.getAttribute("username");
-        
-    //     if (ownerUsername == null) {
-    //         response.put("success", false);
-    //         response.put("message", "User not logged in");
-    //         return response;
-    //     }
-        
-    //     try {
-    //         // Validate PC exists and belongs to user
-    //         Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-    //         if (computerOptional.isEmpty()) {
-    //             response.put("success", false);
-    //             response.put("message", "Computer " + pcName + " not found");
-    //             return response;
-    //         }
-            
-    //         PC computer = computerOptional.get();
-            
-    //         // Process boolean value
-    //         boolean outgoing = isOutgoing != null && isOutgoing;
-            
-    //         // Call UFW service to add the rule
-    //         String result = ufwService.addRuleFromForm(
-    //             computer, 
-    //             action, 
-    //             outgoing, 
-    //             protocol, 
-    //             toType, 
-    //             toIp != null ? toIp : "", 
-    //             toRangeStart != null ? toRangeStart : 0, 
-    //             toRangeEnd != null ? toRangeEnd : 0, 
-    //             port != null ? port : "", 
-    //             fromType, 
-    //             fromIp != null ? fromIp : "", 
-    //             app != null ? app : ""
-    //         );
-            
-    //         if (result.startsWith("success")) {
-    //             response.put("success", true);
-    //             response.put("message", "Firewall rule added successfully");
-                
-    //             // Get updated rules list
-    //             String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
-    //             Session sshSession = connectSSH.establishSSH(
-    //                 computer.getIpAddress(),
-    //                 computer.getPort(),
-    //                 computer.getPcUsername(),
-    //                 computer.getPassword()
-    //             );
-    //             String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
-    //             List<Map<String, String>> updatedRules = parseUfwOutput(statusOutput);
-    //             response.put("firewallRules", updatedRules);
-    //         } else {
-    //             response.put("success", false);
-    //             response.put("message", "Failed to add rule: " + result);
-    //         }
-            
-    //     } catch (Exception e) {
-    //         response.put("success", false);
-    //         response.put("message", "Error adding firewall rule: " + e.getMessage());
-    //         e.printStackTrace();
-    //     }
-        
-    //     return response;
-    // }
     
-    /**
-     * Handle form submission for deleting a firewall rule
-     */
-
     private List<Map<String, String>> parseUfwOutput(String ufwOutput) {
         List<Map<String, String>> firewallRules = new ArrayList<>();
 
@@ -362,11 +273,11 @@ public class MachineController {
             // Parse the "From" field (source IP)
             String sourceIp = from;
             if (from.equals("Anywhere") || from.equals("Anywhere (v6)")) {
-                sourceIp = (ipVersion.equals("IPv6")) ? "::/0" : "0.0.0.0/0";
+                // sourceIp = (ipVersion.equals("IPv6")) ? "::/0" : "0.0.0.0/0";
             }
 
             // Destination IP (UFW typically applies to the local machine, so we can set it as "any" or the machine's IP)
-            String destinationIp = "0.0.0.0/0"; // Adjust this if you know the machine's IP
+            String destinationIp = ""; // Adjust this if you know the machine's IP
 
             // Create a rule map
             Map<String, String> rule = new HashMap<>();
@@ -496,7 +407,7 @@ public class MachineController {
             // Fetch logs if logging is ON
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S cat /var/log/ufw.log.1 | tail -n 10";
+                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tac /var/log/ufw.log | head -n 10";
                 String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
                 System.out.println("Raw logs output in getFirewallLogging: [" + logsOutput + "]");
 

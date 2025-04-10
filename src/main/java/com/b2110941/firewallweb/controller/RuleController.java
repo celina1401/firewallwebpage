@@ -1,8 +1,12 @@
 package com.b2110941.firewallweb.controller;
 
 import com.b2110941.firewallweb.model.PC;
+import com.b2110941.firewallweb.service.ConnectSSH;
 import com.b2110941.firewallweb.service.PCService;
 import com.b2110941.firewallweb.service.UFWService;
+import com.b2110941.firewallweb.service.UbuntuInfo;
+import com.jcraft.jsch.Session;
+
 import jakarta.servlet.http.HttpSession;
 
 import java.util.Map;
@@ -20,6 +24,12 @@ public class RuleController {
 
     @Autowired
     private UFWService ufwService;
+
+    @Autowired
+    private ConnectSSH connectSSH;
+
+    @Autowired
+    private UbuntuInfo ubuntuInfo;
 
     @PostMapping("/machine/{pcName}/rule")
     public String addFirewallRule(
@@ -79,7 +89,6 @@ public class RuleController {
         return "redirect:/machine/" + pcName + "/rule";
     }
 
-
     @DeleteMapping("/machine/deleteRule")
     @ResponseBody
     public Object deleteFirewallRule(
@@ -110,4 +119,73 @@ public class RuleController {
             return Map.of("success", false, "message", result);
         }
     }
+
+    // New endpoint to get the UFW app list
+    @PostMapping("/machine/{pcName}/app-list")
+    @ResponseBody
+    public String[] getUFWAppList(
+            @PathVariable("pcName") String pcName,
+            HttpSession session) {
+
+        // Check if user is logged in
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            return new String[] { "Error: Please login to your account!" };
+        }
+
+        // Find the PC by name and owner
+        Optional<PC> pcOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (pcOptional.isEmpty()) {
+            return new String[] { "Error: Computer " + pcName + " not found" };
+        }
+
+        PC pc = pcOptional.get();
+
+        // Call UFWService to get the app list
+        return ufwService.getUFWAppList(pc);
+    }
+
+    @PostMapping("/machine/{pcName}/interface-list")
+    @ResponseBody
+    public String[] getInterfaceList(
+            @PathVariable("pcName") String pcName,
+            HttpSession session) {
+        
+        // Check if user is logged in
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            return new String[] { "Error: Please login to your account!" };
+        }
+
+        // Find the PC by name and owner
+        Optional<PC> pcOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (pcOptional.isEmpty()) {
+            return new String[] { "Error: Computer " + pcName + " not found" };
+        }
+
+        PC pc = pcOptional.get();
+
+        try {
+            Session sshSession = connectSSH.establishSSH(
+                pc.getIpAddress(),
+                pc.getPort(),
+                pc.getPcUsername(),
+                pc.getPassword()
+            );
+
+            // Execute ip link command and parse output to get interface names
+            String command = "ip link | grep -E '^[0-9]+:' | cut -d: -f2 | awk '{print $1}'";
+            String output = ubuntuInfo.executeCommand(sshSession, command);
+            
+            if (output != null && !output.trim().isEmpty()) {
+                return output.trim().split("\n");
+            }
+            
+            return new String[] { "No interfaces found" };
+            
+        } catch (Exception e) {
+            return new String[] { "Error: " + e.getMessage() };
+        }
+    }
+
 }

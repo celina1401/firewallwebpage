@@ -58,34 +58,48 @@ public class UFWService {
                     .append(action).append(" ")
                     .append(direction).append(" ");
 
+            // ------------------ Handle Interface ------------------
+            if ("interface".equals(toType)) {
+                if (app == null || app.isEmpty()) {
+                    return "error: Interface name is required";
+                }
+                cmdBuilder.append("on ").append(app).append(" ");
+            }
+
             // ------------------ Handle FROM clause ------------------
-            if ("ipaddress".equals(fromType) && fromIp != null && !fromIp.isEmpty()) {
+            if ("ipaddress".equals(fromType)) {
+                if (fromIp == null || fromIp.isEmpty()) {
+                    return "error: Source IP address is required for fromType 'ipaddress'";
+                }
                 cmdBuilder.append("from ").append(fromIp).append(" ");
             } else {
                 cmdBuilder.append("from any ");
             }
 
             // ------------------ Handle TO clause ------------------
-            if ("ipaddress".equals(toType) && toIp != null && !toIp.isEmpty()) {
+            if ("ipaddress".equals(toType)) {
+                if (toIp == null || toIp.isEmpty()) {
+                    return "error: Destination IP address is required for toType 'ipaddress'";
+                }
                 cmdBuilder.append("to ").append(toIp).append(" ");
-            } else if ("range".equals(toType) && toRangeStart != null && !toRangeStart.isEmpty()) {
-                // Assume CIDR format input like 192.168.1.0/24
+            } else if ("range".equals(toType)) {
+                if (toRangeStart == null || toRangeStart.isEmpty()) {
+                    return "error: Range start is required for toType 'range'";
+                }
                 cmdBuilder.append("to ").append(toRangeStart).append(" ");
-            } else if (!"app".equals(toType) && !"interface".equals(toType)) {
+            } else if (!"app".equals(toType)) {
                 cmdBuilder.append("to any ");
             }
 
-            // ------------------ Handle Interface or App ------------------
-            if ("app".equals(toType) && app != null && !app.isEmpty()) {
+            // ------------------ Handle App ------------------
+            if ("app".equals(toType)) {
+                if (app == null || app.isEmpty()) {
+                    return "error: Application name is required for toType 'app'";
+                }
                 cmdBuilder.append("app \"").append(app).append("\" ");
             }
 
-            if ("interface".equals(toType) && app != null && !app.isEmpty()) {
-                cmdBuilder.append("on ").append(app).append(" ");
-            }
-
-            // ------------------ Handle Port and Protocol ------------------            
-            // Handle port or port range first
+            // ------------------ Handle Port and Protocol ------------------
             if (port != null && !port.isEmpty()) {
                 cmdBuilder.append("port ").append(port).append(" ");
             } else if (toRangeStart != null && !toRangeStart.isEmpty()
@@ -93,13 +107,11 @@ public class UFWService {
                 if ("none".equals(protocol)) {
                     return "error: Port range requires a protocol (tcp/udp)";
                 }
-                // Make sure we're using the correct format for port range
                 cmdBuilder.append("port ").append(toRangeStart).append(":").append(toRangeEnd).append(" ");
                 logger.info("Adding port range: {}-{}", toRangeStart, toRangeEnd);
             }
 
-            // Then add protocol (only once)
-            if (!"none".equals(protocol)) {
+            if (!"none".equals(protocol) && protocol != null) {
                 cmdBuilder.append("proto ").append(protocol).append(" ");
             }
 
@@ -131,7 +143,7 @@ public class UFWService {
             } else if (output.contains("ERROR")) {
                 result = "error: " + output;
             } else {
-                result = "success";
+                result = "success"; // Mặc định thành công nếu không có lỗi rõ ràng
             }
 
             channel.disconnect();
@@ -313,4 +325,53 @@ public class UFWService {
         // and return an array of FirewallRule objects
         return new FirewallRule[0]; // Placeholder
     }
+
+    public String[] getUFWAppList(PC pc) {
+        StringBuilder outBuilder = new StringBuilder();
+        try {
+            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+
+            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw app list";
+            channel.setCommand(command);
+            InputStream in = channel.getInputStream();
+            channel.connect();
+
+            byte[] tmp = new byte[1024];
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0) {
+                        break;
+                    }
+                    outBuilder.append(new String(tmp, 0, i));
+                }
+                if (channel.isClosed()) {
+                    break;
+                }
+            }
+            String output = outBuilder.toString();
+            System.out.println(output);
+
+            String[] lines = output.split("\n");
+            java.util.List<String> appList = new java.util.ArrayList<>();
+            boolean started = false;
+            for (String line : lines) {
+                if (line.trim().startsWith("Available applications:")) {
+                    started = true;
+                    continue;
+                }
+                if (started && !line.trim().isEmpty()) {
+                    appList.add(line.trim());
+                }
+            }
+            return appList.toArray(new String[0]);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new String[0]; // Placeholder
+    }
+
 }
