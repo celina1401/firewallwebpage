@@ -279,7 +279,7 @@ public class HomeController {
 
         PC pc = pcOpt.get();
         try {
-            Thread.sleep(15000); // Sleep for 5 seconds
+            Thread.sleep(15000); // Sleep for 15 seconds
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             System.out.println("Status check was interrupted: " + e.getMessage());
@@ -287,6 +287,92 @@ public class HomeController {
         updateComputerStatus(pc); // Update the status
 
         return pc; // Return the PC with updated status
+    }
+
+    @GetMapping("/api/ufw-status/{username}/{pcName}")
+    @ResponseBody
+    public java.util.Map<String, Object> checkUFWStatus(
+            @PathVariable String username,
+            @PathVariable String pcName,
+            HttpSession session) {
+        
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        
+        // Verify user authentication
+        String sessionUsername = (String) session.getAttribute("username");
+        if (sessionUsername == null || !sessionUsername.equals(username)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+        
+        // Find the PC
+        Optional<PC> pcOpt = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+        if (pcOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found");
+        }
+        
+        PC pc = pcOpt.get();
+        
+        try {
+            Session sshSession = connectSSH.establishSSH(
+                    pc.getIpAddress(),
+                    pc.getPort(),
+                    pc.getPcUsername(),
+                    pc.getPassword());
+            
+            if (sshSession == null || !sshSession.isConnected()) {
+                response.put("success", false);
+                response.put("message", "Failed to establish SSH connection");
+                return response;
+            }
+            
+            // Check UFW status
+            String ufwStatusCommand = "echo '" + pc.getPassword() + "' | sudo -S ufw status";
+            
+            com.jcraft.jsch.ChannelExec channel = (com.jcraft.jsch.ChannelExec) sshSession.openChannel("exec");
+            channel.setCommand(ufwStatusCommand);
+            
+            java.io.InputStream in = channel.getInputStream();
+            channel.connect();
+            
+            byte[] tmp = new byte[1024];
+            StringBuilder output = new StringBuilder();
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0) break;
+                    output.append(new String(tmp, 0, i));
+                }
+                if (channel.isClosed()) {
+                    break;
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (Exception ee) {
+                    // Ignore
+                }
+            }
+            
+            channel.disconnect();
+            sshSession.disconnect();
+            
+            String ufwOutput = output.toString();
+            boolean isActive = ufwOutput.contains("Status: active");
+            
+            response.put("success", true);
+            response.put("ufwActive", isActive);
+            response.put("status", isActive ? "ON" : "OFF");
+            response.put("rawOutput", ufwOutput);
+            
+            System.out.println("UFW Status for " + pc.getPcName() + ": " + 
+                    (isActive ? "ON" : "OFF"));
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error checking UFW status: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return response;
     }
 
     private void updateComputerStatus(PC computer) {
@@ -299,6 +385,54 @@ public class HomeController {
 
             boolean isConnected = sshSession != null && sshSession.isConnected();
             computer.setSshStatus(isConnected);
+
+            // Check UFW status if SSH is connected
+            if (isConnected) {
+                try {
+                    // Check UFW status
+                    String ufwStatusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
+                    
+                    com.jcraft.jsch.ChannelExec channel = (com.jcraft.jsch.ChannelExec) sshSession.openChannel("exec");
+                    channel.setCommand(ufwStatusCommand);
+                    
+                    java.io.InputStream in = channel.getInputStream();
+                    channel.connect();
+                    
+                    byte[] tmp = new byte[1024];
+                    StringBuilder output = new StringBuilder();
+                    while (true) {
+                        while (in.available() > 0) {
+                            int i = in.read(tmp, 0, 1024);
+                            if (i < 0) break;
+                            output.append(new String(tmp, 0, i));
+                        }
+                        if (channel.isClosed()) {
+                            break;
+                        }
+                        try {
+                            Thread.sleep(100);
+                        } catch (Exception ee) {
+                            // Ignore
+                        }
+                    }
+                    
+                    channel.disconnect();
+                    
+                    String ufwOutput = output.toString();
+                    boolean isUfwActive = ufwOutput.contains("Status: active");
+                    
+                    // Store UFW status in the PC object
+                    computer.setUfwStatus(isUfwActive ? "ON" : "OFF");
+                    
+                    System.out.println("UFW Status for " + computer.getPcName() + ": " + 
+                            (isUfwActive ? "ON" : "OFF"));
+                } catch (Exception e) {
+                    System.out.println("Error checking UFW status: " + e.getMessage());
+                    computer.setUfwStatus("UNKNOWN");
+                }
+            } else {
+                computer.setUfwStatus("UNKNOWN");
+            }
 
             // Update in database
             pcRepository.save(computer);
@@ -313,6 +447,7 @@ public class HomeController {
         } catch (Exception e) {
             System.out.println("Error checking SSH status for " + computer.getPcName() + ": " + e.getMessage());
             computer.setSshStatus(false);
+            computer.setUfwStatus("UNKNOWN");
             pcRepository.save(computer);
         }
     }

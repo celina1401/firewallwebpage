@@ -18,7 +18,17 @@ public class PC {
     private String password;
     private String ownerUsername;
     private boolean sshStatus;
-    private boolean ufwStatus;
+    // Add this field to your PC class
+    private String ufwStatus;
+    
+    // Add getter and setter
+    public String getUfwStatus() {
+        return ufwStatus;
+    }
+    
+    public void setUfwStatus(String ufwStatus) {
+        this.ufwStatus = ufwStatus;
+    }
     
     public PC() {   
     }
@@ -106,12 +116,5 @@ public class PC {
         this.sshStatus = sshStatus;
     }
 
-    public boolean isUfwStatus() { // Getter cho ufwStatus
-        return ufwStatus;
-    }
-
-    public void setUfwStatus(boolean ufwStatus) {
-        this.ufwStatus = ufwStatus;
-    }
     
 }
