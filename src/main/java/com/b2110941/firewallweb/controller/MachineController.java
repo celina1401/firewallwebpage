@@ -33,8 +33,6 @@ public class MachineController {
     private ConnectSSH connectSSH;
     @Autowired
     private userRepository userRepository;
-    @Autowired
-    private UFWService ufwService;
 
     @GetMapping("/machine/{pcName}")
     public String showMachinePage(
@@ -137,15 +135,42 @@ public class MachineController {
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
-                    computer.getPassword()
-            );            
+                    computer.getPassword());
             System.out.println("Ket noi thanh cong line 139");
 
             Map<String, String> systemInfo = new HashMap<>();
-            systemInfo.put("CPU", ubuntuInfo.executeCommand(sshSession, "lscpu | grep 'Model name' | awk -F ':' '{print $2}'").trim());
+            systemInfo.put("CPU", ubuntuInfo
+                    .executeCommand(sshSession, "lscpu | grep 'Model name' | awk -F ':' '{print $2}'").trim());
             systemInfo.put("RAM", ubuntuInfo.executeCommand(sshSession, "free -h | grep 'Mem:' | awk '{print $2}'"));
-            systemInfo.put("Ubuntu Version", ubuntuInfo.executeCommand(sshSession, "lsb_release -d | awk -F ':' '{print $2}'"));
+            systemInfo.put("Ubuntu Version",
+                    ubuntuInfo.executeCommand(sshSession, "lsb_release -d | awk -F ':' '{print $2}'"));
             model.addAttribute("systemInfo", systemInfo);
+
+            String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S systemctl is-active rsyslog";
+            String rsyslogStatus = ubuntuInfo.executeCommand(sshSession, statusCommand).trim();
+            System.out.println(rsyslogStatus);
+            String systemLoggingStatus = "UNKNOWN";
+            if ("active".equals(rsyslogStatus)) {
+                systemLoggingStatus = "ON";
+            } else if ("inactive".equals(rsyslogStatus)) {
+                systemLoggingStatus = "OFF";
+            }
+            model.addAttribute("systemLoggingStatus", systemLoggingStatus);
+
+            List<Map<String, String>> systemLogs = new ArrayList<>();
+            if ("ON".equals(systemLoggingStatus)) {
+                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tac /var/log/syslog | head -n 10";
+                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                if (logsOutput == null || logsOutput.trim().isEmpty()) {
+                    model.addAttribute("systemLogMessage", "No log entries found in /var/log/syslog");
+                } else {
+                    systemLogs = parseSystemLogs(logsOutput);
+                    if (systemLogs.isEmpty()) {
+                        model.addAttribute("systemLogMessage", "No log entries parsed from /var/log/syslog");
+                    }
+                }
+            }
+            model.addAttribute("systemLogs", systemLogs);
         } catch (JSchException e) {
             model.addAttribute("error", "Không thể kết nối SSH tới " + pcName + ": " + e.getMessage());
         } catch (Exception e) {
@@ -156,6 +181,176 @@ public class MachineController {
             return "machine :: section(menuOption='information')";
         }
         return "machine";
+    }
+
+    @PostMapping("/machine/{pcName}/toggle-system-logging")
+    @ResponseBody
+    public Map<String, Object> toggleSystemLogging(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("enable") boolean enable,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
+        }
+
+        try {
+            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+            if (computerOptional.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Computer " + pcName + " not found");
+                return response;
+            }
+
+            PC computer = computerOptional.get();
+            Session sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword());
+            System.out.println("SSH connection established for toggle system logging");
+
+            // Toggle rsyslog service
+            String enableCommand = enable
+                    ? "echo '" + computer.getPassword() + "' | sudo -S systemctl enable rsyslog"
+                    : "echo '" + computer.getPassword() + "' | sudo -S systemctl disable rsyslog";
+            String startStopCommand = enable
+                    ? "echo '" + computer.getPassword() + "' | sudo -S systemctl start rsyslog"
+                    : "echo '" + computer.getPassword() + "' | sudo -S systemctl stop rsyslog";
+
+            // Execute enable/disable
+            String enableResult = ubuntuInfo.executeCommand(sshSession, enableCommand);
+            System.out.println("Enable/Disable command: " + enableCommand);
+            System.out.println("Enable/Disable result: [" + enableResult + "]");
+            if (enableResult != null && (enableResult.toLowerCase().contains("failed")
+                    || enableResult.toLowerCase().contains("error"))) {
+                response.put("success", false);
+                response.put("message", "Failed to enable/disable rsyslog: " + enableResult);
+                return response;
+            }
+
+            // Execute start/stop
+            String startStopResult = ubuntuInfo.executeCommand(sshSession, startStopCommand);
+            System.out.println("Start/Stop command: " + startStopCommand);
+            System.out.println("Start/Stop result: [" + startStopResult + "]");
+            if (startStopResult != null && (startStopResult.toLowerCase().contains("failed")
+                    || startStopResult.toLowerCase().contains("error"))) {
+                response.put("success", false);
+                response.put("message", "Failed to start/stop rsyslog: " + startStopResult);
+                return response;
+            }
+
+            // Clear logs when disabling
+            if (!enable) {
+                String clearLogCommand = "echo '" + computer.getPassword()
+                        + "' | sudo -S truncate -s 0 /var/log/syslog";
+                String clearResult = ubuntuInfo.executeCommand(sshSession, clearLogCommand);
+                System.out.println("Clear log command: " + clearLogCommand);
+                System.out.println("Clear log result: [" + clearResult + "]");
+            }
+
+            // Fetch updated rsyslog status
+            String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S systemctl is-active rsyslog";
+            String rsyslogStatus = ubuntuInfo.executeCommand(sshSession, statusCommand).trim().toLowerCase();
+            System.out.println("Raw rsyslog status after toggle: [" + rsyslogStatus + "]");
+
+            String systemLoggingStatus = "UNKNOWN";
+            if ("active".equals(rsyslogStatus)) {
+                systemLoggingStatus = "ON";
+            } else if ("inactive".equals(rsyslogStatus)) {
+                systemLoggingStatus = "OFF";
+            } else {
+                response.put("success", false);
+                response.put("message", "Unexpected rsyslog status after toggle: " + rsyslogStatus);
+                return response;
+            }
+
+            List<Map<String, String>> systemLogs = new ArrayList<>();
+            if ("ON".equals(systemLoggingStatus)) {
+                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S cat /var/log/syslog | tail -n 10";
+                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                System.out.println("Raw system logs output after toggle: [" + logsOutput + "]");
+
+                if (logsOutput != null && !logsOutput.trim().isEmpty()) {
+                    systemLogs = parseSystemLogs(logsOutput);
+                }
+            }
+
+            response.put("success", true);
+            response.put("message", "System logging " + (enable ? "enabled" : "disabled"));
+            response.put("systemLoggingStatus", systemLoggingStatus);
+            response.put("systemLogs", systemLogs);
+            if (systemLogs.isEmpty()) {
+                response.put("systemLogMessage", "No logs found in /var/log/syslog");
+            }
+
+        } catch (JSchException e) {
+            response.put("success", false);
+            response.put("message", "SSH connection failed: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error toggling system logging: " + e.getMessage());
+            e.printStackTrace();
+        }
+        System.out.println("Toggle response: " + response);
+        return response;
+    }
+
+    private List<Map<String, String>> parseSystemLogs(String logsOutput) {
+        List<Map<String, String>> logs = new ArrayList<>();
+        if (logsOutput == null || logsOutput.trim().isEmpty()) {
+            return logs;
+        }
+
+        String[] lines = logsOutput.split("\n");
+        for (String line : lines) {
+            Map<String, String> logEntry = new HashMap<>();
+            // System.out.println("Parsing system log line: " + line);
+
+            // Tìm vị trí kết thúc của timestamp (dấu chấm đầu tiên trước mili giây)
+            int timestampEnd = line.indexOf(".");
+            if (timestampEnd > 0) {
+                // Lấy phần timestamp đầy đủ (bao gồm múi giờ)
+                String fullTimestamp = line.substring(0, timestampEnd);
+                // Thay thế 'T' bằng khoảng trắng để định dạng dễ đọc
+                String timestamp = fullTimestamp.replace('T', ' ');
+                logEntry.put("timestamp", timestamp);
+
+                // Tách phần còn lại của dòng log sau timestamp và múi giờ
+                int firstSpaceAfterTimestamp = line.indexOf(" ", timestampEnd);
+                if (firstSpaceAfterTimestamp > 0) {
+                    // Lấy hostname (phần giữa timestamp và service)
+                    int hostnameEnd = line.indexOf(" ", firstSpaceAfterTimestamp + 1);
+                    if (hostnameEnd > firstSpaceAfterTimestamp) {
+                        String hostname = line.substring(firstSpaceAfterTimestamp + 1, hostnameEnd);
+                        logEntry.put("hostname", hostname);
+
+                        // Lấy service (phần giữa hostname và dấu hai chấm)
+                        int serviceEnd = line.indexOf(":", hostnameEnd);
+                        if (serviceEnd > hostnameEnd) {
+                            String service = line.substring(hostnameEnd + 1, serviceEnd);
+                            logEntry.put("service", service);
+
+                            // Lấy message (phần còn lại sau dấu hai chấm)
+                            String message = line.substring(serviceEnd + 1).trim();
+                            logEntry.put("message", message);
+                        } else {
+                            // Nếu không có dấu hai chấm, message có thể rỗng
+                            logEntry.put("service", line.substring(hostnameEnd + 1).trim());
+                            logEntry.put("message", "");
+                        }
+                    }
+                }
+
+                // Thêm logEntry vào danh sách logs
+                logs.add(logEntry);
+            }
+        }
+        return logs;
     }
 
     // 📌 API lấy danh sách quy tắc UFW và trạng thái firewall qua SSH
@@ -187,8 +382,7 @@ public class MachineController {
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
-                    computer.getPassword()
-            );
+                    computer.getPassword());
             // System.out.println("Kết nối SSH thành công");
 
             String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
@@ -222,7 +416,7 @@ public class MachineController {
         }
         return "machine";
     }
-    
+
     private List<Map<String, String>> parseUfwOutput(String ufwOutput) {
         List<Map<String, String>> firewallRules = new ArrayList<>();
 
@@ -276,7 +470,8 @@ public class MachineController {
                 // sourceIp = (ipVersion.equals("IPv6")) ? "::/0" : "0.0.0.0/0";
             }
 
-            // Destination IP (UFW typically applies to the local machine, so we can set it as "any" or the machine's IP)
+            // Destination IP (UFW typically applies to the local machine, so we can set it
+            // as "any" or the machine's IP)
             String destinationIp = ""; // Adjust this if you know the machine's IP
 
             // Create a rule map
@@ -320,8 +515,7 @@ public class MachineController {
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
-                    computer.getPassword()
-            );
+                    computer.getPassword());
             String command = enable
                     ? "echo '" + computer.getPassword() + "' | sudo -S sh -c \"echo y | ufw enable\""
                     : "echo '" + computer.getPassword() + "' | sudo -S ufw disable";
@@ -347,289 +541,4 @@ public class MachineController {
         }
         return response;
     }
-
-    @GetMapping("/machine/{pcName}/logging")
-    public String getFirewallLogging(
-            @PathVariable("pcName") String pcName,
-            Model model,
-            HttpSession session,
-            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
-        String ownerUsername = (String) session.getAttribute("username");
-        if (ownerUsername == null) {
-            model.addAttribute("error", "Please login your account");
-            return "redirect:/";
-        }
-
-        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-        if (computerOptional.isEmpty()) {
-            model.addAttribute("error", "Computer " + pcName + " not found");
-            model.addAttribute("currentMenu", "logging");
-            return "machine";
-        }
-
-        PC computer = computerOptional.get();
-        model.addAttribute("computer", computer);
-        model.addAttribute("currentMenu", "logging");
-
-        try {
-            Session sshSession = connectSSH.establishSSH(
-                    computer.getIpAddress(),
-                    computer.getPort(),
-                    computer.getPcUsername(),
-                    computer.getPassword()
-            );
-            System.out.println("SSH connection established successfully");
-
-            // Fetch logging status
-            String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status verbose";
-            String ufwVerbose = ubuntuInfo.executeCommand(sshSession, command);
-            System.out.println("UFW Status Output in getFirewallLogging: [" + ufwVerbose + "]");
-
-            // Set logging status
-            String loggingStatus = "UNKNOWN";
-            if (ufwVerbose != null && !ufwVerbose.trim().isEmpty()) {
-                String ufwVerboseLower = ufwVerbose.toLowerCase();
-                if (ufwVerboseLower.contains("logging: on")) {
-                    loggingStatus = "ON";
-                    model.addAttribute("loggingStatus", "ON");
-                } else if (ufwVerboseLower.contains("logging: off")) {
-                    loggingStatus = "OFF";
-                    model.addAttribute("loggingStatus", "OFF");
-                } else {
-                    System.out.println("Unexpected UFW status format. Full output: [" + ufwVerbose + "]");
-                }
-            } else {
-                System.out.println("UFW status output is null or empty. Possible SSH or sudo issue.");
-            }
-            System.out.println("Logging Status in getFirewallLogging: " + loggingStatus);
-            model.addAttribute("loggingStatus", loggingStatus);
-
-            // Fetch logs if logging is ON
-            List<Map<String, String>> ufwLogs = new ArrayList<>();
-            if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S tac /var/log/ufw.log | head -n 10";
-                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
-                System.out.println("Raw logs output in getFirewallLogging: [" + logsOutput + "]");
-
-                if (logsOutput == null || logsOutput.trim().isEmpty()) {
-                    model.addAttribute("logMessage", "No log entries found in /var/log/ufw.log");
-                } else {
-                    ufwLogs = parseUfwLogs(logsOutput);
-                    if (ufwLogs.isEmpty()) {
-                        model.addAttribute("logMessage", "No log entries found in /var/log/ufw.log");
-                    }
-                }
-            } else {
-                model.addAttribute("logMessage", "Logging is disabled. Enable logging to view logs.");
-            }
-            model.addAttribute("ufwLogs", ufwLogs);
-
-        } catch (JSchException e) {
-            model.addAttribute("error", "SSH connection failed: " + e.getMessage());
-            model.addAttribute("loggingStatus", "UNKNOWN");
-        } catch (Exception e) {
-            model.addAttribute("error", "Error retrieving firewall logs: " + e.getMessage());
-            model.addAttribute("loggingStatus", "UNKNOWN");
-            e.printStackTrace();
-        }
-
-        if ("XMLHttpRequest".equals(requestedWith)) {
-            return "machine :: section(menuOption='logging')";
-        }
-        return "machine";
-    }
-
-// Toggle logging status
-    @PostMapping("/machine/{pcName}/toggle-logging")
-    @ResponseBody
-    public Map<String, Object> toggleLogging(
-            @PathVariable("pcName") String pcName,
-            @RequestParam("enable") boolean enable,
-            HttpSession session) {
-        Map<String, Object> response = new HashMap<>();
-        String ownerUsername = (String) session.getAttribute("username");
-        if (ownerUsername == null) {
-            response.put("success", false);
-            response.put("message", "User not logged in");
-            return response;
-        }
-
-        try {
-            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-            if (computerOptional.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Computer " + pcName + " not found");
-                return response;
-            }
-
-            PC computer = computerOptional.get();
-            Session sshSession = connectSSH.establishSSH(
-                    computer.getIpAddress(),
-                    computer.getPort(),
-                    computer.getPcUsername(),
-                    computer.getPassword()
-            );
-            System.out.println("SSH connection established successfully");
-
-            // Test sudo privileges
-            String testSudoCommand = "echo '" + computer.getPassword() + "' | sudo -S whoami";
-            String testSudoOutput = ubuntuInfo.executeCommand(sshSession, testSudoCommand);
-            System.out.println("Test Sudo Command Output: " + testSudoOutput);
-            if (!"root".equals(testSudoOutput.trim())) {
-                throw new RuntimeException("Sudo privileges not granted. Expected 'root', got: " + testSudoOutput);
-            }
-
-            // Toggle logging
-            String command = enable
-                    ? "echo '" + computer.getPassword() + "' | sudo -S ufw logging on"
-                    : "echo '" + computer.getPassword() + "' | sudo -S ufw logging off";
-            String result = ubuntuInfo.executeCommand(sshSession, command);
-            System.out.println("Toggle logging result: " + result);
-
-            // Fetch updated logging status and logs
-            String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status verbose";
-            String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
-            System.out.println("UFW Status Output in toggleLogging: [" + statusOutput + "]");
-
-            String loggingStatus = "UNKNOWN";
-            if (statusOutput != null && !statusOutput.trim().isEmpty()) {
-                String statusOutputLower = statusOutput.toLowerCase();
-                if (statusOutputLower.contains("logging: on")) {
-                    loggingStatus = "ON";
-                } else if (statusOutputLower.contains("logging: off")) {
-                    loggingStatus = "OFF";
-                } else {
-                    System.out.println("Unexpected UFW status format in toggleLogging. Full output: [" + statusOutput + "]");
-                }
-            } else {
-                System.out.println("UFW status output is null or empty in toggleLogging. Possible SSH or sudo issue.");
-            }
-            System.out.println("Logging Status in toggleLogging: " + loggingStatus);
-
-            // Fetch logs if logging is ON
-            List<Map<String, String>> ufwLogs = new ArrayList<>();
-            if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword() + "' | sudo -S cat /var/log/ufw.log | tail -n 10";
-                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
-                System.out.println("Raw logs output in toggleLogging: [" + logsOutput + "]");
-
-                if (logsOutput != null && !logsOutput.trim().isEmpty()) {
-                    ufwLogs = parseUfwLogs(logsOutput);
-                }
-            }
-
-            response.put("success", true);
-            response.put("message", "Logging " + (enable ? "enabled" : "disabled"));
-            response.put("loggingStatus", loggingStatus);
-            response.put("ufwLogs", ufwLogs);
-            if (ufwLogs.isEmpty()) {
-                response.put("logMessage", "No logs found in /var/log/ufw.log");
-            }
-
-        } catch (JSchException e) {
-            response.put("success", false);
-            response.put("message", "SSH connection failed: " + e.getMessage());
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error toggling logging: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return response;
-    }
-
-    private List<Map<String, String>> parseUfwLogs(String logsOutput) {
-        List<Map<String, String>> logs = new ArrayList<>();
-        if (logsOutput == null || logsOutput.trim().isEmpty()) {
-            return logs;
-        }
-// Giả sử logsOutput chứa toàn bộ văn bản log
-        String[] lines = logsOutput.split("\n");
-
-        for (String line : lines) {
-            Map<String, String> logEntry = new HashMap<>();
-            System.out.println("Đang xử lý dòng: " + line); // Debug: in ra dòng đang xử lý
-
-            // Xử lý timestamp và hostname
-            int timestampEnd = line.indexOf(".");
-            if (timestampEnd > 0) {
-                String fullTimestamp = line.substring(0, timestampEnd);
-
-                // Extract only date and time (format: Dec 29 01:18:53)
-                String[] timestampParts = fullTimestamp.split("\\s+");
-                if (timestampParts.length > 0) {
-                    String timestamp = timestampParts[0].replace('T', ' ');
-                    logEntry.put("timestamp", timestamp);
-                } else {
-                    logEntry.put("timestamp", fullTimestamp); // Fallback to full timestamp if parsing fails
-                }
-                
-                // Tìm phần UFW và ACTION
-                int ufwIndex = line.indexOf("[UFW");
-                if (ufwIndex > 0) {
-                    int closeBracketIndex = line.indexOf("]", ufwIndex);
-                    if (closeBracketIndex > ufwIndex) {
-                        // Lấy toàn bộ phần từ [UFW đến ]
-                        String ufwPart = line.substring(ufwIndex + 1, closeBracketIndex);
-                        System.out.println("UFW part: " + ufwPart); // Debug
-
-                        // Tách phần UFW để lấy ACTION
-                        String[] ufwParts = ufwPart.split("\\s+", 2);
-                        if (ufwParts.length > 1) {
-                            String action = ufwParts[1];
-                            logEntry.put("action", action);
-                            System.out.println("Đã tìm thấy action: " + action); // Debug
-                        } else {
-                            logEntry.put("action", "UNDEFINED");
-                        }
-                    }
-                }
-
-                // Xử lý các thông tin khác
-                extractLogInfo(line, logEntry, "IN=", "interface");
-                extractLogInfo(line, logEntry, "SRC=", "sourceIp");
-                extractLogInfo(line, logEntry, "SPT=", "sourcePort");
-                extractLogInfo(line, logEntry, "DST=", "destinationIp");
-                extractLogInfo(line, logEntry, "DPT=", "destinationPort");
-                extractLogInfo(line, logEntry, "PROTO=", "protocol");
-
-                logs.add(logEntry);
-            }
-        }
-        // Phương thức hỗ trợ trích xuất thông tin
-
-        return logs;
-    }
-
-    private static void extractLogInfo(String line, Map<String, String> logEntry, String prefix, String key) {
-        int startIndex = line.indexOf(prefix);
-        String value;
-        if (startIndex >= 0) {
-            startIndex += prefix.length();
-            int endIndex = line.indexOf(" ", startIndex);
-            if (endIndex > startIndex) {
-                value = line.substring(startIndex, endIndex);
-                logEntry.put(key, value);
-            } else {
-                // Nếu đây là thành phần cuối cùng của dòng
-                value = line.substring(startIndex);
-                logEntry.put(key, value);
-            }
-
-            if (prefix.equals("PROTO=")) {
-                switch (value) {
-                    case "2":
-                        value = "IGMP";
-                        break;
-                    case "6":
-                        value = "TCP";
-                        break;
-                    case "17":
-                        value = "UDP";
-                        break;
-                }
-            }
-            logEntry.put(key, value);
-        }
-    }
-
 }

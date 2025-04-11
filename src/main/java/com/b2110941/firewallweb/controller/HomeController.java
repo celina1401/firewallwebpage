@@ -10,7 +10,6 @@ import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.JSchException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;

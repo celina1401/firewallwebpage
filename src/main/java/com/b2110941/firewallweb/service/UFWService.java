@@ -20,24 +20,6 @@ public class UFWService {
     @Autowired
     private ConnectSSH connectSSH;
 
-    /**
-     * Add a firewall rule based on form data from machine.html
-     * 
-     * @param pc           The PC to add the rule to
-     * @param action       The action (allow, deny, limit)
-     * @param isOutgoing   Whether the rule is for outgoing traffic
-     * @param protocol     The protocol (tcp, udp, icmp, none)
-     * @param toType       The destination type (any, range, app,
-     *                     ipaddress,interface)
-     * @param toIp         The destination IP address
-     * @param toRangeStart The start of port range
-     * @param toRangeEnd   The end of port range
-     * @param port         The port number
-     * @param fromType     The source type (any, ipaddress)
-     * @param fromIp       The source IP address
-     * @param app          The application name
-     * @return Result of the operation
-     */
     public String addRuleFromForm(PC pc, String action, boolean isOutgoing,
             String protocol, String toType, String toIp,
             String toRangeStart, String toRangeEnd, String port,
@@ -210,12 +192,6 @@ public class UFWService {
         return result;
     }
 
-    /**
-     * Get the status of UFW (enabled or disabled)
-     * 
-     * @param pc The PC to check
-     * @return "active" if UFW is enabled, "inactive" otherwise
-     */
     public String getUFWStatus(PC pc) {
         String result = "inactive";
         StringBuilder outBuilder = new StringBuilder();
@@ -259,13 +235,6 @@ public class UFWService {
         return result;
     }
 
-    /**
-     * Enable or disable UFW
-     * 
-     * @param pc     The PC to modify
-     * @param enable True to enable, false to disable
-     * @return Result of the operation
-     */
     public String toggleUFW(PC pc, boolean enable) {
         String result = "";
         StringBuilder outBuilder = new StringBuilder();
@@ -313,12 +282,6 @@ public class UFWService {
         return result;
     }
 
-    /**
-     * Get all firewall rules for a PC
-     * 
-     * @param pc The PC to get rules for
-     * @return Array of FirewallRule objects
-     */
     public FirewallRule[] getAllRules(PC pc) {
         // Implementation to get all rules
         // This would parse the output of 'sudo ufw status numbered'
