@@ -1,1882 +1,2056 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
-    <head>
-        <meta charset="UTF-8">
-        <link rel="icon" th:href="@{/images/favicon.png}" />
-        <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.min.css" />
-        <title>Machine Management</title>
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" th:href="@{/images/favicon.png}" />
+    <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.min.css" />
+    <title>Machine Management</title>
 
-        <!--        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
-        <script src="https://cdn.jsdelivr.net/npm/xterm@4.19.0/lib/xterm.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
-        <style>
-            /* Reset mặc định */
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
+    <!--        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/xterm@4.19.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
+    <style>
+        /* Reset mặc định */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        /* Side bar */
+        .sidebar {
+            width: 20vw;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar.collapsed {
+            width: 5vw;
+        }
+
+        .sidebar.collapsed .pc-name {
+            display: none;
+        }
+
+        .sidebar.collapsed .profile-icon {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .sidebar.collapsed .profile-icon img {
+            width: 3vw;
+            height: 3vw;
+            margin-bottom: 10px;
+        }
+
+        .sidebar.collapsed .menu-btn p {
+            display: none;
+        }
+
+        .sidebar.collapsed .menu-btn,
+        .sidebar.collapsed .power-button {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .sidebar.collapsed .menu-btn img,
+        .exit-icon {
+            margin: 0;
+            width: 32px;
+        }
+
+        /* Toggle btn */
+        .sidebar-toggle {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            width: 30px;
+            height: 30px;
+            background: #2c3e50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed .sidebar-toggle img {
+            transform: rotate(180deg);
+        }
+
+
+        /* Main container */
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* .profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        } */
+
+        .profile-icon img {
+            width: 10vw;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            transition: transform 0.3s ease;
+        }
+
+        .profile-icon img:hover {
+            transform: scale(1.05);
+        }
+
+        .pc-name {
+            margin: 30px 60px;
+            font-weight: bold;
+            font-size: 150%;
+            text-transform: uppercase;
+            text-align: center;
+            color: white;
+        }
+
+        /* Menu navigation */
+        .menu {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            margin: 5px 0;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-btn:hover,
+        .power-button:hover {
+            background: rgba(85, 113, 139, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .power-button {
+            display: flex;
+            justify-content: left;
+            align-items: center;
+            padding: 12px 25px;
+            gap: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 5px 0;
+            background: none;
+            border: none;
+            width: 100%;
+        }
+
+        .power-button img {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed .power-button p {
+            display: none;
+            /* Only hide text when sidebar is collapsed */
+        }
+
+        .menu-btn.active {
+            background: rgba(85, 113, 139, 0.5);
+            font-weight: bold;
+        }
+
+        .menu-btn img {
+            width: 32px;
+        }
+
+        .menu-btn:hover img {
+            transform: none;
+        }
+
+        /* Footer section */
+        .footer {
+            width: 100%;
+            margin-top: auto;
+            padding-bottom: 20px;
+        }
+
+        .power-button p {
+            color: white;
+            display: bl;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            padding: 3%;
+            overflow-y: auto;
+        }
+
+        .section {
+            align-items: center;
+            height: 100%;
+            /*background-color: #f3f4f6;*/
+        }
+
+        .section h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .section-title {
+            font-size: 28px;
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /*info option*/
+        .info-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .info-content {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: left;
+            border-left: 5px solid #3498db;
+            /* Thêm viền nổi bật */
+        }
+
+        /* Các dòng thông tin */
+        .info-content p {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        /* Làm đậm phần tiêu đề */
+        .info-content strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        /* Hiệu ứng hover */
+        .info-content:hover {
+            transform: translateY(-3px);
+            transition: 0.3s ease-in-out;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .system-info {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            text-align: left;
+            border-left: 5px solid #e67e22;
+            /* Viền màu cam để phân biệt */
+        }
+
+        /* Các dòng thông tin */
+        .system-info p {
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        /* Làm đậm phần tiêu đề */
+        .system-info strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        /* Hiệu ứng hover */
+        .system-info:hover {
+            transform: translateY(-3px);
+            transition: 0.3s ease-in-out;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .error-message {
+            color: white;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #dc3545;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        /*Firewall rules*/
+        /* Rule table styles */
+        .rule-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        .rule-table-container {
+            width: 62%;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            overflow-x: auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .rule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .rule-table th,
+        .rule-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .rule-table th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+        }
+
+        .rule-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .rule-table td {
+            font-size: 16px;
+            color: #333;
+        }
+
+        /*logging table*/
+        .logging-table-container {
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .logging-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .logging-table th,
+        .logging-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .logging-table th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+        }
+
+        .logging-table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .logging-table td {
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* table sys log */
+        .logging-sys-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .logging-sys-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .logging-sys-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .logging-sys-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .logging-sys-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .logging-sys-table tr:hover {
+            background-color: #f0f7ff;
+        }
+
+        /* Column widths for system logs table */
+        .logging-sys-table th:nth-child(1),
+        .logging-sys-table td:nth-child(1) {
+            width: 20%;
+            white-space: nowrap;
+        }
+
+        .logging-sys-table th:nth-child(2),
+        .logging-sys-table td:nth-child(2) {
+            width: 15%;
+            white-space: nowrap;
+        }
+
+        .logging-sys-table th:nth-child(3),
+        .logging-sys-table td:nth-child(3) {
+            width: 15%;
+            white-space: nowrap;
+        }
+
+        .logging-sys-table th:nth-child(4),
+        .logging-sys-table td:nth-child(4) {
+            width: 50%;
+            word-break: break-word;
+        }
+
+        .logging-table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        /* Edit/Delete buttons */
+        .edit-btn {
+            border: none;
+            border-radius: 8px;
+            background-color: #b0dafd;
+        }
+
+
+        .edit-btn:hover {
+            background-color: #3f81b9;
+        }
+
+        .delete-btn {
+            border: none;
+            border-radius: 8px;
+            background-color: #f19ca4;
+
+        }
+
+        .delete-btn:hover {
+            background-color: #b1333b;
+        }
+
+        .edit-btn img,
+        .delete-btn img {
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        /* Form styles for dynamic rule creation */
+        .add-rule-form {
+            transform: translate(72%, -50%);
+            height: fit-content;
+            position: fixed;
+            top: 53.5%;
+            left: 50%;
+            width: 27%;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .add-rule-form:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .add-rule-form h3 {
+            margin-bottom: 15px;
+            font-size: 25px;
+            text-align: center;
+            color: #2c3e50;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .add-rule-form h3:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: #3498db;
+            border-radius: 3px;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            font-size: 16px;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            background: #fff;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-group select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23464646' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 15px;
+            padding-right: 30px;
+        }
+
+        /* Hiệu ứng focus (đổi màu viền) */
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+
+        /* Styling for active labels */
+        .form-group input:focus+label,
+        .form-group input:not(:placeholder-shown)+label,
+        .form-group select:focus+label,
+        .form-group select:valid+label {
+            top: 0;
+            font-size: 12px;
+            color: #0e51ff;
+            font-weight: 600;
+            transform: translateY(-50%);
+        }
+
+        /* Checkbox styling */
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .form-group input[type="checkbox"]+label {
+            position: static;
+            transform: none;
+            pointer-events: auto;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Hidden fields */
+        .hidden {
+            display: none;
+        }
+
+        /* Submit button */
+        .add-rule-form .btn {
+            background: linear-gradient(to right, #2980b9, #3498db);
+            color: #fff;
+            border: none;
+            padding: 14px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-rule-form .btn:hover {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            box-shadow: 0 6px 15px rgba(41, 128, 185, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .add-rule-form .btn:active {
+            background: #1c638d;
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .add-rule-form .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .add-rule-form .btn:hover::before {
+            left: 100%;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .add-rule-form {
+                width: 90%;
+                padding: 20px;
             }
+        }
 
-            body {
-                font-family: Arial, sans-serif;
-                display: flex;
-                height: 100vh;
-                margin: 0;
-                background-color: #f0f0f0;
-            }
+        /* Input group for range selectors */
+        .range-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
 
-            /* Side bar */
+        .range-group input {
+            flex: 1;
+        }
+
+        .range-group span {
+            font-weight: bold;
+            color: #7f8c8d;
+        }
+
+        /* Protocol selector styling */
+        .protocol-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .protocol-option {
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .protocol-option input[type="radio"] {
+            display: none;
+        }
+
+        .protocol-option label {
+            display: block;
+            padding: 8px 12px;
+            background: #f1f1f1;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .protocol-option input[type="radio"]:checked+label {
+            background: #3498db;
+            color: white;
+        }
+
+        /*Switch*/
+        .toggle-container {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #2196F3;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            font-size: 16px;
+        }
+
+        /* Form styles */
+        .form-group {
+            position: relative;
+            /*margin: 20px 0;*/
+            width: 100%;
+        }
+
+        .form-group input {
+            width: 100%;
+            font-size: 16px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #0e51ff;
+        }
+
+        .form-group label {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            color: #999;
+            font-size: 16px;
+            background: white;
+            padding: 0 5px;
+        }
+
+        .form-group input:focus+label,
+        .form-group input:not(:placeholder-shown)+label {
+            top: 0;
+            font-size: 12px;
+            color: #0e51ff;
+            transform: translateY(-50%);
+        }
+
+        .checkbox-like {
+            display: inline-flex;
+            /* label & checkbox nằm ngang */
+            align-items: center;
+            /* canh giữa theo chiều dọc */
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            box-sizing: border-box;
+            cursor: pointer;
+            /* đổi con trỏ chuột thành pointer */
+        }
+
+        /* Style cho checkbox */
+        .checkbox-like input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            /* phóng to checkbox nếu thích */
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 18px;
+            background: #28A745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .btn:hover {
+            background: #218838;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            background: #1e7e34;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
             .sidebar {
-                width: 20vw;
-                min-height: 100vh;
-                background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-                color: white;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding-top: 20px;
-                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-                transition: width 0.3s ease;
-                position: relative;
+                width: 200px;
             }
 
-            .sidebar.collapsed {
-                width: 5vw;
-            }
-
-            .sidebar.collapsed .pc-name {
-                display: none;
-            }
-
-            .sidebar.collapsed .profile-icon {
-                display: flex;
-                justify-content: center;
-                margin: 10px 0;
-            }
-
-            .sidebar.collapsed .profile-icon img {
-                width: 3vw;
-                height: 3vw;
-                margin-bottom: 10px;
-            }
-
-            .sidebar.collapsed .menu-btn p {
-                display: none;
-            }
-
-            .sidebar.collapsed .menu-btn,
-            .sidebar.collapsed .power-button {
-                justify-content: center;
-                padding: 12px 0;
-            }
-
-            .sidebar.collapsed .menu-btn img,
-            .exit-icon {
-                margin: 0;
-                width: 32px;
-            }
-
-            /* Toggle btn */
-            .sidebar-toggle {
-                position: absolute;
-                right: -15px;
-                top: 50%;
-                width: 30px;
-                height: 30px;
-                background: #2c3e50;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-                z-index: 100;
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.collapsed .sidebar-toggle img {
-                transform: rotate(180deg);
-            }
-
-
-            /* Main container */
-            .container {
-                display: flex;
-                width: 100%;
-                height: 100%;
-            }
-
-            /* .profile {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-bottom: 20px;
+            /* .profile-icon img {
+                width: 120px;
+                height: 120px;
             } */
 
-            .profile-icon img {
-                width: 10vw;
-                margin-bottom: 20px;
-                border-radius: 50%;
-                border: 3px solid #fff;
-                transition: transform 0.3s ease;
-            }
-
-            .profile-icon img:hover {
-                transform: scale(1.05);
-            }
-
             .pc-name {
-                margin: 30px 60px;
-                font-weight: bold;
-                font-size: 150%;
-                text-transform: uppercase;
-                text-align: center;
-                color: white;
+                margin: 20px 40px;
+                font-size: 130%;
             }
 
-            /* Menu navigation */
-            .menu {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                flex-grow: 1;
-            }
-
-            .menu-btn {
-                display: flex;
-                align-items: center;
-                gap: 15px;
-                padding: 12px 20px;
-                background: none;
-                border: none;
-                color: white;
-                font-size: 16px;
-                margin: 5px 0;
-                width: 100%;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-
-            .menu-btn:hover,
-            .power-button:hover {
-                background: rgba(85, 113, 139, 0.5);
-                transform: translateY(-2px);
-            }
-
+            .menu-btn,
             .power-button {
-                display: flex;
-                justify-content: left;
-                align-items: center;
-                padding: 12px 25px;
-                gap: 15px;
-                transition: all 0.3s ease;
-                cursor: pointer;
-                border-radius: 8px;
-                margin: 5px 0;
-                background: none;
-                border: none;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
                 width: 100%;
+                height: auto;
+                padding-top: 10px;
             }
 
-            .power-button img {
-                width: 24px;
-                height: 24px;
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.collapsed .power-button p {
-                display: none;
-                /* Only hide text when sidebar is collapsed */
-            }
-
-            .menu-btn.active {
-                background: rgba(85, 113, 139, 0.5);
-                font-weight: bold;
-            }
-
-            .menu-btn img {
-                width: 32px;
-            }
-
-            .menu-btn:hover img {
-                transform: none;
-            }
-
-            /* Footer section */
-            .footer {
-                width: 100%;
-                margin-top: auto;
-                padding-bottom: 20px;
-            }
-
-            .power-button p {
-                color: white;
-                display: bl;
-            }
-
-            /* Content area */
             .content {
-                flex: 1;
-                padding: 3%;
-                overflow-y: auto;
-            }
-
-            .section {
-                align-items: center;
-                height: 100%;
-                /*background-color: #f3f4f6;*/
-            }
-
-            .section h1 {
-                margin-bottom: 20px;
-                color: #333;
-            }
-
-            .section-title {
-                font-size: 28px;
-                color: #2c3e50;
-                text-align: center;
-                margin-bottom: 20px;
-                font-weight: bold;
-            }
-
-            /*info option*/
-            .info-container {
-                margin-bottom: 30px;
-                display: flex;
-                flex-direction: row;
-                justify-content: space-around;
-                gap: 20px;
-            }
-
-            .info-content {
-                background: #ffffff;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                width: 100%;
-                text-align: left;
-                border-left: 5px solid #3498db;
-                /* Thêm viền nổi bật */
-            }
-
-            /* Các dòng thông tin */
-            .info-content p {
-                font-size: 18px;
-                color: #333;
-                margin: 10px 0;
-            }
-
-            /* Làm đậm phần tiêu đề */
-            .info-content strong {
-                color: #2c3e50;
-                font-weight: 600;
-            }
-
-            /* Hiệu ứng hover */
-            .info-content:hover {
-                transform: translateY(-3px);
-                transition: 0.3s ease-in-out;
-                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-            }
-
-            .system-info {
-                background: #ffffff;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                width: 100%;
-                text-align: left;
-                border-left: 5px solid #e67e22;
-                /* Viền màu cam để phân biệt */
-            }
-
-            /* Các dòng thông tin */
-            .system-info p {
-                font-size: 18px;
-                color: #333;
-                margin: 10px 0;
-            }
-
-            /* Làm đậm phần tiêu đề */
-            .system-info strong {
-                color: #2c3e50;
-                font-weight: 600;
-            }
-
-            /* Hiệu ứng hover */
-            .system-info:hover {
-                transform: translateY(-3px);
-                transition: 0.3s ease-in-out;
-                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-            }
-
-            .error-message {
-                color: white;
-                padding: 10px;
-                margin-bottom: 20px;
-                background-color: #dc3545;
-                border-radius: 5px;
-                text-align: center;
-            }
-
-            /*Firewall rules*/
-            /* Rule table styles */
-            .rule-layout {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 20px;
-                justify-content: space-between;
-            }
-
-            .rule-table-container {
-                width: 62%;
-                border-radius: 12px;
-                margin-bottom: 30px;
-                overflow-x: auto;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            }
-
-            .rule-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #ffffff;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                border-radius: 8px;
-            }
-
-            .rule-table th,
-            .rule-table td {
-                padding: 12px 15px;
-                text-align: left;
-                border-bottom: 1px solid #ddd;
-            }
-
-            .rule-table th {
-                background-color: #2c3e50;
-                color: white;
-                font-weight: 600;
-            }
-
-            .rule-table tr:hover {
-                background-color: #f5f5f5;
-            }
-
-            .rule-table td {
-                font-size: 16px;
-                color: #333;
-            }
-
-            /*logging table*/
-            .logging-table-container {
-                margin-bottom: 30px;
-                overflow-x: auto;
-            }
-
-            .logging-table {
-                width: 100%;
-                border-collapse: collapse;
-                background: #ffffff;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-                border-radius: 8px;
-            }
-
-            .logging-table th,
-            .logging-table td {
-                padding: 12px 15px;
-                text-align: left;
-                border-bottom: 1px solid #ddd;
-            }
-
-            .logging-table th {
-                background-color: #2c3e50;
-                color: white;
-                font-weight: 600;
-            }
-
-            .logging-table tr:hover {
-                background-color: #f5f5f5;
-            }
-
-            .logging-table td {
-                font-size: 16px;
-                color: #333;
-            }
-
-            /* Edit/Delete buttons */
-            .edit-btn {
-                border: none;
-                border-radius: 8px;
-                background-color: #b0dafd;
-            }
-
-
-            .edit-btn:hover {
-                background-color: #3f81b9;
-            }
-
-            .delete-btn {
-                border: none;
-                border-radius: 8px;
-                background-color: #f19ca4;
-
-            }
-
-            .delete-btn:hover {
-                background-color: #b1333b;
-            }
-
-            .edit-btn img,
-            .delete-btn img {
-                padding: 6px 12px;
-                border: none;
-                cursor: pointer;
-                transition: background 0.2s ease;
-            }
-
-            /* Form styles for dynamic rule creation */
-            .add-rule-form {
-                transform: translate(72%, -50%);
-                height: fit-content;
-                position: fixed;
-                top: 53.5%;
-                left: 50%;
-                width: 27%;
-                margin: 20px auto;
-                background: #ffffff;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease;
-            }
-
-            .add-rule-form:hover {
-                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-            }
-
-            .add-rule-form h3 {
-                margin-bottom: 15px;
-                font-size: 25px;
-                text-align: center;
-                color: #2c3e50;
-                font-weight: 600;
-                position: relative;
-                padding-bottom: 10px;
-            }
-
-            .add-rule-form h3:after {
-                content: "";
-                position: absolute;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 80px;
-                height: 3px;
-                background: #3498db;
-                border-radius: 3px;
-            }
-
-            .form-group {
-                position: relative;
-                margin-bottom: 18px;
-            }
-
-            .form-group input,
-            .form-group select {
-                width: 100%;
-                font-size: 16px;
-                padding: 12px 15px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                outline: none;
-                background: #fff;
-                transition: all 0.3s;
-                box-sizing: border-box;
-            }
-
-            .form-group select {
-                appearance: none;
-                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23464646' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-                background-repeat: no-repeat;
-                background-position: right 10px center;
-                background-size: 15px;
-                padding-right: 30px;
-            }
-
-            /* Hiệu ứng focus (đổi màu viền) */
-            .form-group input:focus,
-            .form-group select:focus {
-                border-color: #3498db;
-                box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-            }
-
-
-            /* Styling for active labels */
-            .form-group input:focus+label,
-            .form-group input:not(:placeholder-shown)+label,
-            .form-group select:focus+label,
-            .form-group select:valid+label {
-                top: 0;
-                font-size: 12px;
-                color: #0e51ff;
-                font-weight: 600;
-                transform: translateY(-50%);
-            }
-
-            /* Checkbox styling */
-            .form-group input[type="checkbox"] {
-                width: auto;
-                margin-right: 10px;
-                cursor: pointer;
-            }
-
-            .form-group input[type="checkbox"]+label {
-                position: static;
-                transform: none;
-                pointer-events: auto;
-                background: none;
-                padding: 0;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-            }
-
-            /* Hidden fields */
-            .hidden {
-                display: none;
-            }
-
-            /* Submit button */
-            .add-rule-form .btn {
-                background: linear-gradient(to right, #2980b9, #3498db);
-                color: #fff;
-                border: none;
-                padding: 14px 25px;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: 600;
-                width: 100%;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 10px rgba(41, 128, 185, 0.3);
-                text-transform: uppercase;
-                letter-spacing: 1px;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .add-rule-form .btn:hover {
-                background: linear-gradient(to right, #3498db, #2980b9);
-                box-shadow: 0 6px 15px rgba(41, 128, 185, 0.4);
-                transform: translateY(-2px);
-            }
-
-            .add-rule-form .btn:active {
-                background: #1c638d;
-                transform: translateY(0);
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            }
-
-            .add-rule-form .btn::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-                transition: 0.5s;
-            }
-
-            .add-rule-form .btn:hover::before {
-                left: 100%;
-            }
-
-            /* Responsive adjustments */
-            @media (max-width: 768px) {
-                .add-rule-form {
-                    width: 90%;
-                    padding: 20px;
-                }
-            }
-
-            /* Input group for range selectors */
-            .range-group {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-            }
-
-            .range-group input {
-                flex: 1;
-            }
-
-            .range-group span {
-                font-weight: bold;
-                color: #7f8c8d;
-            }
-
-            /* Protocol selector styling */
-            .protocol-selector {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-                margin-top: 5px;
-            }
-
-            .protocol-option {
-                flex: 1;
-                min-width: 80px;
-                text-align: center;
-            }
-
-            .protocol-option input[type="radio"] {
-                display: none;
-            }
-
-            .protocol-option label {
-                display: block;
-                padding: 8px 12px;
-                background: #f1f1f1;
-                border-radius: 5px;
-                cursor: pointer;
-                transition: all 0.3s;
-            }
-
-            .protocol-option input[type="radio"]:checked+label {
-                background: #3498db;
-                color: white;
-            }
-
-            /*Switch*/
-            .toggle-container {
-                margin: 10px 0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-
-            .switch {
-                position: relative;
-                display: inline-block;
-                width: 60px;
-                height: 34px;
-            }
-
-            .switch input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-
-            .slider {
-                position: absolute;
-                cursor: pointer;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: #ccc;
-                transition: .4s;
-                border-radius: 34px;
-            }
-
-            .slider:before {
-                position: absolute;
-                content: "";
-                height: 26px;
-                width: 26px;
-                left: 4px;
-                bottom: 4px;
-                background-color: white;
-                transition: .4s;
-                border-radius: 50%;
-            }
-
-            input:checked+.slider {
-                background-color: #2196F3;
-            }
-
-            input:checked+.slider:before {
-                transform: translateX(26px);
-            }
-
-            .toggle-label {
-                font-size: 16px;
-            }
-
-            /* Form styles */
-            .form-group {
-                position: relative;
-                /*margin: 20px 0;*/
-                width: 100%;
-            }
-
-            .form-group input {
-                width: 100%;
-                font-size: 16px;
                 padding: 15px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                outline: none;
             }
+        }
+    </style>
+</head>
 
-            .form-group input:focus {
-                border-color: #0e51ff;
-            }
+<body>
+    <div class="container">
 
-            .form-group label {
-                position: absolute;
-                left: 15px;
-                top: 50%;
-                transform: translateY(-50%);
-                transition: all 0.3s ease;
-                pointer-events: none;
-                color: #999;
-                font-size: 16px;
-                background: white;
-                padding: 0 5px;
-            }
-
-            .form-group input:focus+label,
-            .form-group input:not(:placeholder-shown)+label {
-                top: 0;
-                font-size: 12px;
-                color: #0e51ff;
-                transform: translateY(-50%);
-            }
-
-            .checkbox-like {
-                display: inline-flex;
-                /* label & checkbox nằm ngang */
-                align-items: center;
-                /* canh giữa theo chiều dọc */
-                width: 100%;
-                padding: 12px 15px;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                background: #fff;
-                box-sizing: border-box;
-                cursor: pointer;
-                /* đổi con trỏ chuột thành pointer */
-            }
-
-            /* Style cho checkbox */
-            .checkbox-like input[type="checkbox"] {
-                margin-right: 10px;
-                transform: scale(1.2);
-                /* phóng to checkbox nếu thích */
-                cursor: pointer;
-            }
-
-            .btn {
-                padding: 15px 20px;
-                border-radius: 8px;
-                font-size: 18px;
-                background: #28A745;
-                color: white;
-                border: none;
-                cursor: pointer;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                transition: background 0.3s, box-shadow 0.3s;
-            }
-
-            .btn:hover {
-                background: #218838;
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            }
-
-            .btn:active {
-                background: #1e7e34;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            /* Responsive adjustments */
-            @media (max-width: 768px) {
-                .sidebar {
-                    width: 200px;
-                }
-
-                /* .profile-icon img {
-                    width: 120px;
-                    height: 120px;
-                } */
-
-                .pc-name {
-                    margin: 20px 40px;
-                    font-size: 130%;
-                }
-
-                .menu-btn,
-                .power-button {
-                    font-size: 16px;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .container {
-                    flex-direction: column;
-                }
-
-                .sidebar {
-                    width: 100%;
-                    height: auto;
-                    padding-top: 10px;
-                }
-
-                .content {
-                    padding: 15px;
-                }
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="container">
-
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-toggle" id="sidebarToggle">
-                    <img src="/images/toggle.png" alt="toggle" />
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-toggle" id="sidebarToggle">
+                <img src="/images/toggle.png" alt="toggle" />
+            </div>
+            <div class="profile">
+                <div class="profile-icon">
+                    <img src="/images/ubuntu.png" alt="Computer">
                 </div>
-                <div class="profile">
-                    <div class="profile-icon">
-                        <img src="/images/ubuntu.png" alt="Computer">
+                <h2 class="pc-name" th:text="${computer.pcName}">Computer (Tên computer)</h2>
+            </div>
+
+            <nav class="menu">
+                <button class="menu-btn" th:classappend="${currentMenu == 'information'} ? 'active' : ''"
+                    th:attr="data-pcname=${computer.pcName},data-menu='information'">
+                    <img src="/images/info.png" alt="information" />
+                    <p>INFORMATION</p>
+                </button>
+                <button class="menu-btn" th:classappend="${currentMenu == 'rule'} ? 'active' : ''"
+                    th:attr="data-pcname=${computer.pcName},data-menu='rule'">
+                    <img src="/images/firewall.png" alt="firewall" />
+                    <p>FIREWALL RULES</p>
+                </button>
+                <button class="menu-btn" th:classappend="${currentMenu == 'logging'} ? 'active' : ''"
+                    th:attr="data-pcname=${computer.pcName},data-menu='logging'">
+                    <img src="/images/log.png" alt="logging" />
+                    <p>LOGGING</p>
+                </button>
+                <button class="menu-btn" th:classappend="${currentMenu == 'terminal'} ? 'active' : ''"
+                    th:attr="data-pcname=${computer.pcName},data-menu='terminal'">
+                    <img src="/images/terminal.png" alt="terminal" />
+                    <p>TERMINAL</p>
+                </button>
+            </nav>
+
+            <div class="footer">
+                <div class="power-button"
+                    th:onclick="|if(confirm('Do you truly intend to exit?')) { window.location.href='@{/home_{username}(username=${session.username})}'; }|">
+                    <img src="/images/exit.png" alt="exit" />
+                    <p>EXIT</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="content" id="content-area">
+        </div>
+    </div>
+
+    <div th:fragment="section(menuOption)" th:remove="tag">
+        <div th:if="${error}" class="error-message" th:text="${error}"></div>
+        <div th:switch="${menuOption}">
+
+            <div th:case="'information'" class="section" id="information-section">
+                <h1 class="section-title">Details of the Ubuntu system</h1>
+                <div class="info-container">
+                    <div class="info-content">
+                        <p><strong>Name of Ubuntu system:</strong> <span th:text="${computer.pcName}"></span></p>
+                        <p><strong>Ubuntu Username:</strong> <span th:text="${computer.pcUsername}"></span></p>
+                        <p><strong>IP Address:</strong> <span th:text="${computer.ipAddress}"></span></p>
+                        <p><strong>Port:</strong> <span th:text="${computer.port}"></span></p>
+                        <p><strong>Owner Username:</strong> <span th:text="${computer.ownerUsername}"></span></p>
                     </div>
-                    <h2 class="pc-name" th:text="${computer.pcName}">Computer (Tên computer)</h2>
-                </div>
 
-                <nav class="menu">
-                    <button class="menu-btn" th:classappend="${currentMenu == 'information'} ? 'active' : ''"
-                            th:attr="data-pcname=${computer.pcName},data-menu='information'">
-                        <img src="/images/info.png" alt="information" />
-                        <p>INFORMATION</p>
-                    </button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'rule'} ? 'active' : ''"
-                            th:attr="data-pcname=${computer.pcName},data-menu='rule'">
-                        <img src="/images/firewall.png" alt="firewall" />
-                        <p>FIREWALL RULES</p>
-                    </button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'logging'} ? 'active' : ''"
-                            th:attr="data-pcname=${computer.pcName},data-menu='logging'">
-                        <img src="/images/log.png" alt="logging" />
-                        <p>LOGGING</p>
-                    </button>
-                    <button class="menu-btn" th:classappend="${currentMenu == 'terminal'} ? 'active' : ''"
-                            th:attr="data-pcname=${computer.pcName},data-menu='terminal'">
-                        <img src="/images/terminal.png" alt="terminal" />
-                        <p>TERMINAL</p>
-                    </button>
-                </nav>
-
-                <div class="footer">
-                    <div class="power-button"
-                         th:onclick="|if(confirm('Do you truly intend to exit?')) { window.location.href='@{/home_{username}(username=${session.username})}'; }|">
-                        <img src="/images/exit.png" alt="exit" />
-                        <p>EXIT</p>
+                    <div class="system-info">
+                        <p><strong>CPU:</strong> <span th:text="${systemInfo?.get('CPU') ?: 'N/A'}"></span></p>
+                        <p><strong>RAM:</strong> <span th:text="${systemInfo?.get('RAM') ?: 'N/A'}"></span></p>
+                        <p><strong>Ubuntu Version:</strong> <span
+                                th:text="${systemInfo?.get('Ubuntu Version') ?: 'N/A'}"></span></p>
                     </div>
+
                 </div>
+
+                <h1 class="section-title">System Logging</h1>
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="systemLoggingToggle" th:checked="${systemLoggingStatus == 'ON'}"
+                            th:attr="data-pc-name=${computer.pcName}" onchange="toggleSystemLogging(this)">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-system-label" id="systemLoggingLabel"
+                        th:text="${systemLoggingStatus == 'ON' ? 'System Logging Status: ON' : 'System Logging Status: OFF'}">
+                    </span>
+                </div>
+
+                <div class="logging-content" id="systemLoggingTable"
+                    th:style="${systemLoggingStatus == 'ON' ? 'display: block' : 'display: none'}">
+                    <div class="logging-table-container">
+                        <table class="logging-sys-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Hostname</th>
+                                    <th>Service</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="logEntry : ${systemLogs}">
+                                    <td th:text="${logEntry.timestamp}">Timestamp</td>
+                                    <td th:text="${logEntry.hostname}">Hostname</td>
+                                    <td th:text="${logEntry.service}">Service</td>
+                                    <td th:text="${logEntry.message}">Message</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(systemLogs)}">
+                                    <td colspan="4" style="text-align: center;">No system log entries found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div th:if="${systemLogMessage}" th:text="${systemLogMessage}"
+                        style="text-align: center; color: #666;"></div>
+                </div>
+
 
             </div>
 
-            <div class="content" id="content-area">
+            <div th:case="'rule'" class="section" id="rule-section">
+                <h1 class="section-title">Firewall rules</h1>
+
+                <!--Toggle switch hiển thị trạng thái-->
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="firewallToggle" th:checked="${firewallStatus == 'active'}"
+                            th:attr="data-pc-name=${computer.pcName}" onchange="toggleFirewall(this)">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label"
+                        th:text="${firewallStatus == 'active' ? 'Firewall Status: ON' : 'Firewall Status: OFF'}">
+                    </span>
+                </div>
+
+                <div class="rule-content" id="firewallRulesTable"
+                    th:style="${firewallStatus == 'active' ? 'display: block' : 'display: none'}">
+                    <!-- Bảng hiển thị danh sách quy tắc firewall -->
+                    <div class="rule-layout">
+                        <div class="rule-table-container">
+                            <table class="rule-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Protocol</th>
+                                        <th>Action</th>
+                                        <th>Options</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="rule : ${firewallRules}">
+                                        <td th:text="${rule.id}"></td>
+                                        <td th:text="${rule.sourceIp}"></td>
+                                        <td
+                                            th:text="${rule.port != null && rule.port != '' ? rule.destinationIp     + rule.port : rule.destinationIp}">
+                                        </td>
+                                        <td th:text="${rule.protocol}"></td>
+                                        <td th:text="${rule.action}"></td>
+                                        <td>
+                                            <button class="edit-btn" th:attr="data-rule-id=${rule.id}"
+                                                onclick="editRule(this)">
+                                                <img src="/images/editing.png" alt="" />
+                                            </button>
+                                            <button class="delete-btn" th:attr="data-rule-id=${rule.id}"
+                                                onclick="deleteRule(this)">
+                                                <img src="/images/delete.png" alt="" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Nếu không có quy tắc, hiển thị thông báo -->
+                                    <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
+                                        <td colspan="7" style="text-align: center;">No firewall rules found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="add-rule-form">
+                            <h3>Add New Firewall Rule</h3>
+                            <form id="dynamicForm" method="post"
+                                th:action="@{/machine/{pcName}/rule(pcName=${computer.pcName})}"
+                                onsubmit="return validateRuleForm()">
+                                <!-- Hidden field for PC name, will be populated by JavaScript -->
+                                <input type="hidden" name="pcName" id="pcNameField">
+
+                                <!-- Action -->
+                                <div class="form-group">
+                                    <select id="action" name="action" required>
+                                        <option value="allow">allow</option>
+                                        <option value="deny">deny</option>
+                                    </select>
+                                    <label for="action">Action</label>
+                                </div>
+
+                                <!-- Outgoing checkbox for direction -->
+                                <div class="form-group checkbox-like">
+                                    <input type="checkbox" id="portCheck" name="portCheck"
+                                        onchange="togglePortFields()">
+                                    <p for="portCheck">Out coming</p>
+                                </div>
+
+                                <!-- Protocol Selection -->
+                                <div class="form-group">
+                                    <select id="protocol" name="protocol" required>
+                                        <option value="tcp">tcp</option>
+                                        <option value="udp">udp</option>
+                                        <option value="none">none</option>
+                                    </select>
+                                    <label for="protocol">Protocol</label>
+                                </div>
+
+                                <!-- Destination (To) -->
+                                <div class="form-group">
+                                    <select id="toType" name="toType" onchange="toggleToFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="app">App</option>
+                                        <option value="ipaddress">IP Address</option>
+                                        <option value="interface">Interface</option>
+                                    </select>
+                                    <label for="toType">Destination</label>
+                                </div>
+
+                                <!-- Destination IP Address (chỉ hiển thị khi toType = ipaddress) -->
+                                <div class="form-group hidden" id="toIpFields">
+                                    <input type="text" id="toIp" name="toIp" placeholder=" ">
+                                    <label for="toIp">Destination IP</label>
+                                </div>
+
+                                <!-- Application (chỉ hiển thị khi toType = app) -->
+                                <div class="form-group hidden" id="toAppFields">
+                                    <select id="toApp" name="toApp">
+                                        <option value="" disabled selected>Select Application</option>
+                                        <option value="app1">App1</option>
+                                        <option value="app2">App2</option>
+                                        <option value="app3">App3</option>
+                                    </select>
+                                    <label for="toApp">Application</label>
+                                </div>
+
+                                <!-- Interface (chỉ hiển thị khi toType = interface) -->
+                                <div class="form-group hidden" id="toInterfaceFields">
+                                    <select id="toInterface" name="toInterface">
+                                        <option value="" disabled selected>Select Interface</option>
+                                        <option value="eth0">eth0</option>
+                                        <option value="eth1">eth1</option>
+                                        <option value="wlan0">wlan0</option>
+                                        <option value="wlan1">wlan1</option>
+                                    </select>
+                                    <label for="toInterface">Interface</label>
+                                </div>
+
+                                <!-- Port Option -->
+                                <div class="form-group">
+                                    <select id="portType" name="portType" onchange="togglePortTypeFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="specific">Specific Port</option>
+                                        <option value="range">Port Range</option>
+                                    </select>
+                                    <label for="portType">Port Type</label>
+                                </div>
+
+                                <!-- Specific Port Field -->
+                                <div class="form-group hidden" id="portFields">
+                                    <input type="number" id="port" name="port" min="1" max="65535" placeholder=" ">
+                                    <label for="port">Port Number</label>
+                                </div>
+
+                                <!-- Port Range Fields -->
+                                <div class="form-group hidden" id="portRangeStartFields">
+                                    <input type="number" id="portRangeStart" name="portRangeStart" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="portRangeStart">Start Port</label>
+                                </div>
+                                <div class="form-group hidden" id="portRangeEndFields">
+                                    <input type="number" id="portRangeEnd" name="portRangeEnd" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="portRangeEnd">End Port</label>
+                                </div>
+
+                                <!-- Source (From) -->
+                                <div class="form-group">
+                                    <select id="fromType" name="fromType" onchange="toggleFromFields()" required>
+                                        <option value="any">Any</option>
+                                        <option value="ipaddress">IP Address</option>
+                                    </select>
+                                    <label for="fromType">Source</label>
+                                </div>
+
+                                <!-- Source IP Address (chỉ hiển thị khi fromType = ipaddress) -->
+                                <div class="form-group hidden" id="fromIpFields">
+                                    <input type="text" id="fromIp" name="fromIp" placeholder=" ">
+                                    <label for="fromIp">Source IP</label>
+                                </div>
+                            </form>
+                            <!-- Submit Button -->
+                            <button type="submit" class="btn"
+                                onclick="document.getElementById('dynamicForm').submit()">Add
+                                Rule</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:case="'logging'" class="section" id="logging-section">
+                <h1 class="section-title">Logging Firewall</h1>
+
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="loggingfirewallToggle" th:checked="${loggingStatus == 'ON'}"
+                            th:attr="data-pc-name=${computer.pcName}" onchange="toggleLogging(this)">
+                        <span class="slider"></span>
+                    </label>
+
+                    <span class="toggle-label"
+                        th:text="${loggingStatus == 'ON' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
+                    </span>
+                </div>
+
+                <div class="logging-content" id="loggingTable"
+                    th:style="${loggingStatus == 'ON' ? 'display: block' : 'display: none'}">
+                    <!-- Bảng hiển thị danh sách quy tắc firewall -->
+                    <div class="logging-table-container">
+                        <table class="logging-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Action</th>
+                                    <th>Destination IP</th>
+                                    <th>Protocol</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="logEntry : ${ufwLogs}">
+                                    <td th:text="${logEntry.timestamp}">Timestamp</td>
+                                    <td th:text="${logEntry.action}">Action</td>
+                                    <td th:text="${logEntry.destinationIp}">Destination IP</td>
+                                    <td th:text="${logEntry.protocol}">Protocol</td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(ufwLogs)}">
+                                    <td colspan="8" style="text-align: center;">No log entries found.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div th:case="'terminal'" class="section" id="terminal-section"
+                th:with="pcName=${computer?.pcName != null ? computer.pcName : 'unknown'}"
+                th:attr="data-pcname=${pcName}">
+                <h1 class="section-title">Terminal</h1>
+                <div id="terminal-status" style="margin-bottom: 10px; color: #dc3545;">
+                    Connecting to WebSocket...
+                </div>
+                <!-- Debug: Display the pcName -->
+                <div th:if="${pcName == 'unknown'}" style="color: red;">
+                    Error: Could not resolve pcName. Check server logs.
+                </div>
             </div>
         </div>
 
-        <div th:fragment="section(menuOption)" th:remove="tag">
-            <div th:if="${error}" class="error-message" th:text="${error}"></div>
-            <div th:switch="${menuOption}">
-
-                <div th:case="'information'" class="section" id="information-section">
-                    <h1 class="section-title">Details of the Ubuntu system</h1>
-                    <div class="info-container">
-                        <div class="info-content">
-                            <p><strong>Name of Ubuntu system:</strong> <span th:text="${computer.pcName}"></span></p>
-                            <p><strong>Ubuntu Username:</strong> <span th:text="${computer.pcUsername}"></span></p>
-                            <p><strong>IP Address:</strong> <span th:text="${computer.ipAddress}"></span></p>
-                            <p><strong>Port:</strong> <span th:text="${computer.port}"></span></p>
-                            <p><strong>Owner Username:</strong> <span th:text="${computer.ownerUsername}"></span></p>
-                        </div>
-
-                        <div class="system-info">
-                            <p><strong>CPU:</strong> <span th:text="${systemInfo?.get('CPU') ?: 'N/A'}"></span></p>
-                            <p><strong>RAM:</strong> <span th:text="${systemInfo?.get('RAM') ?: 'N/A'}"></span></p>
-                            <p><strong>Ubuntu Version:</strong> <span
-                                    th:text="${systemInfo?.get('Ubuntu Version') ?: 'N/A'}"></span></p>
-                        </div>
-                    </div>
-
-                    <h1 class="section-title">System Logging</h1>
-                    <div class="toggle-container">
-                        <label class="switch">
-                            <input type="checkbox" id="systemLoggingToggle" th:checked="${systemLoggingStatus == 'ON'}"
-                                   th:attr="data-pc-name=${computer.pcName}" onchange="toggleSystemLogging(this)">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="toggle-system-label" id="systemLoggingLabel"
-                              th:text="${systemLoggingStatus == 'ON' ? 'System Logging Status: ON' : 'System Logging Status: OFF'}">
-                        </span>
-                    </div>
-                    <div class="logging-content" id="systemLoggingTable"
-                         th:style="${systemLoggingStatus == 'ON' ? 'display: block' : 'display: none'}">
-                        <div class="logging-table-container">
-                            <table class="logging-table">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Hostname</th>
-                                        <th>Service</th>
-                                        <th>Message</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="logEntry : ${systemLogs}">
-                                        <td th:text="${logEntry.timestamp}">Timestamp</td>
-                                        <td th:text="${logEntry.hostname}">Hostname</td>
-                                        <td th:text="${logEntry.service}">Service</td>
-                                        <td th:text="${logEntry.message}">Message</td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(systemLogs)}">
-                                        <td colspan="4" style="text-align: center;">No system log entries found.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div th:if="${systemLogMessage}" th:text="${systemLogMessage}"
-                             style="text-align: center; color: #666;"></div>
-                    </div>
-                </div>
-
-                <div th:case="'rule'" class="section" id="rule-section">
-                    <h1 class="section-title">Firewall rules</h1>
-
-                    <!--Toggle switch hiển thị trạng thái-->
-                    <div th:if="${error}" class="error-message" th:text="${error}"></div>
-                    <div class="toggle-container">
-                        <label class="switch">
-                            <input type="checkbox" id="systemLoggingToggle" th:checked="${systemLoggingStatus == 'ON'}"
-                                   th:attr="data-pc-name=${computer.pcName}" onchange="toggleSystemLogging(this)">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="toggle-system-label" id="systemLoggingLabel"
-                              th:text="${systemLoggingStatus == 'ON' ? 'System Logging Status: ON' : 'System Logging Status: OFF'}">
-                        </span>
-                    </div>
-
-                    <div class="rule-content" id="firewallRulesTable"
-                         th:style="${firewallStatus == 'active' ? 'display: block' : 'display: none'}">
-                        <!-- Bảng hiển thị danh sách quy tắc firewall -->
-                        <div class="rule-layout">
-                            <div class="rule-table-container">
-                                <table class="rule-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>From</th>
-                                            <th>To</th>
-                                            <th>Protocol</th>
-                                            <th>Action</th>
-                                            <th>Options</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr th:each="rule : ${firewallRules}">
-                                            <td th:text="${rule.id}"></td>
-                                            <td th:text="${rule.sourceIp}"></td>
-                                            <td
-                                                th:text="${rule.port != null && rule.port != '' ? rule.destinationIp     + rule.port : rule.destinationIp}">
-                                            </td>
-                                            <td th:text="${rule.protocol}"></td>
-                                            <td th:text="${rule.action}"></td>
-                                            <td>
-                                                <button class="edit-btn" th:attr="data-rule-id=${rule.id}"
-                                                        onclick="editRule(this)">
-                                                    <img src="/images/editing.png" alt="" />
-                                                </button>
-                                                <button class="delete-btn" th:attr="data-rule-id=${rule.id}"
-                                                        onclick="deleteRule(this)">
-                                                    <img src="/images/delete.png" alt="" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <!-- Nếu không có quy tắc, hiển thị thông báo -->
-                                        <tr th:if="${firewallRules == null or #lists.isEmpty(firewallRules)}">
-                                            <td colspan="7" style="text-align: center;">No firewall rules found.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="add-rule-form">
-                                <h3>Add New Firewall Rule</h3>
-                                <form id="dynamicForm" method="post"
-                                      th:action="@{/machine/{pcName}/rule(pcName=${computer.pcName})}"
-                                      onsubmit="return validateRuleForm()">
-                                    <!-- Hidden field for PC name, will be populated by JavaScript -->
-                                    <input type="hidden" name="pcName" id="pcNameField">
-
-                                    <!-- Action -->
-                                    <div class="form-group">
-                                        <select id="action" name="action" required>
-                                            <option value="allow">allow</option>
-                                            <option value="deny">deny</option>
-                                        </select>
-                                        <label for="action">Action</label>
-                                    </div>
-
-                                    <!-- Outgoing checkbox for direction -->
-                                    <div class="form-group checkbox-like">
-                                        <input type="checkbox" id="portCheck" name="portCheck"
-                                               onchange="togglePortFields()">
-                                        <p for="portCheck">Out coming</p>
-                                    </div>
-
-                                    <!-- Protocol Selection -->
-                                    <div class="form-group">
-                                        <select id="protocol" name="protocol" required>
-                                            <option value="tcp">tcp</option>
-                                            <option value="udp">udp</option>
-                                            <option value="none">none</option>
-                                        </select>
-                                        <label for="protocol">Protocol</label>
-                                    </div>
-
-                                    <!-- Destination (To) -->
-                                    <div class="form-group">
-                                        <select id="toType" name="toType" onchange="toggleToFields()" required>
-                                            <option value="any">Any</option>
-                                            <option value="app">App</option>
-                                            <option value="ipaddress">IP Address</option>
-                                            <option value="interface">Interface</option>
-                                        </select>
-                                        <label for="toType">Destination</label>
-                                    </div>
-
-                                    <!-- Destination IP Address (chỉ hiển thị khi toType = ipaddress) -->
-                                    <div class="form-group hidden" id="toIpFields">
-                                        <input type="text" id="toIp" name="toIp" placeholder=" ">
-                                        <label for="toIp">Destination IP</label>
-                                    </div>
-
-                                    <!-- Application (chỉ hiển thị khi toType = app) -->
-                                    <div class="form-group hidden" id="toAppFields">
-                                        <select id="toApp" name="toApp">
-                                            <option value="" disabled selected>Select Application</option>
-                                            <option value="app1">App1</option>
-                                            <option value="app2">App2</option>
-                                            <option value="app3">App3</option>
-                                        </select>
-                                        <label for="toApp">Application</label>
-                                    </div>
-
-                                    <!-- Interface (chỉ hiển thị khi toType = interface) -->
-                                    <div class="form-group hidden" id="toInterfaceFields">
-                                        <select id="toInterface" name="toInterface">
-                                            <option value="" disabled selected>Select Interface</option>
-                                            <option value="eth0">eth0</option>
-                                            <option value="eth1">eth1</option>
-                                            <option value="wlan0">wlan0</option>
-                                            <option value="wlan1">wlan1</option>
-                                        </select>
-                                        <label for="toInterface">Interface</label>
-                                    </div>
-
-                                    <!-- Port Option -->
-                                    <div class="form-group">
-                                        <select id="portType" name="portType" onchange="togglePortTypeFields()" required>
-                                            <option value="any">Any</option>
-                                            <option value="specific">Specific Port</option>
-                                            <option value="range">Port Range</option>
-                                        </select>
-                                        <label for="portType">Port Type</label>
-                                    </div>
-
-                                    <!-- Specific Port Field -->
-                                    <div class="form-group hidden" id="portFields">
-                                        <input type="number" id="port" name="port" min="1" max="65535" placeholder=" ">
-                                        <label for="port">Port Number</label>
-                                    </div>
-
-                                    <!-- Port Range Fields -->
-                                    <div class="form-group hidden" id="portRangeStartFields">
-                                        <input type="number" id="portRangeStart" name="portRangeStart" min="1" max="65535"
-                                               placeholder=" ">
-                                        <label for="portRangeStart">Start Port</label>
-                                    </div>
-                                    <div class="form-group hidden" id="portRangeEndFields">
-                                        <input type="number" id="portRangeEnd" name="portRangeEnd" min="1" max="65535"
-                                               placeholder=" ">
-                                        <label for="portRangeEnd">End Port</label>
-                                    </div>
-
-                                    <!-- Source (From) -->
-                                    <div class="form-group">
-                                        <select id="fromType" name="fromType" onchange="toggleFromFields()" required>
-                                            <option value="any">Any</option>
-                                            <option value="ipaddress">IP Address</option>
-                                        </select>
-                                        <label for="fromType">Source</label>
-                                    </div>
-
-                                    <!-- Source IP Address (chỉ hiển thị khi fromType = ipaddress) -->
-                                    <div class="form-group hidden" id="fromIpFields">
-                                        <input type="text" id="fromIp" name="fromIp" placeholder=" ">
-                                        <label for="fromIp">Source IP</label>
-                                    </div>
-                                </form>
-                                <!-- Submit Button -->
-                                <button type="submit" class="btn"
-                                        onclick="document.getElementById('dynamicForm').submit()">Add
-                                    Rule</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div th:case="'logging'" class="section" id="logging-section">
-                    <h1 class="section-title">Logging Firewall</h1>
-
-                    <div class="toggle-container">
-                        <label class="switch">
-                            <input type="checkbox" id="loggingfirewallToggle" th:checked="${loggingStatus == 'ON'}"
-                                   th:attr="data-pc-name=${computer.pcName}" onchange="toggleLogging(this)">
-                            <span class="slider"></span>
-                        </label>
-
-                        <span class="toggle-label"
-                              th:text="${loggingStatus == 'ON' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
-                        </span>
-                    </div>
-
-                    <div class="logging-content" id="loggingTable"
-                         th:style="${loggingStatus == 'ON' ? 'display: block' : 'display: none'}">
-                        <!-- Bảng hiển thị danh sách quy tắc firewall -->
-                        <div class="logging-table-container">
-                            <table class="logging-table">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Action</th>
-                                        <th>Destination IP</th>
-                                        <th>Protocol</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr th:each="logEntry : ${ufwLogs}">
-                                        <td th:text="${logEntry.timestamp}">Timestamp</td>
-                                        <td th:text="${logEntry.action}">Action</td>
-                                        <td th:text="${logEntry.destinationIp}">Destination IP</td>
-                                        <td th:text="${logEntry.protocol}">Protocol</td>
-                                    </tr>
-                                    <tr th:if="${#lists.isEmpty(ufwLogs)}">
-                                        <td colspan="8" style="text-align: center;">No log entries found.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div th:case="'terminal'" class="section" id="terminal-section"
-                     th:with="pcName=${computer?.pcName != null ? computer.pcName : 'unknown'}"
-                     th:attr="data-pcname=${pcName}">
-                    <h1 class="section-title">Terminal</h1>
-                    <div id="terminal-status" style="margin-bottom: 10px; color: #dc3545;">
-                        Connecting to WebSocket...
-                    </div>
-                    <!-- Debug: Display the pcName -->
-                    <div th:if="${pcName == 'unknown'}" style="color: red;">
-                        Error: Could not resolve pcName. Check server logs.
-                    </div>
-                </div>
-            </div>
-
-            <script>
-                // Utility Functions
-                // Validate IP address
-                function validateIpAddress(ip) {
-                    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-                    if (!ipRegex.test(ip)) {
+        <script>
+            // Utility Functions
+            // Validate IP address
+            function validateIpAddress(ip) {
+                const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+                if (!ipRegex.test(ip)) {
+                    return false;
+                }
+                const parts = ip.split('.');
+                return parts.every((part) => {
+                    const num = parseInt(part);
+                    if (part.length > 1 && part.startsWith('0')) {
                         return false;
                     }
-                    const parts = ip.split('.');
-                    return parts.every((part) => {
-                        const num = parseInt(part);
-                        if (part.length > 1 && part.startsWith('0')) {
-                            return false;
-                        }
-                        return num >= 0 && num <= 255;
-                    });
+                    return num >= 0 && num <= 255;
+                });
+            }
+
+            // Form Validation Functions
+            // Validate firewall rule form
+            function validateRuleForm() {
+                const action = document.getElementById('action')?.value;
+                const toType = document.getElementById('toType')?.value;
+                const fromType = document.getElementById('fromType')?.value;
+                const portType = document.getElementById('portType')?.value;
+                const protocol = document.getElementById('protocol')?.value;
+
+                if (!action || !toType || !fromType || !portType || !protocol) {
+                    alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type, Port Type, Protocol');
+                    return false;
                 }
 
-                // Form Validation Functions
-                // Validate firewall rule form
-                function validateRuleForm() {
-                    const action = document.getElementById('action')?.value;
-                    const toType = document.getElementById('toType')?.value;
-                    const fromType = document.getElementById('fromType')?.value;
-                    const portType = document.getElementById('portType')?.value;
-                    const protocol = document.getElementById('protocol')?.value;
+                // Validate Destination IP
+                if (toType === 'ipaddress') {
+                    const toIp = document.getElementById('toIp')?.value;
+                    if (!toIp || !validateIpAddress(toIp)) {
+                        alert('Vui lòng nhập địa chỉ IP đích hợp lệ (ví dụ: 192.168.1.1)');
+                        return false;
+                    }
+                }
 
-                    if (!action || !toType || !fromType || !portType || !protocol) {
-                        alert('Vui lòng điền đầy đủ các trường bắt buộc: Action, To Type, From Type, Port Type, Protocol');
+                // Validate App
+                if (toType === 'app') {
+                    const appName = document.getElementById('toApp')?.value;
+                    if (!appName) {
+                        alert('Vui lòng chọn một ứng dụng');
+                        return false;
+                    }
+                }
+
+                // Validate Port logic
+                if (portType === 'specific') {
+                    const port = document.getElementById('port')?.value;
+                    if (!port || isNaN(port) || port < 1 || port > 65535) {
+                        alert('Vui lòng nhập số port hợp lệ (1-65535)');
+                        return false;
+                    }
+                    if (protocol === 'none') {
+                        alert('Bạn phải chọn protocol (tcp/udp) nếu sử dụng port.');
+                        return false;
+                    }
+                }
+
+                if (portType === 'range') {
+                    const portStart = document.getElementById('portRangeStart')?.value;
+                    const portEnd = document.getElementById('portRangeEnd')?.value;
+
+                    if (!portStart || !portEnd || isNaN(portStart) || isNaN(portEnd) ||
+                        portStart < 1 || portEnd > 65535 || Number(portStart) > Number(portEnd)) {
+                        alert('Vui lòng nhập dải port hợp lệ (1-65535), và Start phải nhỏ hơn hoặc bằng End.');
                         return false;
                     }
 
-                    // Validate Destination IP
-                    if (toType === 'ipaddress') {
-                        const toIp = document.getElementById('toIp')?.value;
-                        if (!toIp || !validateIpAddress(toIp)) {
-                            alert('Vui lòng nhập địa chỉ IP đích hợp lệ (ví dụ: 192.168.1.1)');
-                            return false;
-                        }
+                    if (protocol === 'none') {
+                        alert('Please select protocol (tcp/udp) if using port range.');
+                        return false;
                     }
-
-                    // Validate App
-                    if (toType === 'app') {
-                        const appName = document.getElementById('toApp')?.value;
-                        if (!appName) {
-                            alert('Vui lòng chọn một ứng dụng');
-                            return false;
-                        }
-                    }
-
-                    // Validate Port logic
-                    if (portType === 'specific') {
-                        const port = document.getElementById('port')?.value;
-                        if (!port || isNaN(port) || port < 1 || port > 65535) {
-                            alert('Vui lòng nhập số port hợp lệ (1-65535)');
-                            return false;
-                        }
-                        if (protocol === 'none') {
-                            alert('Bạn phải chọn protocol (tcp/udp) nếu sử dụng port.');
-                            return false;
-                        }
-                    }
-
-                    if (portType === 'range') {
-                        const portStart = document.getElementById('portRangeStart')?.value;
-                        const portEnd = document.getElementById('portRangeEnd')?.value;
-
-                        if (!portStart || !portEnd || isNaN(portStart) || isNaN(portEnd) ||
-                                portStart < 1 || portEnd > 65535 || Number(portStart) > Number(portEnd)) {
-                            alert('Vui lòng nhập dải port hợp lệ (1-65535), và Start phải nhỏ hơn hoặc bằng End.');
-                            return false;
-                        }
-
-                        if (protocol === 'none') {
-                            alert('Please select protocol (tcp/udp) if using port range.');
-                            return false;
-                        }
-                    }
-
-                    // Validate Source IP
-                    if (fromType === 'ipaddress') {
-                        const fromIp = document.getElementById('fromIp')?.value;
-                        if (!fromIp || !validateIpAddress(fromIp)) {
-                            alert('Vui lòng nhập địa chỉ IP nguồn hợp lệ (ví dụ: 192.168.1.1)');
-                            return false;
-                        }
-                    }
-
-                    return true;
                 }
 
-                function toggleSystemLogging(element) {
-                    const pcName = element.getAttribute('data-pc-name');
-                    if (!pcName) {
-                        console.error("data-pc-name attribute is missing or empty");
-                        alert("Error: Computer name not found");
-                        return;
+                // Validate Source IP
+                if (fromType === 'ipaddress') {
+                    const fromIp = document.getElementById('fromIp')?.value;
+                    if (!fromIp || !validateIpAddress(fromIp)) {
+                        alert('Vui lòng nhập địa chỉ IP nguồn hợp lệ (ví dụ: 192.168.1.1)');
+                        return false;
                     }
+                }
 
-                    const isChecked = element.checked;
-                    const url = `/machine/${pcName}/toggle-system-logging`;
-                    element.disabled = true;
-                    const label = document.querySelector('.toggle-system-label');
-                    const originalLabel = label.textContent;
-                    label.textContent = 'Processing...';
+                return true;
+            }
 
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Cache-Control': 'no-cache'
-                        },
-                        body: `enable=${isChecked}`
+            function toggleSystemLogging(element) {
+                const pcName = element.getAttribute('data-pc-name');
+                if (!pcName) {
+                    console.error("data-pc-name attribute is missing or empty");
+                    alert("Error: Computer name not found");
+                    return;
+                }
+
+                const isChecked = element.checked;
+                const url = `/machine/${pcName}/toggle-system-logging`;
+                element.disabled = true;
+                const label = document.querySelector('.toggle-system-label');
+                const originalLabel = label.textContent;
+                label.textContent = 'Processing...';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `enable=${isChecked}`
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
                     })
-                            .then(response => {
-                                console.log('Response status:', response.status);
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.status);
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                console.log('Response data:', data);
-                                if (data.success) {
-                                    label.textContent = isChecked ? 'System Logging Status: ON' : 'System Logging Status: OFF';
-                                    const systemLoggingTable = document.getElementById('systemLoggingTable');
-                                    if (systemLoggingTable) {
-                                        systemLoggingTable.style.display = data.systemLoggingStatus === 'ON' ? 'block' : 'none';
-                                    }
-                                    const tbody = systemLoggingTable?.querySelector('tbody');
-                                    if (tbody && data.systemLogs) {
-                                        tbody.innerHTML = '';
-                                        if (data.systemLogs.length > 0) {
-                                            data.systemLogs.forEach(log => {
-                                                const tr = document.createElement('tr');
-                                                tr.innerHTML = `
-                                    <td>${log.timestamp || ''}</td>
-                                    <td>${log.hostname || ''}</td>
-                                    <td>${log.service || ''}</td>
-                                    <td>${log.message || ''}</td>
-                                `;
-                                                tbody.appendChild(tr);
-                                            });
-                                        } else {
-                                            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No system log entries found.</td></tr>';
-                                        }
-                                    }
-                                    console.log(`System logging ${isChecked ? 'enabled' : 'disabled'} successfully`);
-                                } else {
-                                    console.error('Failed to toggle system logging:', data.message);
-                                    alert('Failed to toggle system logging: ' + data.message);
-                                    element.checked = !isChecked;
-                                    label.textContent = originalLabel;
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                alert('Error toggling system logging: ' + error.message);
-                                element.checked = !isChecked;
-                                label.textContent = originalLabel;
-                            })
-                            .finally(() => {
-                                element.disabled = false;
-                            });
-                }
+                    .then(data => {
+                        element.disabled = false;
+                        if (data.success) {
+                            label.textContent = isChecked ? 'System Logging Status: ON' : 'System Logging Status: OFF';
+                            const systemLoggingTable = document.getElementById('systemLoggingTable');
+                            if (systemLoggingTable) {
+                                systemLoggingTable.style.display = isChecked ? 'block' : 'none';
+                            }
 
-                // Toggle Functions for Form Fields
-                // Show/hide Destination fields
-                function toggleToFields() {
-                    const toType = document.getElementById('toType')?.value;
-                    const toIpFields = document.getElementById('toIpFields');
-                    const toRangeFields = document.getElementById('toRangeFields');
-                    const toAppFields = document.getElementById('toAppFields');
-                    const toInterfaceFields = document.getElementById('toInterfaceFields');
+                            // If logs were returned, update the table
+                            if (data.systemLogs && data.systemLogs.length > 0) {
+                                updateSystemLogsTable(data.systemLogs);
+                            }
 
-                    [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
-                        field?.classList.add('hidden');
-                    });
-
-                    if (toType === 'ipaddress') {
-                        toIpFields?.classList.remove('hidden');
-                    } else if (toType === 'app') {
-                        toAppFields?.classList.remove('hidden');
-                        const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                        fetchUFWAppList(pcName); // Fetch UFW app list when "app" is selected
-                    } else if (toType === 'interface') {
-                        toInterfaceFields?.classList.remove('hidden');
-                    }
-                }
-
-                // Show/hide Port Type fields
-                function togglePortTypeFields() {
-                    const portType = document.getElementById('portType')?.value;
-                    const protocol = document.getElementById('protocol')?.value;
-                    const portFields = document.getElementById('portFields');
-                    const portRangeStartFields = document.getElementById('portRangeStartFields');
-                    const portRangeEndFields = document.getElementById('portRangeEndFields');
-
-                    // Hide all fields initially
-                    [portFields, portRangeStartFields, portRangeEndFields].forEach(field => {
-                        field?.classList.add('hidden');
-                    });
-
-                    // Disable inputs initially
-                    document.getElementById('port')?.setAttribute('disabled', 'true');
-                    document.getElementById('portRangeStart')?.setAttribute('disabled', 'true');
-                    document.getElementById('portRangeEnd')?.setAttribute('disabled', 'true');
-
-                    if (portType === 'specific' && protocol !== 'none') {
-                        portFields?.classList.remove('hidden');
-                        document.getElementById('port')?.removeAttribute('disabled');
-                    } else if (portType === 'range') {
-                        if (protocol === 'none') {
-                            alert("Please select protocol (tcp/udp/icmp) if using port range.");
-                            document.getElementById('portType').value = 'any';
-                            return togglePortTypeFields(); // Reset fields
+                            console.log(`System logging has been ${isChecked ? 'enabled' : 'disabled'} successfully`);
                         } else {
-                            portRangeStartFields?.classList.remove('hidden');
-                            portRangeEndFields?.classList.remove('hidden');
-                            document.getElementById('portRangeStart')?.removeAttribute('disabled');
-                            document.getElementById('portRangeEnd')?.removeAttribute('disabled');
+                            console.error('Could not toggle system logging:', data.message);
+                            alert('Could not toggle system logging: ' + data.message);
+                            element.checked = !isChecked;
+                            label.textContent = originalLabel;
                         }
-                    }
-                }
-
-                // Show/hide Source fields
-                function toggleFromFields() {
-                    const fromType = document.getElementById('fromType')?.value;
-                    const fromIpFields = document.getElementById('fromIpFields');
-                    if (fromIpFields) {
-                        fromIpFields.classList.toggle('hidden', fromType !== 'ipaddress');
-                    }
-                }
-
-                // Fetch UFW App List
-                function fetchUFWAppList(pcName) {
-                    fetch(`/machine/${pcName}/app-list`, {
-                        method: 'POST',
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
                     })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Failed to fetch app list: ' + response.statusText);
-                                }
-                                return response.json();
-                            })
-                            .then(apps => {
-                                const toAppSelect = document.getElementById('toApp');
-                                if (toAppSelect) {
-                                    toAppSelect.innerHTML = '<option value="">Select an application</option>';
-                                    if (apps[0]?.startsWith("Error:")) {
-                                        alert(apps[0]);
-                                    } else {
-                                        apps.forEach(app => {
-                                            const option = document.createElement('option');
-                                            option.value = app;
-                                            option.textContent = app;
-                                            toAppSelect.appendChild(option);
-                                        });
-                                    }
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching UFW app list:', error);
-                                alert('Failed to load application list');
-                            });
-                }
-
-                function fetchInterfaceList(pcName) {
-                    fetch(`/machine/${pcName}/interface-list`, {
-                        method: 'POST',
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Failed to fetch interface list: ' + response.statusText);
-                                }
-                                return response.json();
-                            })
-                            .then(interfaces => {
-                                const toInterfaceSelect = document.getElementById('toInterface');
-                                if (toInterfaceSelect) {
-                                    toInterfaceSelect.innerHTML = '<option value="">Select an interface</option>';
-                                    if (interfaces[0]?.startsWith("Error:")) {
-                                        alert(interfaces[0]);
-                                    } else {
-                                        interfaces.forEach(iface => {
-                                            const option = document.createElement('option');
-                                            option.value = iface;
-                                            option.textContent = iface;
-                                            toInterfaceSelect.appendChild(option);
-                                        });
-                                    }
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching interface list:', error);
-                                alert('Failed to load interface list');
-                            });
-                }
-
-                // Update toggleToFields function to include interface list fetching
-                function toggleToFields() {
-                    const toType = document.getElementById('toType')?.value;
-                    const toIpFields = document.getElementById('toIpFields');
-                    const toRangeFields = document.getElementById('toRangeFields');
-                    const toAppFields = document.getElementById('toAppFields');
-                    const toInterfaceFields = document.getElementById('toInterfaceFields');
-
-                    [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
-                        field?.classList.add('hidden');
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error: ' + error.message);
+                        element.checked = !isChecked;
+                        element.disabled = false;
+                        label.textContent = originalLabel;
                     });
+            }
 
-                    if (toType === 'ipaddress') {
-                        toIpFields?.classList.remove('hidden');
-                    } else if (toType === 'app') {
-                        toAppFields?.classList.remove('hidden');
-                        const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                        fetchUFWAppList(pcName);
-                    } else if (toType === 'interface') {
-                        toInterfaceFields?.classList.remove('hidden');
-                        const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                        fetchInterfaceList(pcName); // Fetch interface list when "interface" is selected
-                    }
+            // Update system logs table with new data
+            function updateSystemLogsTable(logs) {
+                const tableBody = document.querySelector('#systemLoggingTable table tbody');
+                if (!tableBody) return;
+
+                // Clear existing rows
+                tableBody.innerHTML = '';
+
+                if (logs.length === 0) {
+                    const emptyRow = document.createElement('tr');
+                    emptyRow.innerHTML = '<td colspan="4" style="text-align: center;">No system log entries found.</td>';
+                    tableBody.appendChild(emptyRow);
+                    return;
                 }
 
-                // Toggle Firewall
-                function toggleFirewall(element) {
-                    const pcName = element.getAttribute('data-pc-name');
-                    if (!pcName) {
-                        console.error("data-pc-name attribute is missing or empty");
-                        alert("Lỗi: Không tìm thấy tên máy tính");
-                        return;
+                // Add new rows
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+
+                    const timestampCell = document.createElement('td');
+                    timestampCell.textContent = log.timestamp;
+
+                    const hostnameCell = document.createElement('td');
+                    hostnameCell.textContent = log.hostname;
+
+                    const serviceCell = document.createElement('td');
+                    serviceCell.textContent = log.service;
+
+                    const messageCell = document.createElement('td');
+                    messageCell.textContent = log.message;
+
+                    row.appendChild(timestampCell);
+                    row.appendChild(hostnameCell);
+                    row.appendChild(serviceCell);
+                    row.appendChild(messageCell);
+
+                    tableBody.appendChild(row);
+                });
+            }
+
+            // Toggle Functions for Form Fields
+            // Show/hide Destination fields
+            function toggleToFields() {
+                const toType = document.getElementById('toType')?.value;
+                const toIpFields = document.getElementById('toIpFields');
+                const toRangeFields = document.getElementById('toRangeFields');
+                const toAppFields = document.getElementById('toAppFields');
+                const toInterfaceFields = document.getElementById('toInterfaceFields');
+
+                [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
+                    field?.classList.add('hidden');
+                });
+
+                if (toType === 'ipaddress') {
+                    toIpFields?.classList.remove('hidden');
+                } else if (toType === 'app') {
+                    toAppFields?.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
+                    fetchUFWAppList(pcName); // Fetch UFW app list when "app" is selected
+                } else if (toType === 'interface') {
+                    toInterfaceFields?.classList.remove('hidden');
+                }
+            }
+
+            // Show/hide Port Type fields
+            function togglePortTypeFields() {
+                const portType = document.getElementById('portType')?.value;
+                const protocol = document.getElementById('protocol')?.value;
+                const portFields = document.getElementById('portFields');
+                const portRangeStartFields = document.getElementById('portRangeStartFields');
+                const portRangeEndFields = document.getElementById('portRangeEndFields');
+
+                // Hide all fields initially
+                [portFields, portRangeStartFields, portRangeEndFields].forEach(field => {
+                    field?.classList.add('hidden');
+                });
+
+                // Disable inputs initially
+                document.getElementById('port')?.setAttribute('disabled', 'true');
+                document.getElementById('portRangeStart')?.setAttribute('disabled', 'true');
+                document.getElementById('portRangeEnd')?.setAttribute('disabled', 'true');
+
+                if (portType === 'specific' && protocol !== 'none') {
+                    portFields?.classList.remove('hidden');
+                    document.getElementById('port')?.removeAttribute('disabled');
+                } else if (portType === 'range') {
+                    if (protocol === 'none') {
+                        alert("Please select protocol (tcp/udp/icmp) if using port range.");
+                        document.getElementById('portType').value = 'any';
+                        return togglePortTypeFields(); // Reset fields
+                    } else {
+                        portRangeStartFields?.classList.remove('hidden');
+                        portRangeEndFields?.classList.remove('hidden');
+                        document.getElementById('portRangeStart')?.removeAttribute('disabled');
+                        document.getElementById('portRangeEnd')?.removeAttribute('disabled');
                     }
+                }
+            }
 
-                    const isChecked = element.checked;
-                    const url = `/machine/${pcName}/toggle-firewall`;
-                    element.disabled = true;
-                    const label = document.querySelector('.toggle-label');
-                    const originalLabel = label.textContent;
-                    label.textContent = 'Đang xử lý...';
+            // Show/hide Source fields
+            function toggleFromFields() {
+                const fromType = document.getElementById('fromType')?.value;
+                const fromIpFields = document.getElementById('fromIpFields');
+                if (fromIpFields) {
+                    fromIpFields.classList.toggle('hidden', fromType !== 'ipaddress');
+                }
+            }
 
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: `enable=${isChecked}`
+            // Fetch UFW App List
+            function fetchUFWAppList(pcName) {
+                fetch(`/machine/${pcName}/app-list`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch app list: ' + response.statusText);
+                        }
+                        return response.json();
                     })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.status);
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                element.disabled = false;
-                                if (data.success) {
-                                    label.textContent = isChecked ? 'Firewall: ON' : 'Firewall: OFF';
-                                    const firewallRulesTable = document.getElementById('firewallRulesTable');
-                                    if (firewallRulesTable) {
-                                        firewallRulesTable.style.display = isChecked ? 'block' : 'none';
-                                    }
-                                    console.log(`Firewall đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
-                                } else {
-                                    console.error('Không thể bật/tắt firewall:', data.message);
-                                    alert('Không thể bật/tắt firewall: ' + data.message);
-                                    element.checked = !isChecked;
-                                    label.textContent = originalLabel;
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Lỗi:', error);
-                                alert('Lỗi: ' + error.message);
-                                element.checked = !isChecked;
-                                element.disabled = false;
-                                label.textContent = originalLabel;
-                            });
-                }
-
-                // Toggle Logging
-                function toggleLogging(element) {
-                    const pcName = element.getAttribute('data-pc-name');
-                    if (!pcName) {
-                        console.error("data-pc-name attribute is missing or empty");
-                        alert("Error: Computer name not found");
-                        return;
-                    }
-
-                    const isChecked = element.checked;
-                    const url = `/machine/${pcName}/toggle-logging`;
-                    element.disabled = true;
-                    const label = document.querySelector('.toggle-label');
-                    const originalLabel = label.textContent;
-                    label.textContent = 'Đang xử lý...';
-
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: `enable=${isChecked}`
-                    })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.status);
-                                }
-                                return response.json();
-                            })
-                            .then(data => {
-                                element.disabled = false;
-                                if (data.success) {
-                                    label.textContent = isChecked ? 'Logging: ON' : 'Logging: OFF';
-                                    const loggingTable = document.getElementById('loggingTable');
-                                    if (loggingTable) {
-                                        loggingTable.style.display = isChecked ? 'block' : 'none';
-                                    }
-                                    console.log(`Logging đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
-                                } else {
-                                    console.error('Không thể bật/tắt logging:', data.message);
-                                    alert('Không thể bật/tắt logging: ' + data.message);
-                                    element.checked = !isChecked;
-                                    label.textContent = originalLabel;
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Lỗi:', error);
-                                alert('Lỗi: ' + error.message);
-                                element.checked = !isChecked;
-                                element.disabled = false;
-                                label.textContent = originalLabel;
-                            });
-                }
-
-                // Firewall Rule Management Functions
-                function editRule(element) {
-                    const ruleId = element.getAttribute('data-rule-id');
-                    console.log('Editing rule with ID:', ruleId);
-                    alert(`Chỉnh sửa quy tắc với ID: ${ruleId} (Chưa triển khai)`);
-                    // TODO: Implement edit form logic here
-                }
-
-                function deleteRule(element) {
-                    const ruleId = element.getAttribute('data-rule-id');
-                    const pcName = window.location.pathname.split('/')[2];
-
-                    if (confirm('Bạn có chắc chắn muốn xóa quy tắc này?')) {
-                        fetch(`/machine/deleteRule?ruleId=${ruleId}&pcName=${pcName}`, {
-                            method: 'DELETE',
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error('Network response was not ok: ' + response.status);
-                                    }
-                                    return response.json();
-                                })
-                                .then(data => {
-                                    if (data.success) {
-                                        alert('Xóa quy tắc thành công');
-                                        window.location.reload();
-                                    } else {
-                                        alert('Lỗi khi xóa quy tắc: ' + data.message);
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Lỗi:', error);
-                                    alert('Lỗi: ' + error.message);
+                    .then(apps => {
+                        const toAppSelect = document.getElementById('toApp');
+                        if (toAppSelect) {
+                            toAppSelect.innerHTML = '<option value="">Select an application</option>';
+                            if (apps[0]?.startsWith("Error:")) {
+                                alert(apps[0]);
+                            } else {
+                                apps.forEach(app => {
+                                    const option = document.createElement('option');
+                                    option.value = app;
+                                    option.textContent = app;
+                                    toAppSelect.appendChild(option);
                                 });
-                    }
-                }
-
-                // Form Initialization Functions
-                function reinitializeForms() {
-                    setupFormValidations();
-                    const forms = document.querySelectorAll('form');
-                    forms.forEach(form => {
-                        form.removeEventListener('submit', handleFormSubmit); // Prevent duplicate listeners
-                        form.addEventListener('submit', handleFormSubmit);
-                    });
-                    initializeRuleForm();
-                }
-
-                function handleFormSubmit(e) {
-                    e.preventDefault();
-                    if (!validateRuleForm())
-                        return; // Validate before submission
-                    const form = e.target;
-                    const formData = new FormData(form);
-                    const action = form.getAttribute('action');
-                    fetch(action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                            }
+                        }
                     })
+                    .catch(error => {
+                        console.error('Error fetching UFW app list:', error);
+                        alert('Failed to load application list');
+                    });
+            }
+
+            function fetchInterfaceList(pcName) {
+                fetch(`/machine/${pcName}/interface-list`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch interface list: ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(interfaces => {
+                        const toInterfaceSelect = document.getElementById('toInterface');
+                        if (toInterfaceSelect) {
+                            toInterfaceSelect.innerHTML = '<option value="">Select an interface</option>';
+                            if (interfaces[0]?.startsWith("Error:")) {
+                                alert(interfaces[0]);
+                            } else {
+                                interfaces.forEach(iface => {
+                                    const option = document.createElement('option');
+                                    option.value = iface;
+                                    option.textContent = iface;
+                                    toInterfaceSelect.appendChild(option);
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching interface list:', error);
+                        alert('Failed to load interface list');
+                    });
+            }
+
+            // Update toggleToFields function to include interface list fetching
+            function toggleToFields() {
+                const toType = document.getElementById('toType')?.value;
+                const toIpFields = document.getElementById('toIpFields');
+                const toRangeFields = document.getElementById('toRangeFields');
+                const toAppFields = document.getElementById('toAppFields');
+                const toInterfaceFields = document.getElementById('toInterfaceFields');
+
+                [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
+                    field?.classList.add('hidden');
+                });
+
+                if (toType === 'ipaddress') {
+                    toIpFields?.classList.remove('hidden');
+                } else if (toType === 'app') {
+                    toAppFields?.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
+                    fetchUFWAppList(pcName);
+                } else if (toType === 'interface') {
+                    toInterfaceFields?.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
+                    fetchInterfaceList(pcName); // Fetch interface list when "interface" is selected
+                }
+            }
+
+            // Toggle Firewall
+            function toggleFirewall(element) {
+                const pcName = element.getAttribute('data-pc-name');
+                if (!pcName) {
+                    console.error("data-pc-name attribute is missing or empty");
+                    alert("Lỗi: Không tìm thấy tên máy tính");
+                    return;
+                }
+
+                const isChecked = element.checked;
+                const url = `/machine/${pcName}/toggle-firewall`;
+                element.disabled = true;
+                const label = document.querySelector('.toggle-label');
+                const originalLabel = label.textContent;
+                label.textContent = 'Đang xử lý...';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `enable=${isChecked}`
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        element.disabled = false;
+                        if (data.success) {
+                            label.textContent = isChecked ? 'Firewall: ON' : 'Firewall: OFF';
+                            const firewallRulesTable = document.getElementById('firewallRulesTable');
+                            if (firewallRulesTable) {
+                                firewallRulesTable.style.display = isChecked ? 'block' : 'none';
+                            }
+                        } else {
+                            console.error('Không thể bật/tắt firewall:', data.message);
+                            alert('Không thể bật/tắt firewall: ' + data.message);
+                            element.checked = !isChecked;
+                            label.textContent = originalLabel;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Lỗi:', error);
+                        alert('Lỗi: ' + error.message);
+                        element.checked = !isChecked;
+                        element.disabled = false;
+                        label.textContent = originalLabel;
+                    });
+            }
+
+            // Toggle Logging
+            function toggleLogging(element) {
+                const pcName = element.getAttribute('data-pc-name');
+                if (!pcName) {
+                    console.error("data-pc-name attribute is missing or empty");
+                    alert("Lỗi: Không tìm thấy tên máy tính");
+                    return;
+                }
+
+                const isChecked = element.checked;
+                const url = `/machine/${pcName}/toggle-logging`;
+                element.disabled = true;
+                const label = document.querySelector('.toggle-label');
+                const originalLabel = label.textContent;
+                label.textContent = 'Đang xử lý...';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: `enable=${isChecked}`
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        element.disabled = false;
+                        if (data.success) {
+                            label.textContent = isChecked ? 'Logging: ON' : 'Logging: OFF';
+                            const loggingTable = document.getElementById('loggingTable');
+                            if (loggingTable) {
+                                loggingTable.style.display = isChecked ? 'block' : 'none';
+                            }
+                            console.log(`Logging đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
+                        } else {
+                            console.error('Không thể bật/tắt logging:', data.message);
+                            alert('Không thể bật/tắt logging: ' + data.message);
+                            element.checked = !isChecked;
+                            label.textContent = originalLabel;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Lỗi:', error);
+                        alert('Lỗi: ' + error.message);
+                        element.checked = !isChecked;
+                        element.disabled = false;
+                        label.textContent = originalLabel;
+                    });
+            }
+
+            // Firewall Rule Management Functions
+            function editRule(element) {
+                const ruleId = element.getAttribute('data-rule-id');
+                console.log('Editing rule with ID:', ruleId);
+                alert(`Chỉnh sửa quy tắc với ID: ${ruleId} (Chưa triển khai)`);
+                // TODO: Implement edit form logic here
+            }
+
+            function deleteRule(element) {
+                const ruleId = element.getAttribute('data-rule-id');
+                const pcName = window.location.pathname.split('/')[2];
+
+                if (confirm('Bạn có chắc chắn muốn xóa quy tắc này?')) {
+                    fetch(`/machine/deleteRule?ruleId=${ruleId}&pcName=${pcName}`, {
+                        method: 'DELETE',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok: ' + response.status);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                alert('Xóa quy tắc thành công');
+                                window.location.reload();
+                            } else {
+                                alert('Lỗi khi xóa quy tắc: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Lỗi:', error);
+                            alert('Lỗi: ' + error.message);
+                        });
+                }
+            }
+
+            // Form Initialization Functions
+            function reinitializeForms() {
+                setupFormValidations();
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    form.removeEventListener('submit', handleFormSubmit); // Prevent duplicate listeners
+                    form.addEventListener('submit', handleFormSubmit);
+                });
+                initializeRuleForm();
+            }
+
+            function handleFormSubmit(e) {
+                e.preventDefault();
+                if (!validateRuleForm()) return; // Validate before submission
+                const form = e.target;
+                const formData = new FormData(form);
+                const action = form.getAttribute('action');
+                fetch(action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        document.getElementById('content-area').innerHTML = html;
+                        reinitializeForms();
+                    })
+                    .catch(error => {
+                        console.error('Lỗi gửi form:', error);
+                        document.getElementById('content-area').innerHTML =
+                            '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
+                    });
+            }
+
+            function setupFormValidations() {
+                console.log("Setting up form validations...");
+                const ruleForm = document.querySelector('form[action*="/rule"]');
+                if (ruleForm) {
+                    ruleForm.addEventListener('submit', function (e) {
+                        if (!validateRuleForm()) {
+                            e.preventDefault();
+                        }
+                    });
+                }
+            }
+
+            function initializeRuleForm() {
+                const outgoingCheckbox = document.getElementById('outgoingCheckbox');
+                if (outgoingCheckbox) {
+                    outgoingCheckbox.addEventListener('change', function () {
+                        const directionField = document.getElementById('direction');
+                        if (directionField) {
+                            directionField.value = this.checked ? 'out' : 'in';
+                        }
+                    });
+                }
+
+                document.getElementById('toType')?.addEventListener('change', toggleToFields);
+                document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
+                document.getElementById('portType')?.addEventListener('change', togglePortTypeFields);
+                document.getElementById('protocol')?.addEventListener('change', togglePortTypeFields);
+
+                const portCheck = document.getElementById('portCheck');
+                if (portCheck) {
+                    portCheck.addEventListener('change', function () {
+                        const portFields = document.getElementById('portFields');
+                        if (portFields) {
+                            portFields.classList.toggle('hidden', !this.checked);
+                        }
+                    });
+                }
+            }
+
+            // Terminal Functions
+            function initializeTerminal() {
+                const terminalSection = document.getElementById('terminal-section');
+                if (!terminalSection) {
+                    console.error('Không tìm thấy phần tử chứa terminal');
+                    return;
+                }
+
+                const statusElement = document.getElementById('terminal-status');
+                const pcName = terminalSection.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error('Không tìm thấy thuộc tính data-pcname');
+                    if (statusElement) {
+                        statusElement.textContent = "Lỗi: Không tìm thấy tên máy tính";
+                        statusElement.style.color = "#dc3545";
+                    }
+                    return;
+                }
+
+                if (typeof Terminal === 'undefined') {
+                    console.error('Terminal.js không được tải');
+                    if (statusElement) {
+                        statusElement.textContent = "Lỗi: Terminal.js không được tải";
+                        statusElement.style.color = "#dc3545";
+                    }
+                    return;
+                }
+
+                const terminal = new Terminal({
+                    cursorBlink: true,
+                    rows: 20,
+                    cols: 80,
+                    theme: { background: '#000000', foreground: '#ffffff' }
+                });
+
+                let terminalContainer = document.getElementById('terminal-container');
+                if (!terminalContainer) {
+                    terminalContainer = document.createElement('div');
+                    terminalContainer.id = 'terminal-container';
+                    terminalContainer.style.height = '400px';
+                    terminalSection.appendChild(terminalContainer);
+                }
+
+                terminal.open(terminalContainer);
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const host = window.location.hostname;
+                const port = 1402;
+                const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal`;
+                let socket;
+                let retryCount = 0;
+                const maxRetries = 5;
+                const retryDelay = 3000;
+
+                function connectWebSocket() {
+                    if (statusElement) {
+                        statusElement.textContent = "Đang kết nối...";
+                        statusElement.style.color = "#ffc107";
+                    }
+
+                    socket = new WebSocket(socketUrl);
+                    socket.onopen = () => {
+                        terminal.clear();
+                        terminal.write("\r\n\x1b[32m*** Kết nối WebSocket thành công! ***\x1b[0m\r\n\r\n");
+                        retryCount = 0;
+                        if (statusElement) {
+                            statusElement.textContent = "Đã kết nối WebSocket";
+                            statusElement.style.color = "#28A745";
+                        }
+                    };
+                    socket.onmessage = (event) => terminal.write(event.data);
+                    socket.onerror = (err) => {
+                        console.error("Lỗi WebSocket:", err);
+                        if (statusElement) {
+                            statusElement.textContent = "Lỗi WebSocket";
+                            statusElement.style.color = "#dc3545";
+                        }
+                    };
+                    socket.onclose = (event) => {
+                        console.log("WebSocket closed:", event.code, event.reason);
+                        terminal.write("\r\n\x1b[31m*** WebSocket connection closed! ***\x1b[0m\r\n");
+                        if (statusElement) {
+                            statusElement.textContent = "WebSocket disconnected";
+                            statusElement.style.color = "#dc3545";
+                        }
+                        if (retryCount < maxRetries) {
+                            retryCount++;
+                            terminal.write(`\r\n\x1b[33m*** Đang thử lại kết nối (${retryCount}/${maxRetries})... ***\x1b[0m\r\n`);
+                            if (statusElement) {
+                                statusElement.textContent = `Đang thử lại (${retryCount}/${maxRetries})...`;
+                            }
+                            setTimeout(connectWebSocket, retryDelay);
+                        } else {
+                            terminal.write("\r\n\x1b[31m*** Maximum retry attempts reached. Unable to connect to WebSocket. ***\x1b[0m\r\n");
+                            if (statusElement) {
+                                statusElement.innerHTML = 'Unable to connect to WebSocket <button onclick="initializeTerminal()" class="btn btn-sm btn-primary ml-2">Retry</button>';
+                            }
+                        }
+                    };
+                }
+
+                terminal.onData((data) => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(data);
+                    } else {
+                        terminal.write("\r\n\x1b[31mKhông thể gửi dữ liệu: WebSocket chưa kết nối.\x1b[0m\r\n");
+                    }
+                });
+
+                terminal.onResize((size) => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
+                    }
+                });
+
+                window.initializeTerminal = initializeTerminal;
+                connectWebSocket();
+                return terminal;
+            }
+
+            // Main Initialization
+            document.addEventListener('DOMContentLoaded', function () {
+                const menuButtons = document.querySelectorAll('.menu-btn');
+                const contentArea = document.getElementById('content-area');
+                let activeButton = document.querySelector('.menu-btn.active');
+
+                // Load initial content
+                const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
+                const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
+                const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
+
+                fetch(initialUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        contentArea.innerHTML = html;
+                        contentArea.style.opacity = '1';
+                        reinitializeForms();
+                        if (initialMenu.toLowerCase() === 'terminal') {
+                            initializeTerminal();
+                        } else if (initialMenu.toLowerCase() === 'rule') {
+                            const pcName = activeButton?.getAttribute('data-pcname') || 'wsl';
+                            if (document.getElementById('toType')?.value === 'app') {
+                                fetchUFWAppList(pcName);
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Lỗi fetch ban đầu:', error);
+                        contentArea.innerHTML = '<div class="error-message">Lỗi khi tải nội dung: ' + error.message + '</div>';
+                        contentArea.style.opacity = '1';
+                    });
+
+                // Handle menu button clicks
+                menuButtons.forEach(button => {
+                    button.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        const menuOption = this.getAttribute('data-menu');
+                        const pcName = this.getAttribute('data-pcname') || 'wsl';
+                        const url = `/machine/${pcName}/${menuOption}`;
+
+                        window.history.pushState({ menu: menuOption, pcName: pcName }, '', url);
+
+                        if (activeButton) {
+                            activeButton.classList.remove('active');
+                        }
+                        this.classList.add('active');
+                        activeButton = this;
+
+                        contentArea.style.opacity = '0';
+                        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(response => {
                                 if (!response.ok) {
-                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                    throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
                                 }
                                 return response.text();
                             })
                             .then(html => {
-                                document.getElementById('content-area').innerHTML = html;
-                                reinitializeForms();
+                                setTimeout(() => {
+                                    contentArea.innerHTML = html;
+                                    contentArea.style.opacity = '1';
+                                    reinitializeForms();
+                                    if (menuOption.toLowerCase() === 'terminal') {
+                                        initializeTerminal();
+                                    } else if (menuOption.toLowerCase() === 'rule') {
+                                        if (document.getElementById('toType')?.value === 'app') {
+                                            fetchUFWAppList(pcName);
+                                        }
+                                    }
+                                }, 200);
                             })
                             .catch(error => {
-                                console.error('Lỗi gửi form:', error);
-                                document.getElementById('content-area').innerHTML =
-                                        '<div class="error-message">Lỗi khi gửi form: ' + error.message + '</div>';
+                                console.error('Lỗi fetch:', error);
+                                contentArea.innerHTML = `<div class="error-message">Lỗi khi tải nội dung: ${error.message}</div>`;
+                                contentArea.style.opacity = '1';
                             });
-                }
-
-                function setupFormValidations() {
-                    console.log("Setting up form validations...");
-                    const ruleForm = document.querySelector('form[action*="/rule"]');
-                    if (ruleForm) {
-                        ruleForm.addEventListener('submit', function (e) {
-                            if (!validateRuleForm()) {
-                                e.preventDefault();
-                            }
-                        });
-                    }
-                }
-
-                function initializeRuleForm() {
-                    const outgoingCheckbox = document.getElementById('outgoingCheckbox');
-                    if (outgoingCheckbox) {
-                        outgoingCheckbox.addEventListener('change', function () {
-                            const directionField = document.getElementById('direction');
-                            if (directionField) {
-                                directionField.value = this.checked ? 'out' : 'in';
-                            }
-                        });
-                    }
-
-                    document.getElementById('toType')?.addEventListener('change', toggleToFields);
-                    document.getElementById('fromType')?.addEventListener('change', toggleFromFields);
-                    document.getElementById('portType')?.addEventListener('change', togglePortTypeFields);
-                    document.getElementById('protocol')?.addEventListener('change', togglePortTypeFields);
-
-                    const portCheck = document.getElementById('portCheck');
-                    if (portCheck) {
-                        portCheck.addEventListener('change', function () {
-                            const portFields = document.getElementById('portFields');
-                            if (portFields) {
-                                portFields.classList.toggle('hidden', !this.checked);
-                            }
-                        });
-                    }
-                }
-
-                // Terminal Functions
-                function initializeTerminal() {
-                    const terminalSection = document.getElementById('terminal-section');
-                    if (!terminalSection) {
-                        console.error('Không tìm thấy phần tử chứa terminal');
-                        return;
-                    }
-
-                    const statusElement = document.getElementById('terminal-status');
-                    const pcName = terminalSection.getAttribute('data-pcname');
-                    if (!pcName) {
-                        console.error('Không tìm thấy thuộc tính data-pcname');
-                        if (statusElement) {
-                            statusElement.textContent = "Lỗi: Không tìm thấy tên máy tính";
-                            statusElement.style.color = "#dc3545";
-                        }
-                        return;
-                    }
-
-                    if (typeof Terminal === 'undefined') {
-                        console.error('Terminal.js không được tải');
-                        if (statusElement) {
-                            statusElement.textContent = "Lỗi: Terminal.js không được tải";
-                            statusElement.style.color = "#dc3545";
-                        }
-                        return;
-                    }
-
-                    const terminal = new Terminal({
-                        cursorBlink: true,
-                        rows: 20,
-                        cols: 80,
-                        theme: {background: '#000000', foreground: '#ffffff'}
                     });
+                });
 
-                    let terminalContainer = document.getElementById('terminal-container');
-                    if (!terminalContainer) {
-                        terminalContainer = document.createElement('div');
-                        terminalContainer.id = 'terminal-container';
-                        terminalContainer.style.height = '400px';
-                        terminalSection.appendChild(terminalContainer);
-                    }
+                // Handle popstate (back/forward navigation)
+                window.addEventListener('popstate', function (event) {
+                    const state = event.state;
+                    if (state) {
+                        const menuOption = state.menu || 'information';
+                        const pcName = state.pcName || activeButton?.getAttribute('data-pcname') || 'wsl';
+                        const url = `/machine/${pcName}/${menuOption}`;
 
-                    terminal.open(terminalContainer);
-                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    const host = window.location.hostname;
-                    const port = 1402;
-                    const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal`;
-                    let socket;
-                    let retryCount = 0;
-                    const maxRetries = 5;
-                    const retryDelay = 3000;
-
-                    function connectWebSocket() {
-                        if (statusElement) {
-                            statusElement.textContent = "Đang kết nối...";
-                            statusElement.style.color = "#ffc107";
-                        }
-
-                        socket = new WebSocket(socketUrl);
-                        socket.onopen = () => {
-                            terminal.clear();
-                            terminal.write("\r\n\x1b[32m*** Kết nối WebSocket thành công! ***\x1b[0m\r\n\r\n");
-                            retryCount = 0;
-                            if (statusElement) {
-                                statusElement.textContent = "Đã kết nối WebSocket";
-                                statusElement.style.color = "#28A745";
-                            }
-                        };
-                        socket.onmessage = (event) => terminal.write(event.data);
-                        socket.onerror = (err) => {
-                            console.error("Lỗi WebSocket:", err);
-                            if (statusElement) {
-                                statusElement.textContent = "Lỗi WebSocket";
-                                statusElement.style.color = "#dc3545";
-                            }
-                        };
-                        socket.onclose = (event) => {
-                            console.log("WebSocket closed:", event.code, event.reason);
-                            terminal.write("\r\n\x1b[31m*** WebSocket connection closed! ***\x1b[0m\r\n");
-                            if (statusElement) {
-                                statusElement.textContent = "WebSocket disconnected";
-                                statusElement.style.color = "#dc3545";
-                            }
-                            if (retryCount < maxRetries) {
-                                retryCount++;
-                                terminal.write(`\r\n\x1b[33m*** Đang thử lại kết nối (${retryCount}/${maxRetries})... ***\x1b[0m\r\n`);
-                                if (statusElement) {
-                                    statusElement.textContent = `Đang thử lại (${retryCount}/${maxRetries})...`;
-                                }
-                                setTimeout(connectWebSocket, retryDelay);
-                            } else {
-                                terminal.write("\r\n\x1b[31m*** Maximum retry attempts reached. Unable to connect to WebSocket. ***\x1b[0m\r\n");
-                                if (statusElement) {
-                                    statusElement.innerHTML = 'Unable to connect to WebSocket <button onclick="initializeTerminal()" class="btn btn-sm btn-primary ml-2">Retry</button>';
-                                }
-                            }
-                        };
-                    }
-
-                    terminal.onData((data) => {
-                        if (socket && socket.readyState === WebSocket.OPEN) {
-                            socket.send(data);
-                        } else {
-                            terminal.write("\r\n\x1b[31mKhông thể gửi dữ liệu: WebSocket chưa kết nối.\x1b[0m\r\n");
-                        }
-                    });
-
-                    terminal.onResize((size) => {
-                        if (socket && socket.readyState === WebSocket.OPEN) {
-                            socket.send(JSON.stringify({type: 'resize', cols: size.cols, rows: size.rows}));
-                        }
-                    });
-
-                    window.initializeTerminal = initializeTerminal;
-                    connectWebSocket();
-                    return terminal;
-                }
-
-                // Main Initialization
-                document.addEventListener('DOMContentLoaded', function () {
-                    const menuButtons = document.querySelectorAll('.menu-btn');
-                    const contentArea = document.getElementById('content-area');
-                    let activeButton = document.querySelector('.menu-btn.active');
-
-                    // Load initial content
-                    const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
-                    const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
-                    const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
-
-                    fetch(initialUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                        contentArea.style.opacity = '0';
+                        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                             .then(response => {
                                 if (!response.ok) {
                                     throw new Error('Network response was not ok: ' + response.statusText);
@@ -1887,131 +2061,46 @@
                                 contentArea.innerHTML = html;
                                 contentArea.style.opacity = '1';
                                 reinitializeForms();
-                                if (initialMenu.toLowerCase() === 'terminal') {
+
+                                menuButtons.forEach(btn => {
+                                    btn.classList.remove('active');
+                                    if (btn.getAttribute('data-menu') === menuOption) {
+                                        btn.classList.add('active');
+                                        activeButton = btn;
+                                    }
+                                });
+
+                                if (menuOption.toLowerCase() === 'terminal') {
                                     initializeTerminal();
-                                } else if (initialMenu.toLowerCase() === 'rule') {
-                                    const pcName = activeButton?.getAttribute('data-pcname') || 'wsl';
+                                } else if (menuOption.toLowerCase() === 'rule') {
                                     if (document.getElementById('toType')?.value === 'app') {
                                         fetchUFWAppList(pcName);
                                     }
                                 }
                             })
                             .catch(error => {
-                                console.error('Initial fetch error:', error);
+                                console.error('Lỗi fetch popstate:', error);
                                 contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
                                 contentArea.style.opacity = '1';
                             });
-
-                    // Handle menu button clicks
-                    menuButtons.forEach(button => {
-                        button.addEventListener('click', function (e) {
-                            e.preventDefault();
-                            const menuOption = this.getAttribute('data-menu');
-                            const pcName = this.getAttribute('data-pcname') || 'wsl';
-                            const url = `/machine/${pcName}/${menuOption}`;
-
-                            if (menuOption === 'information') {
-                                url = `/machine/${pcName}/system-logging`;
-                            }
-
-                            window.history.pushState({menu: menuOption, pcName: pcName}, '', url);
-
-                            if (activeButton) {
-                                activeButton.classList.remove('active');
-                            }
-                            this.classList.add('active');
-                            activeButton = this;
-
-                            contentArea.style.opacity = '0';
-                            fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
-                                        }
-                                        return response.text();
-                                    })
-                                    .then(html => {
-                                        setTimeout(() => {
-                                            contentArea.innerHTML = html;
-                                            contentArea.style.opacity = '1';
-                                            reinitializeForms();
-                                            if (menuOption.toLowerCase() === 'terminal') {
-                                                initializeTerminal();
-                                            } else if (menuOption.toLowerCase() === 'rule') {
-                                                if (document.getElementById('toType')?.value === 'app') {
-                                                    fetchUFWAppList(pcName);
-                                                }
-                                            }
-                                        }, 200);
-                                    })
-                                    .catch(error => {
-                                        console.error('Lỗi fetch:', error);
-                                        contentArea.innerHTML = `<div class="error-message">Lỗi khi tải nội dung: ${error.message}</div>`;
-                                        contentArea.style.opacity = '1';
-                                    });
-                        });
-                    });
-
-                    // Handle popstate (back/forward navigation)
-                    window.addEventListener('popstate', function (event) {
-                        const state = event.state;
-                        if (state) {
-                            const menuOption = state.menu || 'information';
-                            const pcName = state.pcName || activeButton?.getAttribute('data-pcname') || 'wsl';
-                            const url = `/machine/${pcName}/${menuOption}`;
-
-                            contentArea.style.opacity = '0';
-                            fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error('Network response was not ok: ' + response.statusText);
-                                        }
-                                        return response.text();
-                                    })
-                                    .then(html => {
-                                        contentArea.innerHTML = html;
-                                        contentArea.style.opacity = '1';
-                                        reinitializeForms();
-
-                                        menuButtons.forEach(btn => {
-                                            btn.classList.remove('active');
-                                            if (btn.getAttribute('data-menu') === menuOption) {
-                                                btn.classList.add('active');
-                                                activeButton = btn;
-                                            }
-                                        });
-
-                                        if (menuOption.toLowerCase() === 'terminal') {
-                                            initializeTerminal();
-                                        } else if (menuOption.toLowerCase() === 'rule') {
-                                            if (document.getElementById('toType')?.value === 'app') {
-                                                fetchUFWAppList(pcName);
-                                            }
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Lỗi fetch popstate:', error);
-                                        contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                                        contentArea.style.opacity = '1';
-                                    });
-                        }
-                    });
-
-                    // Sidebar toggle
-                    document.getElementById('sidebarToggle')?.addEventListener('click', function () {
-                        const sidebar = document.getElementById('sidebar');
-                        sidebar.classList.toggle('collapsed');
-                        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-                    });
-
-                    // Load sidebar state
-                    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-                    if (isCollapsed) {
-                        document.getElementById('sidebar')?.classList.add('collapsed');
                     }
                 });
-            </script>
 
-    </body>
+                // Sidebar toggle
+                document.getElementById('sidebarToggle')?.addEventListener('click', function () {
+                    const sidebar = document.getElementById('sidebar');
+                    sidebar.classList.toggle('collapsed');
+                    localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+                });
+
+                // Load sidebar state
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    document.getElementById('sidebar')?.classList.add('collapsed');
+                }
+            });
+        </script>
+
+</body>
 
 </html>

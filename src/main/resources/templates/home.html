@@ -233,7 +233,7 @@
             transition: all 0.3s ease;
             position: relative;
         }
-        
+
         .delete-btn {
             position: absolute;
             top: 10px;
@@ -251,7 +251,7 @@
             transition: all 0.3s ease;
             z-index: 10;
         }
-        
+
         .delete-btn:hover {
             transform: scale(1.1);
             background-color: #c0392b;
@@ -467,6 +467,15 @@
 
         .input-field:focus {
             border-color: #0e51ff;
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 5%;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #a6a6a6;
         }
 
         label {
@@ -703,14 +712,14 @@
                 </div>
 
                 <div th:case="*" class="section">
-                    <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}" 
-                         th:onclick="redirectToMachine(this)" style="cursor: pointer;">
-                         
-                         <a th:href="@{'/delete-pc/' + ${username} + '/' + ${computer.pcName}}"
+                    <div th:each="computer : ${computers}" class="computer" th:data-pcname="${computer.pcName}"
+                        th:onclick="redirectToMachine(this)" style="cursor: pointer;">
+
+                        <a th:href="@{'/delete-pc/' + ${username} + '/' + ${computer.pcName}}"
                             onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this PC?')"
                             class="delete-btn">
                             <i class="fas fa-times"></i>
-                         </a>
+                        </a>
 
                         <img src="/images/computer.png" alt="Computer">
                         <div class="pc-name" th:text="${computer.pcName}">PC NAME</div>
@@ -763,6 +772,7 @@
                     <div class="input-contain">
                         <input type="password" class="input-field" name="password" required>
                         <label for="password">Password</label>
+                        <span class="eye-icon" onclick="togglePassword()"><i class="fas fa-eye"></i></span>
                     </div>
                     <button type="submit" class="btn_add_computer">Done</button>
                 </form>
@@ -791,6 +801,20 @@
         function redirectToMachine(element) {
             let pcName = element.getAttribute("data-pcname") || 'defaultPC';
             window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
+        }
+
+        function togglePassword() {
+            const passwordInput = document.querySelector(".input-field[name='password']");
+            const eyeIcon = document.querySelector(".eye-icon i");
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyeIcon.classList.remove("fa-eye");
+                eyeIcon.classList.add("fa-eye-slash");
+            } else {
+                passwordInput.type = "password";
+                eyeIcon.classList.remove("fa-eye-slash");
+                eyeIcon.classList.add("fa-eye");
+            }
         }
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -953,7 +977,7 @@
             // Save state to localStorage
             localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
         });
-        
+
         function checkSSHStatusOne(event, button) {
             event.stopPropagation(); // Ngăn click vào máy
 

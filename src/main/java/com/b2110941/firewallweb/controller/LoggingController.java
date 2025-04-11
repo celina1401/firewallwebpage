@@ -81,7 +81,7 @@ public class LoggingController {
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
                 String logsCommand = "echo '" + computer.getPassword()
-                        + "' | sudo -S tac /var/log/ufw.log | head -n 10";
+                        + "' | sudo -S tac /var/log/ufw.log.1 | head -n 10";
                 String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
                 System.out.println("Raw UFW logs output: [" + logsOutput + "]");
 
