@@ -52,13 +52,13 @@ public class UbuntuInfo {
             InputStream in = channel.getInputStream();
             InputStream err_in = channel.getErrStream();
 
-            //Thực thi
+            // Thực thi
             channel.connect();
 
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
 
             String line;
-//            System.out.println("aaaaaaaaaa");
+            // System.out.println("aaaaaaaaaa");
             while ((line = reader.readLine()) != null) {
                 outputBuffer.append(line).append("\n");
 

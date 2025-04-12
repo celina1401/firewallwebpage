@@ -13,6 +13,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
@@ -34,22 +35,29 @@ public class TerminalWebSocketHandler extends TextWebSocketHandler {
         String username = (String) session.getAttributes().get("username");
 
         if (pcName == null || username == null) {
-            sendErrorAndClose(session, "Error: pcName or username is missing in session attributes.", CloseStatus.BAD_DATA);
+            sendErrorAndClose(session, "Error: pcName or username is missing in session attributes.",
+                    CloseStatus.BAD_DATA);
             return;
         }
 
         System.out.println("WebSocket connection established for PC: " + pcName + ", user: " + username);
 
         // Find the PC using pcName and validate user access
-        PC computer = pcService.findByPcName(pcName);
-//        if (computer == null) {
-//            sendErrorAndClose(session, "PC not found: " + pcName, CloseStatus.NOT_FOUND);
-//            return;
-//        }
+        Optional<PC> computerOpt = pcService.findByPcName(pcName);
 
-        // Validate that the user has access to this PC
+        if (!computerOpt.isPresent()) {
+            try {
+                sendErrorAndClose(session, "PC not found: " + pcName, new CloseStatus(4004, "PC_NOT_FOUND"));
+            } catch (Exception e) {
+                System.err.println("Error sending PC not found message: " + e.getMessage());
+            }
+            return;
+        }
+
+        PC computer = computerOpt.get();
         if (!username.equals(computer.getOwnerUsername())) {
-            sendErrorAndClose(session, "Access denied: User " + username + " does not own PC " + pcName, CloseStatus.POLICY_VIOLATION);
+            sendErrorAndClose(session, "Access denied: User " + username + " does not own PC " + pcName,
+                    CloseStatus.POLICY_VIOLATION);
             return;
         }
 
@@ -64,8 +72,7 @@ public class TerminalWebSocketHandler extends TextWebSocketHandler {
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
-                    computer.getPassword()
-            );
+                    computer.getPassword());
             channel = (ChannelShell) sshSession.openChannel("shell");
             channel.setPty(true); // Enable pseudo-terminal for shell
             sshOutput = channel.getOutputStream();

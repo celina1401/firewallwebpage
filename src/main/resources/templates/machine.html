@@ -1254,13 +1254,15 @@
                 <div id="terminal-status" style="margin-bottom: 10px; color: #dc3545;">
                     Connecting to WebSocket...
                 </div>
-                <!-- Debug: Display the pcName -->
                 <div th:if="${pcName == 'unknown'}" style="color: red;">
                     Error: Could not resolve pcName. Check server logs.
                 </div>
+                <div id="terminal-container" style="height: 400px; background: black;"></div>
             </div>
         </div>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
         <script>
             // Utility Functions
             // Validate IP address
@@ -1293,7 +1295,6 @@
                     return false;
                 }
 
-                // Validate Destination IP
                 if (toType === 'ipaddress') {
                     const toIp = document.getElementById('toIp')?.value;
                     if (!toIp || !validateIpAddress(toIp)) {
@@ -1302,7 +1303,6 @@
                     }
                 }
 
-                // Validate App
                 if (toType === 'app') {
                     const appName = document.getElementById('toApp')?.value;
                     if (!appName) {
@@ -1311,7 +1311,6 @@
                     }
                 }
 
-                // Validate Port logic
                 if (portType === 'specific') {
                     const port = document.getElementById('port')?.value;
                     if (!port || isNaN(port) || port < 1 || port > 65535) {
@@ -1340,7 +1339,6 @@
                     }
                 }
 
-                // Validate Source IP
                 if (fromType === 'ipaddress') {
                     const fromIp = document.getElementById('fromIp')?.value;
                     if (!fromIp || !validateIpAddress(fromIp)) {
@@ -1352,6 +1350,116 @@
                 return true;
             }
 
+            // Terminal Initialization
+            function initializeTerminal() {
+                const terminalSection = document.getElementById('terminal-section');
+                if (!terminalSection) {
+                    console.error('Terminal section not found');
+                    return;
+                }
+
+                const statusElement = document.getElementById('terminal-status');
+                const pcName = terminalSection.getAttribute('data-pcname');
+                if (!pcName || pcName === 'unknown') {
+                    console.error('Invalid or missing data-pcname');
+                    if (statusElement) {
+                        statusElement.textContent = 'Error: Invalid computer name';
+                        statusElement.style.color = '#dc3545';
+                    }
+                    return;
+                }
+
+                if (typeof Terminal === 'undefined' || typeof FitAddon === 'undefined') {
+                    console.error('xterm.js or FitAddon not loaded');
+                    if (statusElement) {
+                        statusElement.textContent = 'Error: Terminal libraries not loaded';
+                        statusElement.style.color = '#dc3545';
+                    }
+                    return;
+                }
+
+                // Initialize xterm.js
+                const terminal = new Terminal({
+                    cursorBlink: true,
+                    rows: 20,
+                    cols: 80,
+                    theme: { background: '#000000', foreground: '#ffffff' }
+                });
+                const fitAddon = new FitAddon.FitAddon();
+                terminal.loadAddon(fitAddon);
+
+                let terminalContainer = document.getElementById('terminal-container');
+                if (!terminalContainer) {
+                    console.error('Terminal container not found');
+                    return;
+                }
+
+                // Clear any existing terminal content
+                terminalContainer.innerHTML = '';
+                terminal.open(terminalContainer);
+                fitAddon.fit();
+
+                // Initialize WebSocket with STOMP
+                const socket = new SockJS('/ssh-terminal');
+                const stompClient = Stomp.over(socket);
+                let isConnected = false;
+
+                stompClient.connect({}, function (frame) {
+                    isConnected = true;
+                    terminal.clear();
+                    terminal.write('\r\n\x1b[32m*** Connected to SSH Terminal ***\x1b[0m\r\n');
+                    if (statusElement) {
+                        statusElement.textContent = 'Connected';
+                        statusElement.style.color = '#28a745';
+                    }
+
+                    // Subscribe to terminal output
+                    stompClient.subscribe(`/topic/terminal/${pcName}/output`, function (message) {
+                        terminal.write(message.body);
+                    });
+
+                    // Send initial connection command to backend
+                    stompClient.send(`/app/terminal/${pcName}/connect`, {}, JSON.stringify({ pcName: pcName }));
+                }, function (error) {
+                    console.error('STOMP error:', error);
+                    isConnected = false;
+                    terminal.write('\r\n\x1b[31m*** Connection failed ***\x1b[0m\r\n');
+                    if (statusElement) {
+                        statusElement.textContent = 'Connection failed';
+                        statusElement.style.color = '#dc3545';
+                    }
+                });
+
+                // Handle terminal input
+                terminal.onData(function (data) {
+                    if (isConnected) {
+                        stompClient.send(`/app/terminal/${pcName}/command`, {}, data);
+                    } else {
+                        terminal.write('\r\n\x1b[31m*** Not connected. Please wait or refresh. ***\x1b[0m\r\n');
+                    }
+                });
+
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    fitAddon.fit();
+                });
+
+                // Handle WebSocket disconnection
+                socket.onclose = function () {
+                    isConnected = false;
+                    terminal.write('\r\n\x1b[31m*** Disconnected from SSH Terminal ***\x1b[0m\r\n');
+                    if (statusElement) {
+                        statusElement.textContent = 'Disconnected';
+                        statusElement.style.color = '#dc3545';
+                    }
+                };
+
+                // Expose for manual retry
+                window.initializeTerminal = initializeTerminal;
+                return terminal;
+            }
+
+            // Existing Functions (kept as-is unless modified)
             function toggleSystemLogging(element) {
                 const pcName = element.getAttribute('data-pc-name');
                 if (!pcName) {
@@ -1389,12 +1497,9 @@
                             if (systemLoggingTable) {
                                 systemLoggingTable.style.display = isChecked ? 'block' : 'none';
                             }
-
-                            // If logs were returned, update the table
                             if (data.systemLogs && data.systemLogs.length > 0) {
                                 updateSystemLogsTable(data.systemLogs);
                             }
-
                             console.log(`System logging has been ${isChecked ? 'enabled' : 'disabled'} successfully`);
                         } else {
                             console.error('Could not toggle system logging:', data.message);
@@ -1412,12 +1517,10 @@
                     });
             }
 
-            // Update system logs table with new data
             function updateSystemLogsTable(logs) {
                 const tableBody = document.querySelector('#systemLoggingTable table tbody');
                 if (!tableBody) return;
 
-                // Clear existing rows
                 tableBody.innerHTML = '';
 
                 if (logs.length === 0) {
@@ -1427,33 +1530,24 @@
                     return;
                 }
 
-                // Add new rows
                 logs.forEach(log => {
                     const row = document.createElement('tr');
-
                     const timestampCell = document.createElement('td');
                     timestampCell.textContent = log.timestamp;
-
                     const hostnameCell = document.createElement('td');
                     hostnameCell.textContent = log.hostname;
-
                     const serviceCell = document.createElement('td');
                     serviceCell.textContent = log.service;
-
                     const messageCell = document.createElement('td');
                     messageCell.textContent = log.message;
-
                     row.appendChild(timestampCell);
                     row.appendChild(hostnameCell);
                     row.appendChild(serviceCell);
                     row.appendChild(messageCell);
-
                     tableBody.appendChild(row);
                 });
             }
 
-            // Toggle Functions for Form Fields
-            // Show/hide Destination fields
             function toggleToFields() {
                 const toType = document.getElementById('toType')?.value;
                 const toIpFields = document.getElementById('toIpFields');
@@ -1470,13 +1564,14 @@
                 } else if (toType === 'app') {
                     toAppFields?.classList.remove('hidden');
                     const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                    fetchUFWAppList(pcName); // Fetch UFW app list when "app" is selected
+                    fetchUFWAppList(pcName);
                 } else if (toType === 'interface') {
                     toInterfaceFields?.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
+                    fetchInterfaceList(pcName);
                 }
             }
 
-            // Show/hide Port Type fields
             function togglePortTypeFields() {
                 const portType = document.getElementById('portType')?.value;
                 const protocol = document.getElementById('protocol')?.value;
@@ -1484,12 +1579,10 @@
                 const portRangeStartFields = document.getElementById('portRangeStartFields');
                 const portRangeEndFields = document.getElementById('portRangeEndFields');
 
-                // Hide all fields initially
                 [portFields, portRangeStartFields, portRangeEndFields].forEach(field => {
                     field?.classList.add('hidden');
                 });
 
-                // Disable inputs initially
                 document.getElementById('port')?.setAttribute('disabled', 'true');
                 document.getElementById('portRangeStart')?.setAttribute('disabled', 'true');
                 document.getElementById('portRangeEnd')?.setAttribute('disabled', 'true');
@@ -1501,7 +1594,7 @@
                     if (protocol === 'none') {
                         alert("Please select protocol (tcp/udp/icmp) if using port range.");
                         document.getElementById('portType').value = 'any';
-                        return togglePortTypeFields(); // Reset fields
+                        return togglePortTypeFields();
                     } else {
                         portRangeStartFields?.classList.remove('hidden');
                         portRangeEndFields?.classList.remove('hidden');
@@ -1511,7 +1604,6 @@
                 }
             }
 
-            // Show/hide Source fields
             function toggleFromFields() {
                 const fromType = document.getElementById('fromType')?.value;
                 const fromIpFields = document.getElementById('fromIpFields');
@@ -1520,7 +1612,6 @@
                 }
             }
 
-            // Fetch UFW App List
             function fetchUFWAppList(pcName) {
                 fetch(`/machine/${pcName}/app-list`, {
                     method: 'POST',
@@ -1587,32 +1678,6 @@
                     });
             }
 
-            // Update toggleToFields function to include interface list fetching
-            function toggleToFields() {
-                const toType = document.getElementById('toType')?.value;
-                const toIpFields = document.getElementById('toIpFields');
-                const toRangeFields = document.getElementById('toRangeFields');
-                const toAppFields = document.getElementById('toAppFields');
-                const toInterfaceFields = document.getElementById('toInterfaceFields');
-
-                [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
-                    field?.classList.add('hidden');
-                });
-
-                if (toType === 'ipaddress') {
-                    toIpFields?.classList.remove('hidden');
-                } else if (toType === 'app') {
-                    toAppFields?.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                    fetchUFWAppList(pcName);
-                } else if (toType === 'interface') {
-                    toInterfaceFields?.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                    fetchInterfaceList(pcName); // Fetch interface list when "interface" is selected
-                }
-            }
-
-            // Toggle Firewall
             function toggleFirewall(element) {
                 const pcName = element.getAttribute('data-pc-name');
                 if (!pcName) {
@@ -1666,7 +1731,6 @@
                     });
             }
 
-            // Toggle Logging
             function toggleLogging(element) {
                 const pcName = element.getAttribute('data-pc-name');
                 if (!pcName) {
@@ -1721,12 +1785,10 @@
                     });
             }
 
-            // Firewall Rule Management Functions
             function editRule(element) {
                 const ruleId = element.getAttribute('data-rule-id');
                 console.log('Editing rule with ID:', ruleId);
                 alert(`Chỉnh sửa quy tắc với ID: ${ruleId} (Chưa triển khai)`);
-                // TODO: Implement edit form logic here
             }
 
             function deleteRule(element) {
@@ -1759,12 +1821,11 @@
                 }
             }
 
-            // Form Initialization Functions
             function reinitializeForms() {
                 setupFormValidations();
                 const forms = document.querySelectorAll('form');
                 forms.forEach(form => {
-                    form.removeEventListener('submit', handleFormSubmit); // Prevent duplicate listeners
+                    form.removeEventListener('submit', handleFormSubmit);
                     form.addEventListener('submit', handleFormSubmit);
                 });
                 initializeRuleForm();
@@ -1772,7 +1833,7 @@
 
             function handleFormSubmit(e) {
                 e.preventDefault();
-                if (!validateRuleForm()) return; // Validate before submission
+                if (!validateRuleForm()) return;
                 const form = e.target;
                 const formData = new FormData(form);
                 const action = form.getAttribute('action');
@@ -1837,132 +1898,12 @@
                 }
             }
 
-            // Terminal Functions
-            function initializeTerminal() {
-                const terminalSection = document.getElementById('terminal-section');
-                if (!terminalSection) {
-                    console.error('Không tìm thấy phần tử chứa terminal');
-                    return;
-                }
-
-                const statusElement = document.getElementById('terminal-status');
-                const pcName = terminalSection.getAttribute('data-pcname');
-                if (!pcName) {
-                    console.error('Không tìm thấy thuộc tính data-pcname');
-                    if (statusElement) {
-                        statusElement.textContent = "Lỗi: Không tìm thấy tên máy tính";
-                        statusElement.style.color = "#dc3545";
-                    }
-                    return;
-                }
-
-                if (typeof Terminal === 'undefined') {
-                    console.error('Terminal.js không được tải');
-                    if (statusElement) {
-                        statusElement.textContent = "Lỗi: Terminal.js không được tải";
-                        statusElement.style.color = "#dc3545";
-                    }
-                    return;
-                }
-
-                const terminal = new Terminal({
-                    cursorBlink: true,
-                    rows: 20,
-                    cols: 80,
-                    theme: { background: '#000000', foreground: '#ffffff' }
-                });
-
-                let terminalContainer = document.getElementById('terminal-container');
-                if (!terminalContainer) {
-                    terminalContainer = document.createElement('div');
-                    terminalContainer.id = 'terminal-container';
-                    terminalContainer.style.height = '400px';
-                    terminalSection.appendChild(terminalContainer);
-                }
-
-                terminal.open(terminalContainer);
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const host = window.location.hostname;
-                const port = 1402;
-                const socketUrl = `${protocol}//${host}:${port}/machine/${encodeURIComponent(pcName)}/terminal`;
-                let socket;
-                let retryCount = 0;
-                const maxRetries = 5;
-                const retryDelay = 3000;
-
-                function connectWebSocket() {
-                    if (statusElement) {
-                        statusElement.textContent = "Đang kết nối...";
-                        statusElement.style.color = "#ffc107";
-                    }
-
-                    socket = new WebSocket(socketUrl);
-                    socket.onopen = () => {
-                        terminal.clear();
-                        terminal.write("\r\n\x1b[32m*** Kết nối WebSocket thành công! ***\x1b[0m\r\n\r\n");
-                        retryCount = 0;
-                        if (statusElement) {
-                            statusElement.textContent = "Đã kết nối WebSocket";
-                            statusElement.style.color = "#28A745";
-                        }
-                    };
-                    socket.onmessage = (event) => terminal.write(event.data);
-                    socket.onerror = (err) => {
-                        console.error("Lỗi WebSocket:", err);
-                        if (statusElement) {
-                            statusElement.textContent = "Lỗi WebSocket";
-                            statusElement.style.color = "#dc3545";
-                        }
-                    };
-                    socket.onclose = (event) => {
-                        console.log("WebSocket closed:", event.code, event.reason);
-                        terminal.write("\r\n\x1b[31m*** WebSocket connection closed! ***\x1b[0m\r\n");
-                        if (statusElement) {
-                            statusElement.textContent = "WebSocket disconnected";
-                            statusElement.style.color = "#dc3545";
-                        }
-                        if (retryCount < maxRetries) {
-                            retryCount++;
-                            terminal.write(`\r\n\x1b[33m*** Đang thử lại kết nối (${retryCount}/${maxRetries})... ***\x1b[0m\r\n`);
-                            if (statusElement) {
-                                statusElement.textContent = `Đang thử lại (${retryCount}/${maxRetries})...`;
-                            }
-                            setTimeout(connectWebSocket, retryDelay);
-                        } else {
-                            terminal.write("\r\n\x1b[31m*** Maximum retry attempts reached. Unable to connect to WebSocket. ***\x1b[0m\r\n");
-                            if (statusElement) {
-                                statusElement.innerHTML = 'Unable to connect to WebSocket <button onclick="initializeTerminal()" class="btn btn-sm btn-primary ml-2">Retry</button>';
-                            }
-                        }
-                    };
-                }
-
-                terminal.onData((data) => {
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(data);
-                    } else {
-                        terminal.write("\r\n\x1b[31mKhông thể gửi dữ liệu: WebSocket chưa kết nối.\x1b[0m\r\n");
-                    }
-                });
-
-                terminal.onResize((size) => {
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(JSON.stringify({ type: 'resize', cols: size.cols, rows: size.rows }));
-                    }
-                });
-
-                window.initializeTerminal = initializeTerminal;
-                connectWebSocket();
-                return terminal;
-            }
-
             // Main Initialization
             document.addEventListener('DOMContentLoaded', function () {
                 const menuButtons = document.querySelectorAll('.menu-btn');
                 const contentArea = document.getElementById('content-area');
                 let activeButton = document.querySelector('.menu-btn.active');
 
-                // Load initial content
                 const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
                 const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
                 const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
@@ -1993,7 +1934,6 @@
                         contentArea.style.opacity = '1';
                     });
 
-                // Handle menu button clicks
                 menuButtons.forEach(button => {
                     button.addEventListener('click', function (e) {
                         e.preventDefault();
@@ -2039,7 +1979,6 @@
                     });
                 });
 
-                // Handle popstate (back/forward navigation)
                 window.addEventListener('popstate', function (event) {
                     const state = event.state;
                     if (state) {
@@ -2084,14 +2023,12 @@
                     }
                 });
 
-                // Sidebar toggle
                 document.getElementById('sidebarToggle')?.addEventListener('click', function () {
                     const sidebar = document.getElementById('sidebar');
                     sidebar.classList.toggle('collapsed');
                     localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
                 });
 
-                // Load sidebar state
                 const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                 if (isCollapsed) {
                     document.getElementById('sidebar')?.classList.add('collapsed');
