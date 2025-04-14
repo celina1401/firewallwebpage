@@ -33,7 +33,7 @@ public class TerminalController {
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
             model.addAttribute("error", "Please log in to access the terminal.");
-            return "redirect:/login"; // Redirect to login page
+            return "redirect:/"; // Redirect to login page
         }
 
         // Find the PC by pcName and ownerUsername

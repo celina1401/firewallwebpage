@@ -5,7 +5,6 @@ import com.b2110941.firewallweb.model.User;
 import com.b2110941.firewallweb.repository.userRepository;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import com.b2110941.firewallweb.service.PCService;
-import com.b2110941.firewallweb.service.UFWService;
 import com.b2110941.firewallweb.service.UbuntuInfo;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -69,11 +68,9 @@ public class MachineController {
         Optional<User> userOpt = userRepository.findByUsername(ownerUsername);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            // Đưa username (hoặc toàn bộ user) vào model
+            
             model.addAttribute("username", user.getUsername());
-            // Nếu cần hiển thị fullname hoặc các thông tin khác:
-            // model.addAttribute("fullname", user.getFullname());
-            // model.addAttribute("user", user); // tuỳ ý
+            
         } else {
             // Không tìm thấy user trong DB => xử lý lỗi
             model.addAttribute("error", "User not found in DB");

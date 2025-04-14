@@ -726,8 +726,10 @@
                                 <span th:text="${computer.sshStatus} ? 'SSH: Connected' : 'SSH: Disconnected'">SSH:
                                     Disconnected</span>
                             </div>
-                            <div class="status-item active">
-                                <span>UFW Status: ON</span>
+                            <div class="status-item active"
+                                th:style="${computer.ufwStatus} ? 'color: #27ae60;' : 'color: #e74c3c;'">
+                                <span th:text="${computer.ufwStatus} ? 'UFW Status: ON' : 'UFW Status: OFF'">UFW Status:
+                                    Unknown</span>
                             </div>
                         </div>
                         <button class="check-status-btn" th:data-pcname="${computer.pcName}"
@@ -879,7 +881,7 @@
                                 target: null // Not the button, so won't stop propagation
                             };
                             checkSSHStatusOne(mockEvent, button);
-                        }, index * 2000); // Check each computer with a 2-second delay
+                        }); // Check each computer with a 2-second delay
                     });
                 }
             }); // Wait 1 second after page load before starting checks
@@ -897,6 +899,7 @@
             };
         });
 
+        // Menu button click handler
         // Menu button click handler
         menuButtons.forEach(button => {
             button.addEventListener('click', function (e) {
@@ -927,7 +930,23 @@
                             setTimeout(() => {
                                 contentArea.innerHTML = html;
                                 contentArea.style.opacity = '1';
-                            }, 200);
+
+                                // Check status for all computers if manageSystem section is loaded
+                                if (menuOption === 'manageSystem') {
+                                    const statusButtons = document.querySelectorAll('.check-status-btn');
+                                    if (statusButtons.length > 0) {
+                                        statusButtons.forEach((button, index) => {
+                                            setTimeout(() => {
+                                                const mockEvent = {
+                                                    stopPropagation: () => { },
+                                                    target: null
+                                                };
+                                                checkSSHStatusOne(mockEvent, button);
+                                            }); // Check each computer with a 2-second delay
+                                        });
+                                    }
+                                }
+                            });
                         })
                         .catch(error => {
                             console.error('Fetch error:', error);
@@ -1030,94 +1049,94 @@
         });
 
         function checkSSHStatusOne(event, button) {
-    if (event.target === button) {
-        event.stopPropagation(); // Prevent click on machine only for direct button clicks
-    }
+            if (event.target === button) {
+                event.stopPropagation(); // Prevent click on machine only for direct button clicks
+            }
 
-    const pcName = button.getAttribute("data-pcname");
-    const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
-    const sshStatusItem = pcDiv.querySelector(".ssh-status");
-    const sshStatusSpan = sshStatusItem.querySelector("span");
-    const ufwStatusItem = pcDiv.querySelector(".status-item.active");
-    const ufwStatusSpan = ufwStatusItem.querySelector("span");
-    
-    // Change button text to indicate loading
-    const originalButtonText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
-    button.disabled = true;
+            const pcName = button.getAttribute("data-pcname");
+            const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
+            const sshStatusItem = pcDiv.querySelector(".ssh-status");
+            const sshStatusSpan = sshStatusItem.querySelector("span");
+            const ufwStatusItem = pcDiv.querySelector(".status-item.active");
+            const ufwStatusSpan = ufwStatusItem.querySelector("span");
 
-    // Show checking status and disable clicks
-    sshStatusSpan.textContent = "SSH: Checking...";
-    sshStatusItem.classList.remove("connected");
-    sshStatusItem.style.color = "#2980b9";
-    ufwStatusSpan.textContent = "UFW Status: Checking...";
-    ufwStatusItem.style.color = "#2980b9";
-    pcDiv.classList.add("checking"); // Disable clicks during check
+            // Change button text to indicate loading
+            const originalButtonText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            button.disabled = true;
 
-    // First check SSH status
-    fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return res.json();
-        })
-        .then(pc => {
-            if (pc.sshStatus) {
-                sshStatusSpan.textContent = "SSH: Connected";
-                sshStatusItem.classList.add("connected");
-                sshStatusItem.style.color = "";
-                pcDiv.classList.add("accessible"); // Mark as clickable
-                // Now check UFW status since SSH is connected
-                return fetch(`/api/ufw-status/${username}/${encodeURIComponent(pcName)}`);
-            } else {
-                sshStatusSpan.textContent = "SSH: Disconnected";
-                sshStatusItem.classList.remove("connected");
-                sshStatusItem.style.color = "#e74c3c";
-                ufwStatusSpan.textContent = "UFW Status: UNKNOWN";
-                ufwStatusItem.style.color = "#777";
-                pcDiv.classList.remove("accessible"); // Not clickable
-                throw new Error('SSH disconnected');
-            }
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return res.json();
-        })
-        .then(data => {
-            // Update UFW status
-            if (data.success) {
-                ufwStatusSpan.textContent = `UFW Status: ${data.status}`;
-                if (data.ufwActive) {
-                    ufwStatusItem.style.color = "#27ae60"; // Green for ON
-                } else {
-                    ufwStatusItem.style.color = "#e74c3c"; // Red for OFF
-                }
-            } else {
-                ufwStatusSpan.textContent = "UFW Status: ERROR";
-                ufwStatusItem.style.color = "#e74c3c";
-                console.error("UFW status check failed:", data.message);
-            }
-        })
-        .catch(err => {
-            if (err.message !== 'SSH disconnected') {
-                console.error("Status check failed:", err);
-                sshStatusSpan.textContent = "SSH: Error";
-                sshStatusItem.style.color = "#e74c3c";
-                ufwStatusSpan.textContent = "UFW Status: ERROR";
-                ufwStatusItem.style.color = "#e74c3c";
-                pcDiv.classList.remove("accessible"); // Not clickable
-            }
-        })
-        .finally(() => {
-            // Restore button text and re-enable clicks
-            button.innerHTML = originalButtonText;
-            button.disabled = false;
-            pcDiv.classList.remove("checking");
-        });
-}
+            // Show checking status and disable clicks
+            sshStatusSpan.textContent = "SSH: Checking...";
+            sshStatusItem.classList.remove("connected");
+            sshStatusItem.style.color = "#2980b9";
+            ufwStatusSpan.textContent = "UFW Status: Checking...";
+            ufwStatusItem.style.color = "#2980b9";
+            pcDiv.classList.add("checking"); // Disable clicks during check
+
+            // First check SSH status
+            fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return res.json();
+                })
+                .then(pc => {
+                    if (pc.sshStatus) {
+                        sshStatusSpan.textContent = "SSH: Connected";
+                        sshStatusItem.classList.add("connected");
+                        sshStatusItem.style.color = "";
+                        pcDiv.classList.add("accessible"); // Mark as clickable
+                        // Now check UFW status since SSH is connected
+                        return fetch(`/api/ufw-status/${username}/${encodeURIComponent(pcName)}`);
+                    } else {
+                        sshStatusSpan.textContent = "SSH: Disconnected";
+                        sshStatusItem.classList.remove("connected");
+                        sshStatusItem.style.color = "#e74c3c";
+                        ufwStatusSpan.textContent = "UFW Status: UNKNOWN";
+                        ufwStatusItem.style.color = "#777";
+                        pcDiv.classList.remove("accessible"); // Not clickable
+                        throw new Error('SSH disconnected');
+                    }
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    // Update UFW status
+                    if (data.success) {
+                        ufwStatusSpan.textContent = `UFW Status: ${data.status}`;
+                        if (data.ufwActive) {
+                            ufwStatusItem.style.color = "#27ae60"; // Green for ON
+                        } else {
+                            ufwStatusItem.style.color = "#e74c3c"; // Red for OFF
+                        }
+                    } else {
+                        ufwStatusSpan.textContent = "UFW Status: ERROR";
+                        ufwStatusItem.style.color = "#e74c3c";
+                        console.error("UFW status check failed:", data.message);
+                    }
+                })
+                .catch(err => {
+                    if (err.message !== 'SSH disconnected') {
+                        console.error("Status check failed:", err);
+                        sshStatusSpan.textContent = "SSH: Error";
+                        sshStatusItem.style.color = "#e74c3c";
+                        ufwStatusSpan.textContent = "UFW Status: ERROR";
+                        ufwStatusItem.style.color = "#e74c3c";
+                        pcDiv.classList.remove("accessible"); // Not clickable
+                    }
+                })
+                .finally(() => {
+                    // Restore button text and re-enable clicks
+                    button.innerHTML = originalButtonText;
+                    button.disabled = false;
+                    pcDiv.classList.remove("checking");
+                });
+        }
 
     </script>
 </body>
