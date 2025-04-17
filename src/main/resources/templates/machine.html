@@ -108,13 +108,6 @@
             height: 100%;
         }
 
-        /* .profile {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin-bottom: 20px;
-            } */
-
         .profile-icon {
             display: flex;
             justify-content: center;
@@ -577,6 +570,240 @@
             border-bottom-right-radius: 12px;
         }
 
+        .date-filter {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 5px 10px;
+        }
+
+        .date-filter input[type="date"] {
+            border: none;
+            background: transparent;
+            color: #2c3e50;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.3s;
+        }
+
+        .date-filter input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
+
+        .action-filter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .action-filter label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .action-filter select {
+            border: none;
+            background: transparent;
+            color: #2c3e50;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .action-filter select:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .action-filter select:focus {
+            outline: none;
+            background: rgba(33, 150, 243, 0.15);
+        }
+
+        .action-filter select option {
+            background: white;
+            color: #2c3e50;
+            padding: 8px;
+        }
+
+        .proto-filter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .proto-filter label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .proto-filter select {
+            border: none;
+            background: transparent;
+            color: #2c3e50;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .proto-filter select:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .proto-filter select:focus {
+            outline: none;
+            background: rgba(33, 150, 243, 0.15);
+        }
+
+        .proto-filter select option {
+            background: white;
+            color: #2c3e50;
+            padding: 8px;
+        }
+
+        .rows-filter {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .rows-filter label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .rows-filter input {
+            border: none;
+            background: transparent;
+            color: #2c3e50;
+            font-size: 14px;
+            font-family: inherit;
+            width: 60px;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .rows-filter input:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .rows-filter input:focus {
+            outline: none;
+            background: rgba(33, 150, 243, 0.15);
+        }
+
+        #filterContainer {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            width: 300px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        #filterContainer.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .filter-header h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        .close-filter {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 0 5px;
+            transition: color 0.3s ease;
+        }
+
+        .close-filter:hover {
+            color: #333;
+        }
+
+        .filter-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-content>div {
+            width: 100%;
+        }
+
+        .filter-content label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .filter-content input,
+        .filter-content select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-content input:focus,
+        .filter-content select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
         /* table sys log */
         .logging-sys-table {
             width: 100%;
@@ -1037,8 +1264,38 @@
             /* padding: 10px 20px; */
         }
 
-        .filter-btn{
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
             border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn label {
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .filter-btn img {
+            width: 24px;
+            height: 24px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .filter-btn:hover img {
+            opacity: 1;
         }
 
         .toggle-label {
@@ -1549,17 +1806,53 @@
                             <input type="radio" name="loggingLevel" value="high" id="high"
                                 th:checked="${currentLoggingLevel == 'high'}" onchange="changeLoggingLevel(this.value)">
                             <label for="high">High</label>
-
                         </div>
-                        <button class="filter-btn">
+                        <button class="filter-btn" onclick="toggleFilterContainer()">
+                            <label for="">Filter: </label>
                             <img src="/images/filter.png" alt="">
                         </button>
                     </div>
                 </div>
 
-                <div class="toggle-container-logging">
-                    
+                <div class="toggle-container-logging" id="filterContainer" style="display: none">
+                    <div class="filter-header">
+                        <h3>Filter Options</h3>
+                        <button class="close-filter" onclick="toggleFilterContainer()">×</button>
+                    </div>
+                    <div class="filter-content">
+                        <div class="date-filter">
+                            <label for="logDate">Date:</label>
+                            <input type="date" id="logDate" name="logDate" onchange="filterLogsByDate(this.value)">
+                        </div>
+
+                        <div class="action-filter">
+                            <label for="actionFilter">Action:</label>
+                            <select id="actionFilter" onchange="filterLogsByAction(this.value)">
+                                <option value="all">All</option>
+                                <option value="ALLOW">Allow</option>
+                                <option value="DENY">Deny</option>
+                                <option value="BLOCK">Block</option>
+                            </select>
+                        </div>
+
+                        <div class="proto-filter">
+                            <label for="protocolFilter">Protocol:</label>
+                            <select id="protocolFilter" onchange="filterLogsByProtocol(this.value)">
+                                <option value="all">All</option>
+                                <option value="TCP">TCP</option>
+                                <option value="UDP">UDP</option>
+                                <option value="ICMP">ICMP</option>
+                            </select>
+                        </div>
+
+                        <div class="rows-filter">
+                            <label for="rowsToShow">Show rows:</label>
+                            <input type="number" id="rowsToShow" min="1" max="100" value="10"
+                                onchange="filterLogsByRows(this.value)">
+                        </div>
+                    </div>
                 </div>
+
 
                 <div class="logging-content" id="loggingTable"
                     th:style="${loggingStatus == 'ON' ? 'display: block' : 'display: none'}">
@@ -1742,6 +2035,170 @@
                     });
             }
 
+            function filterLogsByAction(action) {
+                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
+
+                const dateValue = document.getElementById('logDate').value;
+
+                fetch(`/machine/${pcName}/logging-filter`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `action=${action}&date=${dateValue}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.querySelector('.logging-table tbody');
+                            if (tbody) {
+                                tbody.innerHTML = '';
+                                if (data.ufwLogs.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
+                                } else {
+                                    data.ufwLogs.forEach(log => {
+                                        tbody.innerHTML += `
+                                        <tr>
+                                            <td>${log.timestamp || ''}</td>
+                                            <td>${log.action || ''}</td>
+                                            <td>${log.destinationIp || ''}</td>
+                                            <td>${log.protocol || ''}</td>
+                                        </tr>
+                                    `;
+                                    });
+                                }
+                            }
+                        } else {
+                            console.error('Failed to filter logs:', data.message);
+                            alert('Failed to filter logs: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error filtering logs');
+                    });
+            }
+
+            function filterLogsByProtocol(protocol) {
+                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
+
+                const dateValue = document.getElementById('logDate').value;
+                const actionValue = document.getElementById('actionFilter').value;
+
+                fetch(`/machine/${pcName}/logging-filter`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `protocol=${protocol}&date=${dateValue}&action=${actionValue}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.querySelector('.logging-table tbody');
+                            if (tbody) {
+                                tbody.innerHTML = '';
+                                if (data.ufwLogs.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
+                                } else {
+                                    data.ufwLogs.forEach(log => {
+                                        tbody.innerHTML += `
+                                        <tr>
+                                            <td>${log.timestamp || ''}</td>
+                                            <td>${log.action || ''}</td>
+                                            <td>${log.destinationIp || ''}</td>
+                                            <td>${log.protocol || ''}</td>
+                                        </tr>
+                                    `;
+                                    });
+                                }
+                            }
+                        } else {
+                            console.error('Failed to filter logs:', data.message);
+                            alert('Failed to filter logs: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error filtering logs');
+                    });
+            }
+
+            function filterLogsByRows(rows) {
+                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
+
+                const dateValue = document.getElementById('logDate').value;
+                const actionValue = document.getElementById('actionFilter').value;
+                const protocolValue = document.getElementById('protocolFilter').value;
+
+                fetch(`/machine/${pcName}/logging-filter`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `rows=${rows}&date=${dateValue}&action=${actionValue}&protocol=${protocolValue}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const tbody = document.querySelector('.logging-table tbody');
+                            if (tbody) {
+                                tbody.innerHTML = '';
+                                if (data.ufwLogs.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
+                                } else {
+                                    data.ufwLogs.forEach(log => {
+                                        tbody.innerHTML += `
+                                        <tr>
+                                            <td>${log.timestamp || ''}</td>
+                                            <td>${log.action || ''}</td>
+                                            <td>${log.destinationIp || ''}</td>
+                                            <td>${log.protocol || ''}</td>
+                                        </tr>
+                                    `;
+                                    });
+                                }
+                            }
+                        } else {
+                            console.error('Failed to filter logs:', data.message);
+                            alert('Failed to filter logs: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error filtering logs');
+                    });
+            }
+
+            function toggleFilterContainer() {
+                const container = document.getElementById('filterContainer');
+                const isHidden = window.getComputedStyle(container).display === 'none';
+
+                if (isHidden) {
+                    container.style.display = 'block';
+                    requestAnimationFrame(() => {
+                        container.classList.add('show');
+                    });
+                } else {
+                    container.classList.remove('show');
+                    container.addEventListener('transitionend', function hideContainer() {
+                        container.style.display = 'none';
+                        container.removeEventListener('transitionend', hideContainer);
+                    });
+                }
+            }
 
             // Terminal Initialization
             function initializeTerminal() {
