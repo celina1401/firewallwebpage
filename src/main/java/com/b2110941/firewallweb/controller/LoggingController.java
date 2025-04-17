@@ -1,5 +1,6 @@
 package com.b2110941.firewallweb.controller;
 
+import com.b2110941.firewallweb.model.LoggingUFW;
 import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import com.b2110941.firewallweb.service.PCService;
@@ -8,6 +9,8 @@ import com.b2110941.firewallweb.service.UFWService;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,6 +24,8 @@ import java.util.Optional;
 
 @Controller
 public class LoggingController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LoggingController.class);
 
     @Autowired
     private PCService pcService;
@@ -40,12 +45,14 @@ public class LoggingController {
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith) {
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
+            logger.warn("Unauthorized access attempt to /machine/{}/logging - User not logged in", pcName);
             model.addAttribute("error", "Please login your account");
             return "redirect:/";
         }
 
         Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
         if (computerOptional.isEmpty()) {
+            logger.error("Computer not found: pcName={}, ownerUsername={}", pcName, ownerUsername);
             model.addAttribute("error", "Computer " + pcName + " not found");
             model.addAttribute("currentMenu", "logging");
             return "machine";
@@ -55,22 +62,23 @@ public class LoggingController {
         // Add current logging level
         String currentLevel = ufwService.getLoggingLevel(computer);
         model.addAttribute("currentLoggingLevel", currentLevel);
-        
+
         model.addAttribute("computer", computer);
         model.addAttribute("currentMenu", "logging");
 
+        Session sshSession = null;
         try {
-            Session sshSession = connectSSH.establishSSH(
+            sshSession = connectSSH.establishSSH(
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword());
-            System.out.println("SSH connection established successfully for UFW logging");
+            logger.info("SSH connection established successfully for UFW logging: pcName={}", pcName);
 
             // Fetch UFW logging status
             String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status verbose";
             String ufwVerbose = ubuntuInfo.executeCommand(sshSession, command);
-            System.out.println("UFW Status Output: [" + ufwVerbose + "]");
+            logger.debug("UFW Status Output: [{}]", ufwVerbose);
 
             String loggingStatus = "UNKNOWN";
             if (ufwVerbose != null && !ufwVerbose.trim().isEmpty()) {
@@ -81,37 +89,55 @@ public class LoggingController {
                     loggingStatus = "OFF";
                 }
             }
-            System.out.println("UFW Logging Status: " + loggingStatus);
+            logger.info("UFW Logging Status: {}", loggingStatus);
             model.addAttribute("loggingStatus", loggingStatus);
 
             // Fetch UFW logs if logging is ON
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword()
-                        + "' | sudo -S tac /var/log/ufw.log.1 | head -n 10";
-                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
-                System.out.println("Raw UFW logs output: [" + logsOutput + "]");
+                // Check multiple log files to handle rotation
+                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String logsOutput = null;
+                for (String logFile : logFiles) {
+                    String logsCommand = "echo '" + computer.getPassword()
+                            + "' | sudo -S tac " + logFile + " | head -n 10";
+                    logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                    logger.debug("Raw UFW logs output from {}: [{}]", logFile, logsOutput);
+
+                    if (logsOutput != null && !logsOutput.trim().isEmpty()) {
+                        break; // Found logs in this file, no need to check others
+                    }
+                }
 
                 if (logsOutput == null || logsOutput.trim().isEmpty()) {
-                    model.addAttribute("logMessage", "No log entries found in /var/log/ufw.log");
+                    logger.warn("No log entries found in any UFW log files for pcName={}", pcName);
+                    model.addAttribute("logMessage", "No log entries found in UFW log files");
                 } else {
                     ufwLogs = parseUfwLogs(logsOutput);
                     if (ufwLogs.isEmpty()) {
-                        model.addAttribute("logMessage", "No log entries parsed from /var/log/ufw.log");
+                        logger.warn("No log entries parsed from UFW logs for pcName={}", pcName);
+                        model.addAttribute("logMessage", "No log entries parsed from UFW log files");
                     }
                 }
             } else {
+                logger.info("UFW logging is disabled for pcName={}", pcName);
                 model.addAttribute("logMessage", "UFW logging is disabled. Enable logging to view logs.");
             }
             model.addAttribute("ufwLogs", ufwLogs);
 
         } catch (JSchException e) {
+            logger.error("SSH connection failed for pcName={}: {}", pcName, e.getMessage(), e);
             model.addAttribute("error", "SSH connection failed: " + e.getMessage());
             model.addAttribute("loggingStatus", "UNKNOWN");
         } catch (Exception e) {
+            logger.error("Error retrieving UFW logs for pcName={}: {}", pcName, e.getMessage(), e);
             model.addAttribute("error", "Error retrieving UFW logs: " + e.getMessage());
             model.addAttribute("loggingStatus", "UNKNOWN");
-            e.printStackTrace();
+        } finally {
+            if (sshSession != null) {
+                sshSession.disconnect();
+                logger.info("SSH session disconnected for pcName={}", pcName);
+            }
         }
 
         if ("XMLHttpRequest".equals(requestedWith)) {
@@ -124,43 +150,47 @@ public class LoggingController {
     @ResponseBody
     public Map<String, Object> toggleLogging(
             @PathVariable("pcName") String pcName,
-            @RequestParam("enable") boolean enable,
+            @RequestParam("status") String status,
             HttpSession session) {
         Map<String, Object> response = new HashMap<>();
+        boolean enable = "on".equalsIgnoreCase(status);
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
+            logger.warn("Unauthorized attempt to toggle logging for pcName={} - User not logged in", pcName);
             response.put("success", false);
             response.put("message", "User not logged in");
             return response;
         }
 
-        try {
-            Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-            if (computerOptional.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Computer " + pcName + " not found");
-                return response;
-            }
+        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (computerOptional.isEmpty()) {
+            logger.error("Computer not found: pcName={}, ownerUsername={}", pcName, ownerUsername);
+            response.put("success", false);
+            response.put("message", "Computer " + pcName + " not found");
+            return response;
+        }
 
-            PC computer = computerOptional.get();
-            Session sshSession = connectSSH.establishSSH(
+        PC computer = computerOptional.get();
+        Session sshSession = null;
+        try {
+            sshSession = connectSSH.establishSSH(
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword());
-            System.out.println("SSH connection established successfully for toggle UFW logging");
+            logger.info("SSH connection established successfully for toggle UFW logging: pcName={}", pcName);
 
             // Toggle UFW logging
             String command = enable
                     ? "echo '" + computer.getPassword() + "' | sudo -S ufw logging on"
                     : "echo '" + computer.getPassword() + "' | sudo -S ufw logging off";
             String result = ubuntuInfo.executeCommand(sshSession, command);
-            System.out.println("Toggle UFW logging result: " + result);
+            logger.debug("Toggle UFW logging result: {}", result);
 
             // Fetch updated UFW logging status and logs
             String statusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status verbose";
             String statusOutput = ubuntuInfo.executeCommand(sshSession, statusCommand);
-            System.out.println("UFW Status Output after toggle: [" + statusOutput + "]");
+            logger.debug("UFW Status Output after toggle: [{}]", statusOutput);
 
             String loggingStatus = "UNKNOWN";
             if (statusOutput != null && !statusOutput.trim().isEmpty()) {
@@ -171,14 +201,23 @@ public class LoggingController {
                     loggingStatus = "OFF";
                 }
             }
-            System.out.println("UFW Logging Status after toggle: " + loggingStatus);
+            logger.info("UFW Logging Status after toggle: {}", loggingStatus);
 
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
-                String logsCommand = "echo '" + computer.getPassword()
-                        + "' | sudo -S cat /var/log/ufw.log.1 | tail -n 10";
-                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
-                System.out.println("Raw UFW logs output after toggle: [" + logsOutput + "]");
+                // Check multiple log files to handle rotation
+                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String logsOutput = null;
+                for (String logFile : logFiles) {
+                    String logsCommand = "echo '" + computer.getPassword()
+                            + "' | sudo -S tac " + logFile + " | head -n 10";
+                    logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                    logger.debug("Raw UFW logs output from {}: [{}]", logFile, logsOutput);
+
+                    if (logsOutput != null && !logsOutput.trim().isEmpty()) {
+                        break; // Found logs in this file, no need to check others
+                    }
+                }
 
                 if (logsOutput != null && !logsOutput.trim().isEmpty()) {
                     ufwLogs = parseUfwLogs(logsOutput);
@@ -190,16 +229,22 @@ public class LoggingController {
             response.put("loggingStatus", loggingStatus);
             response.put("ufwLogs", ufwLogs);
             if (ufwLogs.isEmpty()) {
-                response.put("logMessage", "No logs found in /var/log/ufw.log.1");
+                response.put("logMessage", "No logs found in UFW log files");
             }
 
         } catch (JSchException e) {
+            logger.error("SSH connection failed for pcName={}: {}", pcName, e.getMessage(), e);
             response.put("success", false);
             response.put("message", "SSH connection failed: " + e.getMessage());
         } catch (Exception e) {
+            logger.error("Error toggling UFW logging for pcName={}: {}", pcName, e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Error toggling UFW logging: " + e.getMessage());
-            e.printStackTrace();
+        } finally {
+            if (sshSession != null) {
+                sshSession.disconnect();
+                logger.info("SSH session disconnected for pcName={}", pcName);
+            }
         }
         return response;
     }
@@ -207,45 +252,60 @@ public class LoggingController {
     private List<Map<String, String>> parseUfwLogs(String logsOutput) {
         List<Map<String, String>> logs = new ArrayList<>();
         if (logsOutput == null || logsOutput.trim().isEmpty()) {
+            logger.warn("No logs to parse: logsOutput is empty or null");
             return logs;
         }
 
         String[] lines = logsOutput.split("\n");
         for (String line : lines) {
+            if (line == null || line.trim().isEmpty()) {
+                continue;
+            }
+
             Map<String, String> logEntry = new HashMap<>();
-            System.out.println("Parsing UFW log line: " + line);
+            logger.debug("Parsing UFW log line: {}", line);
 
+            // Extract timestamp (e.g., "Apr 17 12:34:56")
             int timestampEnd = line.indexOf(".");
-            if (timestampEnd > 0) {
-                String fullTimestamp = line.substring(0, timestampEnd);
-                String[] timestampParts = fullTimestamp.split("\\s+");
-                String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
-                logEntry.put("timestamp", timestamp);
+            if (timestampEnd < 0) {
+                logger.warn("Invalid log line format, missing timestamp: {}", line);
+                continue;
+            }
 
-                int ufwIndex = line.indexOf("[UFW");
-                if (ufwIndex > 0) {
-                    int closeBracketIndex = line.indexOf("]", ufwIndex);
-                    if (closeBracketIndex > ufwIndex) {
-                        String ufwPart = line.substring(ufwIndex + 1, closeBracketIndex);
-                        String[] ufwParts = ufwPart.split("\\s+", 2);
-                        if (ufwParts.length > 1) {
-                            logEntry.put("action", ufwParts[1]);
-                        } else {
-                            logEntry.put("action", "UNDEFINED");
-                        }
-                    }
-                }
+            String fullTimestamp = line.substring(0, timestampEnd);
+            String[] timestampParts = fullTimestamp.split("\\s+");
+            String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
+            logEntry.put("timestamp", timestamp);
 
-                extractLogInfo(line, logEntry, "IN=", "interface");
-                extractLogInfo(line, logEntry, "SRC=", "sourceIp");
-                extractLogInfo(line, logEntry, "SPT=", "sourcePort");
-                extractLogInfo(line, logEntry, "DST=", "destinationIp");
-                extractLogInfo(line, logEntry, "DPT=", "destinationPort");
-                extractLogInfo(line, logEntry, "PROTO=", "protocol");
+            int ufwIndex = line.indexOf("[UFW");
+            if (ufwIndex < 0) {
+                logger.warn("Invalid log line format, missing [UFW]: {}", line);
+                continue;
+            }
 
+            int closeBracketIndex = line.indexOf("]", ufwIndex);
+            if (closeBracketIndex < ufwIndex) {
+                logger.warn("Invalid log line format, missing closing bracket for [UFW]: {}", line);
+                continue;
+            }
+
+            String ufwPart = line.substring(ufwIndex + 1, closeBracketIndex);
+            String[] ufwParts = ufwPart.split("\\s+", 2);
+            String action = ufwParts.length > 1 ? ufwParts[1] : "UNDEFINED";
+            logEntry.put("action", action);
+
+            extractLogInfo(line, logEntry, "DST=", "destinationIp");
+            extractLogInfo(line, logEntry, "PROTO=", "protocol");
+            extractLogInfo(line, logEntry, "IN=", "interface");
+            extractLogInfo(line, logEntry, "SRC=", "sourceIp");
+            extractLogInfo(line, logEntry, "SPT=", "sourcePort");
+            extractLogInfo(line, logEntry, "DPT=", "destinationPort");
+
+            if (!logEntry.isEmpty()) {
                 logs.add(logEntry);
             }
         }
+        logger.info("Parsed {} log entries", logs.size());
         return logs;
     }
 
@@ -258,7 +318,7 @@ public class LoggingController {
             if (endIndex > startIndex) {
                 value = line.substring(startIndex, endIndex);
             } else {
-                value = line.substring(startIndex);
+                value = line.substring(startIndex).trim();
             }
 
             if (prefix.equals("PROTO=")) {
@@ -288,6 +348,7 @@ public class LoggingController {
 
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
+            logger.warn("Unauthorized attempt to change logging level for pcName={} - User not logged in", pcName);
             response.put("success", false);
             response.put("message", "User not logged in");
             return response;
@@ -295,6 +356,7 @@ public class LoggingController {
 
         Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
         if (computerOptional.isEmpty()) {
+            logger.error("Computer not found: pcName={}, ownerUsername={}", pcName, ownerUsername);
             response.put("success", false);
             response.put("message", "Computer not found");
             return response;
@@ -302,20 +364,31 @@ public class LoggingController {
 
         PC computer = computerOptional.get();
         String result = ufwService.changeLoggingLevel(computer, level);
+        Session sshSession = null;
 
         if (result.equals("success")) {
             try {
-                Session sshSession = connectSSH.establishSSH(
+                sshSession = connectSSH.establishSSH(
                         computer.getIpAddress(),
                         computer.getPort(),
                         computer.getPcUsername(),
                         computer.getPassword());
+                logger.info("SSH connection established successfully for fetching logs after changing logging level: pcName={}", pcName);
 
                 // Fetch updated logs
-                String logsCommand = "echo '" + computer.getPassword()
-                        + "' | sudo -S tac /var/log/ufw.log.1 | head -n 10";
-                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
-                
+                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String logsOutput = null;
+                for (String logFile : logFiles) {
+                    String logsCommand = "echo '" + computer.getPassword()
+                            + "' | sudo -S tac " + logFile + " | head -n 10";
+                    logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                    logger.debug("Raw UFW logs output from {}: [{}]", logFile, logsOutput);
+
+                    if (logsOutput != null && !logsOutput.trim().isEmpty()) {
+                        break;
+                    }
+                }
+
                 List<Map<String, String>> ufwLogs = new ArrayList<>();
                 if (logsOutput != null && !logsOutput.trim().isEmpty()) {
                     ufwLogs = parseUfwLogs(logsOutput);
@@ -325,15 +398,59 @@ public class LoggingController {
                 response.put("message", "Logging level changed to " + level);
                 response.put("ufwLogs", ufwLogs);
                 if (ufwLogs.isEmpty()) {
-                    response.put("logMessage", "No logs found in /var/log/ufw.log.1");
+                    response.put("logMessage", "No logs found in UFW log files");
                 }
             } catch (Exception e) {
+                logger.error("Error fetching updated logs for pcName={}: {}", pcName, e.getMessage(), e);
                 response.put("success", false);
                 response.put("message", "Error fetching updated logs: " + e.getMessage());
+            } finally {
+                if (sshSession != null) {
+                    sshSession.disconnect();
+                    logger.info("SSH session disconnected for pcName={}", pcName);
+                }
             }
         } else {
+            logger.error("Failed to change logging level for pcName={}: {}", pcName, result);
             response.put("success", false);
             response.put("message", result);
+        }
+
+        return response;
+    }
+
+    @GetMapping("/machine/{pcName}/log-details")
+    @ResponseBody
+    public Map<String, Object> getLogDetails(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("timestamp") String timestamp,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            logger.warn("Unauthorized attempt to fetch log details for pcName={} - User not logged in", pcName);
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
+        }
+
+        try {
+            logger.info("Fetching log details for pcName={}, timestamp={}", pcName, timestamp);
+            LoggingUFW logDetails = ufwService.getLogDetailsByTimestamp(pcName, timestamp, ownerUsername);
+            if (logDetails == null) {
+                logger.warn("No log details found for pcName={}, timestamp={}", pcName, timestamp);
+                response.put("success", false);
+                response.put("message", "Log entry not found for timestamp: " + timestamp);
+                return response;
+            }
+
+            logger.debug("Log details retrieved: {}", logDetails.getFullLog());
+            response.put("success", true);
+            response.put("logDetails", logDetails);
+        } catch (Exception e) {
+            logger.error("Error fetching log details for pcName={}, timestamp={}: {}", pcName, timestamp, e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Error fetching log details: " + e.getMessage());
         }
 
         return response;

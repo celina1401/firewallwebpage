@@ -804,6 +804,131 @@
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
 
+        .details-cell {
+            text-align: center;
+        }
+        
+        .details-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        
+        .details-btn:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+
+        /* modal ufw Log */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            margin: 5% auto;
+            padding: 0;
+            width: 70%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            background: linear-gradient(145deg, #1a2942, #2c3e50);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .close-modal {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-modal:hover {
+            color: #bdc3c7;
+        }
+
+        .modal-body {
+            padding: 25px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .log-detail-item {
+            margin-bottom: 15px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .log-detail-item:hover {
+            background: #e9ecef;
+        }
+
+        .log-detail-item strong {
+            display: inline-block;
+            width: 150px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        .log-detail-item span, 
+        .log-detail-item pre {
+            color: #34495e;
+            font-family: monospace;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .log-detail-item pre {
+            margin-top: 10px;
+            padding: 10px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 6px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+
+
         /* table sys log */
         .logging-sys-table {
             width: 100%;
@@ -1865,6 +1990,7 @@
                                     <th>Action</th>
                                     <th>Destination IP</th>
                                     <th>Protocol</th>
+                                    <th>Details</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1873,12 +1999,64 @@
                                     <td th:text="${logEntry.action}">Action</td>
                                     <td th:text="${logEntry.destinationIp}">Destination IP</td>
                                     <td th:text="${logEntry.protocol}">Protocol</td>
+                                    <td class="details-cell">
+                                        <button class="details-btn" onclick="showLogDetails(this)">
+                                            <img src="/images/details.png" alt="">
+                                        </button>
+                                    </td>
                                 </tr>
                                 <tr th:if="${#lists.isEmpty(ufwLogs)}">
                                     <td colspan="8" style="text-align: center;">No log entries found.</td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <div id="logDetailModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Log Details</h2>
+                            <span class="close-modal" onclick="closeLogDetailModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="log-detail-item">
+                                <strong>Timestamp:</strong>
+                                <span id="logTimestamp"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Action:</strong>
+                                <span id="logAction"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Source IP:</strong>
+                                <span id="logSourceIp"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Source Port:</strong>
+                                <span id="logSourcePort"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Destination IP:</strong>
+                                <span id="logDestIp"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Destination Port:</strong>
+                                <span id="logDestPort"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Protocol:</strong>
+                                <span id="logProtocol"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Interface:</strong>
+                                <span id="logInterface"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Full Log:</strong>
+                                <pre id="logFullLog"></pre>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2346,9 +2524,9 @@
                             if (systemLoggingTable) {
                                 systemLoggingTable.style.display = isChecked ? 'block' : 'none';
                             }
-                            if (data.systemLogs && data.systemLogs.length > 0) {
-                                updateSystemLogsTable(data.systemLogs);
-                            }
+                            // if (data.systemLogs && data.systemLogs.length > 0) {
+                            //     updateSystemLogsTable(data.systemLogs);
+                            // }
                             console.log(`System logging has been ${isChecked ? 'enabled' : 'disabled'} successfully`);
                         } else {
                             console.error('Could not toggle system logging:', data.message);
@@ -2366,37 +2544,37 @@
                     });
             }
 
-            function updateSystemLogsTable(logs) {
-                const tableBody = document.querySelector('#systemLoggingTable table tbody');
-                if (!tableBody)
-                    return;
+            // function updateSystemLogsTable(logs) {
+            //     const tableBody = document.querySelector('#systemLoggingTable table tbody');
+            //     if (!tableBody)
+            //         return;
 
-                tableBody.innerHTML = '';
+            //     tableBody.innerHTML = '';
 
-                if (logs.length === 0) {
-                    const emptyRow = document.createElement('tr');
-                    emptyRow.innerHTML = '<td colspan="4" style="text-align: center;">No system log entries found.</td>';
-                    tableBody.appendChild(emptyRow);
-                    return;
-                }
+            //     if (logs.length === 0) {
+            //         const emptyRow = document.createElement('tr');
+            //         emptyRow.innerHTML = '<td colspan="4" style="text-align: center;">No system log entries found.</td>';
+            //         tableBody.appendChild(emptyRow);
+            //         return;
+            //     }
 
-                logs.forEach(log => {
-                    const row = document.createElement('tr');
-                    const timestampCell = document.createElement('td');
-                    timestampCell.textContent = log.timestamp;
-                    const hostnameCell = document.createElement('td');
-                    hostnameCell.textContent = log.hostname;
-                    const serviceCell = document.createElement('td');
-                    serviceCell.textContent = log.service;
-                    const messageCell = document.createElement('td');
-                    messageCell.textContent = log.message;
-                    row.appendChild(timestampCell);
-                    row.appendChild(hostnameCell);
-                    row.appendChild(serviceCell);
-                    row.appendChild(messageCell);
-                    tableBody.appendChild(row);
-                });
-            }
+            //     logs.forEach(log => {
+            //         const row = document.createElement('tr');
+            //         const timestampCell = document.createElement('td');
+            //         timestampCell.textContent = log.timestamp;
+            //         const hostnameCell = document.createElement('td');
+            //         hostnameCell.textContent = log.hostname;
+            //         const serviceCell = document.createElement('td');
+            //         serviceCell.textContent = log.service;
+            //         const messageCell = document.createElement('td');
+            //         messageCell.textContent = log.message;
+            //         row.appendChild(timestampCell);
+            //         row.appendChild(hostnameCell);
+            //         row.appendChild(serviceCell);
+            //         row.appendChild(messageCell);
+            //         tableBody.appendChild(row);
+            //     });
+            // }
 
             function toggleToFields() {
                 const toType = document.getElementById('toType')?.value;
@@ -2635,6 +2813,26 @@
                     });
             }
 
+            function showLogDetails(button) {
+                // Get data from button attributes
+                document.getElementById('logTimestamp').textContent = button.getAttribute('data-timestamp') || 'N/A';
+                document.getElementById('logAction').textContent = button.getAttribute('data-action') || 'N/A';
+                document.getElementById('logSourceIp').textContent = button.getAttribute('data-source-ip') || 'N/A';
+                document.getElementById('logSourcePort').textContent = button.getAttribute('data-source-port') || 'N/A';
+                document.getElementById('logDestIp').textContent = button.getAttribute('data-destination-ip') || 'N/A';
+                document.getElementById('logDestPort').textContent = button.getAttribute('data-destination-port') || 'N/A';
+                document.getElementById('logProtocol').textContent = button.getAttribute('data-protocol') || 'N/A';
+                document.getElementById('logInterface').textContent = button.getAttribute('data-interface') || 'N/A';
+                document.getElementById('logFullLog').textContent = button.getAttribute('data-full-log') || 'N/A';
+                
+                // Show the modal
+                document.getElementById('logDetailModal').style.display = 'block';
+            }
+
+            function closeLogDetailModal() {
+                document.getElementById('logDetailModal').style.display = 'none';
+            }
+
             function editRule(element) {
                 const ruleId = element.getAttribute('data-rule-id');
                 console.log('Editing rule with ID:', ruleId);
@@ -2758,6 +2956,28 @@
                 const initialMenu = activeButton ? activeButton.getAttribute('data-menu') : 'information';
                 const initialPcName = activeButton ? activeButton.getAttribute('data-pcname') : 'wsl';
                 const initialUrl = `/machine/${initialPcName}/${initialMenu}`;
+
+                const closeModalBtn = document.querySelector('.close-modal');
+                if (closeModalBtn) {
+                    closeModalBtn.addEventListener('click', closeLogDetailModal);
+                }
+                
+                // Close modal when clicking outside the modal content
+                const modal = document.getElementById('logDetailModal');
+                if (modal) {
+                    modal.addEventListener('click', function(event) {
+                        if (event.target === modal) {
+                            closeLogDetailModal();
+                        }
+                    });
+                }
+                
+                // Close modal with Escape key
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' && modal.style.display === 'block') {
+                        closeLogDetailModal();
+                    }
+                });
 
                 fetch(initialUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
                     .then(response => {
