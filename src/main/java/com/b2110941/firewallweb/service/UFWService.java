@@ -138,13 +138,6 @@ public class UFWService {
         return result;
     }
 
-    /**
-     * Delete a firewall rule by ID
-     * 
-     * @param pc     The PC to delete the rule from
-     * @param ruleId The ID of the rule to delete
-     * @return Result of the operation
-     */
     public String deleteRule(PC pc, String ruleId) {
         String result = "";
         StringBuilder outBuilder = new StringBuilder();
@@ -283,9 +276,6 @@ public class UFWService {
     }
 
     public FirewallRule[] getAllRules(PC pc) {
-        // Implementation to get all rules
-        // This would parse the output of 'sudo ufw status numbered'
-        // and return an array of FirewallRule objects
         return new FirewallRule[0]; // Placeholder
     }
 
@@ -335,6 +325,46 @@ public class UFWService {
             e.printStackTrace();
         }
         return new String[0]; // Placeholder
+    }
+    
+    public String getUFWLogging(PC pc) {
+        StringBuilder outBuilder = new StringBuilder();
+        try {
+            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+
+            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw status verbose | grep Logging";
+            channel.setCommand(command);
+            InputStream in = channel.getInputStream();
+            channel.connect();
+
+            byte[] tmp = new byte[1024];
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0) break;
+                    outBuilder.append(new String(tmp, 0, i));
+                }
+                if (channel.isClosed()) break;
+            }
+
+            String output = outBuilder.toString().trim();
+            if (!output.isEmpty()) {
+                int start = output.indexOf("(");
+                int end = output.indexOf(")");
+                if (start >= 0 && end >= 0) {
+                    return output.substring(start + 1, end);
+                }
+            }
+
+            channel.disconnect();
+            session.disconnect();
+        } catch (Exception e) {
+            logger.error("Error getting UFW logging level", e);
+            return "error: " + e.getMessage();
+        }
+        return "unknown";
     }
 
 }

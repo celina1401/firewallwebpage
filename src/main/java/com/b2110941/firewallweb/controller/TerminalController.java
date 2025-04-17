@@ -15,12 +15,9 @@ import java.util.Optional;
 @Controller
 public class TerminalController {
 
-    private final PCService pcService;
-
+    
     @Autowired
-    public TerminalController(PCService pcService) {
-        this.pcService = pcService;
-    }
+    private PCService pcService;
 
     @GetMapping("/machine/{pcName}/terminal")
     public String getTerminal(
