@@ -4,6 +4,7 @@ import com.b2110941.firewallweb.model.PC;
 import com.b2110941.firewallweb.service.ConnectSSH;
 import com.b2110941.firewallweb.service.PCService;
 import com.b2110941.firewallweb.service.UbuntuInfo;
+import com.b2110941.firewallweb.service.UFWService;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import jakarta.servlet.http.HttpSession;
@@ -27,6 +28,8 @@ public class LoggingController {
     private UbuntuInfo ubuntuInfo;
     @Autowired
     private ConnectSSH connectSSH;
+    @Autowired
+    private UFWService ufwService;
 
     // UFW Logging
     @GetMapping("/machine/{pcName}/logging")
@@ -49,6 +52,10 @@ public class LoggingController {
         }
 
         PC computer = computerOptional.get();
+        // Add current logging level
+        String currentLevel = ufwService.getLoggingLevel(computer);
+        model.addAttribute("currentLoggingLevel", currentLevel);
+        
         model.addAttribute("computer", computer);
         model.addAttribute("currentMenu", "logging");
 
@@ -169,7 +176,7 @@ public class LoggingController {
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
                 String logsCommand = "echo '" + computer.getPassword()
-                        + "' | sudo -S cat /var/log/ufw.log | tail -n 10";
+                        + "' | sudo -S cat /var/log/ufw.log.1 | tail -n 10";
                 String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
                 System.out.println("Raw UFW logs output after toggle: [" + logsOutput + "]");
 
@@ -183,7 +190,7 @@ public class LoggingController {
             response.put("loggingStatus", loggingStatus);
             response.put("ufwLogs", ufwLogs);
             if (ufwLogs.isEmpty()) {
-                response.put("logMessage", "No logs found in /var/log/ufw.log");
+                response.put("logMessage", "No logs found in /var/log/ufw.log.1");
             }
 
         } catch (JSchException e) {
@@ -269,5 +276,66 @@ public class LoggingController {
             }
             logEntry.put(key, value);
         }
+    }
+
+    @PostMapping("/machine/{pcName}/logging-level")
+    @ResponseBody
+    public Map<String, Object> changeLoggingLevel(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("level") String level,
+            HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
+        }
+
+        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (computerOptional.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Computer not found");
+            return response;
+        }
+
+        PC computer = computerOptional.get();
+        String result = ufwService.changeLoggingLevel(computer, level);
+
+        if (result.equals("success")) {
+            try {
+                Session sshSession = connectSSH.establishSSH(
+                        computer.getIpAddress(),
+                        computer.getPort(),
+                        computer.getPcUsername(),
+                        computer.getPassword());
+
+                // Fetch updated logs
+                String logsCommand = "echo '" + computer.getPassword()
+                        + "' | sudo -S tac /var/log/ufw.log.1 | head -n 10";
+                String logsOutput = ubuntuInfo.executeCommand(sshSession, logsCommand);
+                
+                List<Map<String, String>> ufwLogs = new ArrayList<>();
+                if (logsOutput != null && !logsOutput.trim().isEmpty()) {
+                    ufwLogs = parseUfwLogs(logsOutput);
+                }
+
+                response.put("success", true);
+                response.put("message", "Logging level changed to " + level);
+                response.put("ufwLogs", ufwLogs);
+                if (ufwLogs.isEmpty()) {
+                    response.put("logMessage", "No logs found in /var/log/ufw.log.1");
+                }
+            } catch (Exception e) {
+                response.put("success", false);
+                response.put("message", "Error fetching updated logs: " + e.getMessage());
+            }
+        } else {
+            response.put("success", false);
+            response.put("message", result);
+        }
+
+        return response;
     }
 }

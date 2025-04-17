@@ -1527,13 +1527,17 @@
 
                     <div class="loggingLevel">
                         <label>Logging Level:</label>
-                        <input type="radio" name="loggingLevel" value="low" id="low">
+                        <input type="radio" name="loggingLevel" value="low" id="low"
+                            th:checked="${currentLoggingLevel == 'low'}" onchange="changeLoggingLevel(this.value)">
                         <label for="low">Low</label>
-                        <input type="radio" name="loggingLevel" value="medium" id="medium">
+                        <input type="radio" name="loggingLevel" value="medium" id="medium"
+                            th:checked="${currentLoggingLevel == 'medium'}" onchange="changeLoggingLevel(this.value)">
                         <label for="medium">Medium</label>
-                        <input type="radio" name="loggingLevel" value="high" id="high">
+                        <input type="radio" name="loggingLevel" value="high" id="high"
+                            th:checked="${currentLoggingLevel == 'high'}" onchange="changeLoggingLevel(this.value)">
                         <label for="high">High</label>
                     </div>
+
                 </div>
 
                 <div class="logging-content" id="loggingTable"
@@ -1667,6 +1671,56 @@
 
                 return true;
             }
+
+            function changeLoggingLevel(level) {
+                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
+
+                fetch(`/machine/${pcName}/logging-level`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `level=${level}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log(`Logging level changed to ${level}`);
+
+                            // Update the logging table
+                            const tbody = document.querySelector('.logging-table tbody');
+                            if (tbody && data.ufwLogs) {
+                                tbody.innerHTML = '';
+                                if (data.ufwLogs.length === 0) {
+                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found.</td></tr>';
+                                } else {
+                                    data.ufwLogs.forEach(log => {
+                                        tbody.innerHTML += `
+                            <tr>
+                                <td>${log.timestamp || ''}</td>
+                                <td>${log.action || ''}</td>
+                                <td>${log.destinationIp || ''}</td>
+                                <td>${log.protocol || ''}</td>
+                            </tr>
+                        `;
+                                    });
+                                }
+                            }
+                        } else {
+                            console.error('Failed to change logging level:', data.message);
+                            alert('Failed to change logging level: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error changing logging level');
+                    });
+            }
+
 
             // Terminal Initialization
             function initializeTerminal() {

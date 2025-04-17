@@ -326,7 +326,7 @@ public class UFWService {
         }
         return new String[0]; // Placeholder
     }
-    
+
     public String getUFWLogging(PC pc) {
         StringBuilder outBuilder = new StringBuilder();
         try {
@@ -343,10 +343,12 @@ public class UFWService {
             while (true) {
                 while (in.available() > 0) {
                     int i = in.read(tmp, 0, 1024);
-                    if (i < 0) break;
+                    if (i < 0)
+                        break;
                     outBuilder.append(new String(tmp, 0, i));
                 }
-                if (channel.isClosed()) break;
+                if (channel.isClosed())
+                    break;
             }
 
             String output = outBuilder.toString().trim();
@@ -365,6 +367,91 @@ public class UFWService {
             return "error: " + e.getMessage();
         }
         return "unknown";
+    }
+
+    public String getLoggingLevel(PC pc) {
+        StringBuilder outBuilder = new StringBuilder();
+        try {
+            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+
+            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw status verbose | grep Logging";
+            channel.setCommand(command);
+            InputStream in = channel.getInputStream();
+            channel.connect();
+
+            byte[] tmp = new byte[1024];
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0)
+                        break;
+                    outBuilder.append(new String(tmp, 0, i));
+                }
+                if (channel.isClosed())
+                    break;
+            }
+
+            String output = outBuilder.toString().trim();
+            logger.info("Logging level output: {}", output);
+
+            if (!output.isEmpty()) {
+                // Extract level from output (e.g., "Logging: on (low)" -> "low")
+                int start = output.indexOf("(");
+                int end = output.indexOf(")");
+                if (start >= 0 && end >= 0) {
+                    return output.substring(start + 1, end).toLowerCase();
+                }
+            }
+
+            channel.disconnect();
+            session.disconnect();
+        } catch (Exception e) {
+            logger.error("Error getting UFW logging level", e);
+            return "error";
+        }
+        return "off";
+    }
+
+    public String changeLoggingLevel(PC pc, String level) {
+        StringBuilder outBuilder = new StringBuilder();
+        try {
+            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
+
+            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw logging " + level.toLowerCase();
+            channel.setCommand(command);
+            InputStream in = channel.getInputStream();
+            channel.connect();
+
+            byte[] tmp = new byte[1024];
+            while (true) {
+                while (in.available() > 0) {
+                    int i = in.read(tmp, 0, 1024);
+                    if (i < 0)
+                        break;
+                    outBuilder.append(new String(tmp, 0, i));
+                }
+                if (channel.isClosed())
+                    break;
+            }
+
+            channel.disconnect();
+            session.disconnect();
+
+            String output = outBuilder.toString();
+            if (output.contains("Logging")) {
+                return "success";
+            } else {
+                return "error: " + output;
+            }
+
+        } catch (Exception e) {
+            logger.error("Error changing UFW logging level", e);
+            return "error: " + e.getMessage();
+        }
     }
 
 }

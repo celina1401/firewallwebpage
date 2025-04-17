@@ -123,32 +123,46 @@
             text-transform: uppercase;
         }
 
+        /* menu */
+        .menu {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex-grow: 1;
+            gap: 12px;
+            padding: 20px 15px;
+        }
+
         .menu-btn {
             display: flex;
             align-items: center;
             gap: 15px;
-            padding: 12px 20px;
-            background: none;
-            border: none;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 16px;
-            margin: 5px 0;
-            width: 100%;
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-
-        .menu-btn:hover,
         .gear-icon:hover,
         .power-icon:hover {
             background: rgba(85, 113, 139, 0.5);
             transform: translateY(-2px);
         }
 
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
         .menu-btn.active {
-            background: rgba(85, 113, 139, 0.5);
-            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .power-button:hover {
@@ -158,7 +172,7 @@
         .settings {
             width: 100%;
             margin-top: auto;
-            padding-bottom: 20px;
+            padding-bottom: 15px;
         }
 
         .gear-icon,
