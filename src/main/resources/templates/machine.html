@@ -1030,6 +1030,17 @@
             font-weight: 600;
         }
 
+        .logging-level-filter {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            /* padding: 10px 20px; */
+        }
+
+        .filter-btn{
+            border: none;
+        }
+
         .toggle-label {
             font-size: 16px;
             font-weight: 500;
@@ -1525,19 +1536,29 @@
                         </span>
                     </div>
 
-                    <div class="loggingLevel">
-                        <label>Logging Level:</label>
-                        <input type="radio" name="loggingLevel" value="low" id="low"
-                            th:checked="${currentLoggingLevel == 'low'}" onchange="changeLoggingLevel(this.value)">
-                        <label for="low">Low</label>
-                        <input type="radio" name="loggingLevel" value="medium" id="medium"
-                            th:checked="${currentLoggingLevel == 'medium'}" onchange="changeLoggingLevel(this.value)">
-                        <label for="medium">Medium</label>
-                        <input type="radio" name="loggingLevel" value="high" id="high"
-                            th:checked="${currentLoggingLevel == 'high'}" onchange="changeLoggingLevel(this.value)">
-                        <label for="high">High</label>
-                    </div>
+                    <div class="logging-level-filter">
+                        <div class="loggingLevel">
+                            <label>Logging Level:</label>
+                            <input type="radio" name="loggingLevel" value="low" id="low"
+                                th:checked="${currentLoggingLevel == 'low'}" onchange="changeLoggingLevel(this.value)">
+                            <label for="low">Low</label>
+                            <input type="radio" name="loggingLevel" value="medium" id="medium"
+                                th:checked="${currentLoggingLevel == 'medium'}"
+                                onchange="changeLoggingLevel(this.value)">
+                            <label for="medium">Medium</label>
+                            <input type="radio" name="loggingLevel" value="high" id="high"
+                                th:checked="${currentLoggingLevel == 'high'}" onchange="changeLoggingLevel(this.value)">
+                            <label for="high">High</label>
 
+                        </div>
+                        <button class="filter-btn">
+                            <img src="/images/filter.png" alt="">
+                        </button>
+                    </div>
+                </div>
+
+                <div class="toggle-container-logging">
+                    
                 </div>
 
                 <div class="logging-content" id="loggingTable"
