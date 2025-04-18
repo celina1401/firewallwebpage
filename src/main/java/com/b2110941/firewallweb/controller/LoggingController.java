@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Controller
 public class LoggingController {
@@ -530,8 +532,8 @@ public class LoggingController {
             extractAndSetLogInfo(matchingLogLine, logDetails, "SPT=", "sourcePort");
             extractAndSetLogInfo(matchingLogLine, logDetails, "DPT=", "destinationPort");
             extractAndSetLogInfo(matchingLogLine, logDetails, "PROTO=", "protocol");
-            extractAndSetLogInfo(matchingLogLine, logDetails, "IN=", "interface");
-            
+            // extractAndSetLogInfo(matchingLogLine, logDetails, "IN=", "interface");
+            extractInterface(matchingLogLine, logDetails);
             logger.debug("Log details retrieved: {}", logDetails.getFullLog());
             response.put("success", true);
             response.put("logDetails", logDetails);
@@ -548,6 +550,27 @@ public class LoggingController {
         }
     
         return response;
+    }
+
+    //tach interface tu IN, OUT
+    private void extractInterface(String logLine, LoggingUFW logDetails) {
+        String inInterface = extractValue(logLine, "IN=");
+        String outInterface = extractValue(logLine, "OUT=");
+        
+        if (!inInterface.isEmpty()) {
+            logDetails.setInterface(inInterface);
+        } else if (!outInterface.isEmpty()) {
+            logDetails.setInterface(outInterface);
+        } else {
+            logDetails.setInterface("N/A");
+        }
+    }
+
+    
+    private String extractValue(String logLine, String prefix) {
+        Pattern pattern = Pattern.compile(prefix + "([^\\s]+)");
+        Matcher matcher = pattern.matcher(logLine);
+        return matcher.find() ? matcher.group(1) : "";
     }
         
     private void extractAndSetLogInfo(String line, LoggingUFW logEntry, String prefix, String field) {

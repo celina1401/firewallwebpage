@@ -482,6 +482,7 @@
 
         /*logging table*/
         .logging-table-container {
+            width: 100%;
             margin: 25px 0;
             overflow-x: auto;
             border-radius: 16px;
@@ -580,13 +581,7 @@
         }
 
         .date-filter input[type="date"] {
-            border: none;
-            background: transparent;
-            color: #2c3e50;
-            font-size: 14px;
             font-family: inherit;
-            cursor: pointer;
-            padding: 5px;
         }
 
         .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
@@ -707,7 +702,7 @@
             color: #2c3e50;
             font-size: 14px;
             font-family: inherit;
-            width: 60px;
+            /* width: 60px; */
             padding: 5px;
             border-radius: 8px;
             transition: all 0.3s ease;
@@ -727,9 +722,9 @@
             top: 60px;
             right: 20px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            width: 300px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            width: 20%;
             z-index: 1000;
             opacity: 0;
             transform: translateY(-10px);
@@ -745,8 +740,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            border-bottom: 1px solid #eee;
+            padding: 18px 7px;
+            /* background: linear-gradient(145deg, #1a2942, #2c3e50); */
+            color: white;
+            margin: -1px;
+            /* Remove white border */
         }
 
         .filter-header h3 {
@@ -770,7 +768,6 @@
         }
 
         .filter-content {
-            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -778,6 +775,7 @@
 
         .filter-content>div {
             width: 100%;
+            margin-bottom: 5px;
         }
 
         .filter-content label {
@@ -785,16 +783,20 @@
             margin-bottom: 5px;
             color: #2c3e50;
             font-weight: 500;
+            font-size: 14px;
+            width: 40%;
         }
 
         .filter-content input,
         .filter-content select {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
+            width: 60%;
+            padding: 10px 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
             font-size: 14px;
-            transition: all 0.3s ease;
+            background: #f8f9fa;
+            color: #2c3e50;
+            box-sizing: border-box;
         }
 
         .filter-content input:focus,
@@ -807,7 +809,7 @@
         .details-cell {
             text-align: center;
         }
-        
+
         .details-btn {
             background: none;
             border: none;
@@ -816,11 +818,79 @@
             border-radius: 3px;
             transition: background-color 0.2s;
         }
-        
+
         .details-btn:hover {
             background-color: rgba(0, 0, 0, 0.1);
         }
-        
+
+        /* export */
+        .table-action {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 15px;
+            align-items: center;
+        }
+
+        .export-btn {
+            width: fit-content;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #35a3fe, #1473de);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);
+            position: relative;
+            overflow: hidden;
+            min-width: 160px;
+            justify-content: center;
+        }
+
+        .export-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+            background: linear-gradient(135deg, #1976D2, #0D47A1);
+        }
+
+        .export-btn:hover:before {
+            left: 100%;
+        }
+
+        .export-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(0, 176, 155, 0.3);
+        }
+
+        .export-btn img {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .export-btn:hover img {
+            transform: rotate(-10deg);
+        }
+
 
         /* modal ufw Log */
         .modal {
@@ -852,6 +922,7 @@
                 opacity: 0;
                 transform: translateY(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -910,7 +981,7 @@
             font-weight: 600;
         }
 
-        .log-detail-item span, 
+        .log-detail-item span,
         .log-detail-item pre {
             color: #34495e;
             font-family: monospace;
@@ -1947,7 +2018,8 @@
                     <div class="filter-content">
                         <div class="date-filter">
                             <label for="logDate">Date:</label>
-                            <input type="date" id="logDate" name="logDate" onchange="filterLogsByDate(this.value)">
+                            <input type="date" id="logDate" name="logDate" onchange="filterLogsByDate(this.value)"
+                                pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
                         </div>
 
                         <div class="action-filter">
@@ -1982,83 +2054,93 @@
                 <div class="logging-content" id="loggingTable"
                     th:style="${loggingStatus == 'ON' ? 'display: block' : 'display: none'}">
                     <!-- Bảng hiển thị danh sách quy tắc firewall -->
-                    <div class="logging-table-container">
-                        <table class="logging-table">
-                            <thead>
-                                <tr>
-                                    <th>Timestamp</th>
-                                    <th>Action</th>
-                                    <th>Destination IP</th>
-                                    <th>Protocol</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr th:each="logEntry : ${ufwLogs}">
-                                    <td th:text="${logEntry.timestamp}">Timestamp</td>
-                                    <td th:text="${logEntry.action}">Action</td>
-                                    <td th:text="${logEntry.destinationIp}">Destination IP</td>
-                                    <td th:text="${logEntry.protocol}">Protocol</td>
-                                    <td class="details-cell">
-                                        <button class="details-btn" th:attr="data-timestamp=${logEntry.timestamp}" onclick="showLogDetails(this)">
-                                            <img src="/images/details.png" alt="">
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr th:if="${#lists.isEmpty(ufwLogs)}">
-                                    <td colspan="8" style="text-align: center;">No log entries found.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                    <div class="table-action">
+                        <div class="logging-table-container">
+                            <table class="logging-table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                        <th>Destination IP</th>
+                                        <th>Protocol</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="logEntry : ${ufwLogs}">
+                                        <td th:text="${logEntry.timestamp}">Timestamp</td>
+                                        <td th:text="${logEntry.action}">Action</td>
+                                        <td th:text="${logEntry.destinationIp}">Destination IP</td>
+                                        <td th:text="${logEntry.protocol}">Protocol</td>
+                                        <td class="details-cell">
+                                            <button class="details-btn" th:attr="data-timestamp=${logEntry.timestamp}"
+                                                onclick="showLogDetails(this)">
+                                                <img src="/images/details.png" alt="">
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(ufwLogs)}">
+                                        <td colspan="8" style="text-align: center;">No log entries found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="export-btn" onclick="exportLogsToCSV()">
+                            <img src="/images/export.png" alt="Export">
+                            <span>Export Logs</span>
+                        </button>
+
                     </div>
+
                 </div>
 
-                    <div id="logDetailModal" class="modal">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Log Details</h2>
-                                <span class="close-modal" onclick="closeLogDetailModal()">&times;</span>
+                <div id="logDetailModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Log Details</h2>
+                            <span class="close-modal" onclick="closeLogDetailModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <div class="log-detail-item">
+                                <strong>Timestamp:</strong>
+                                <span id="logTimestamp"></span>
                             </div>
-                            <div class="modal-body">
-                                <div class="log-detail-item">
-                                    <strong>Timestamp:</strong>
-                                    <span id="logTimestamp"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Action:</strong>
-                                    <span id="logAction"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Source IP:</strong>
-                                    <span id="logSourceIp"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Source Port:</strong>
-                                    <span id="logSourcePort"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Destination IP:</strong>
-                                    <span id="logDestIp"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Destination Port:</strong>
-                                    <span id="logDestPort"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Protocol:</strong>
-                                    <span id="logProtocol"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Interface:</strong>
-                                    <span id="logInterface"></span>
-                                </div>
-                                <div class="log-detail-item">
-                                    <strong>Full Log:</strong>
-                                    <pre id="logFullLog"></pre>
-                                </div>
+                            <div class="log-detail-item">
+                                <strong>Action:</strong>
+                                <span id="logAction"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Source IP:</strong>
+                                <span id="logSourceIp"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Source Port:</strong>
+                                <span id="logSourcePort"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Destination IP:</strong>
+                                <span id="logDestIp"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Destination Port:</strong>
+                                <span id="logDestPort"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Protocol:</strong>
+                                <span id="logProtocol"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Interface:</strong>
+                                <span id="logInterface"></span>
+                            </div>
+                            <div class="log-detail-item">
+                                <strong>Full Log:</strong>
+                                <pre id="logFullLog"></pre>
                             </div>
                         </div>
                     </div>
+                </div>
             </div>
 
             <div th:case="'terminal'" class="section" id="terminal-section"
@@ -2181,24 +2263,26 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            console.log(`Logging level changed to ${level}`);
-
-                            // Update the logging table
                             const tbody = document.querySelector('.logging-table tbody');
-                            if (tbody && data.ufwLogs) {
+                            if (tbody) {
                                 tbody.innerHTML = '';
                                 if (data.ufwLogs.length === 0) {
-                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found.</td></tr>';
+                                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected level.</td></tr>';
                                 } else {
                                     data.ufwLogs.forEach(log => {
                                         tbody.innerHTML += `
-                            <tr>
-                                <td>${log.timestamp || ''}</td>
-                                <td>${log.action || ''}</td>
-                                <td>${log.destinationIp || ''}</td>
-                                <td>${log.protocol || ''}</td>
-                            </tr>
-                        `;
+                                        <tr>
+                                            <td>${log.timestamp || ''}</td>
+                                            <td>${log.action || ''}</td>
+                                            <td>${log.destinationIp || ''}</td>
+                                            <td>${log.protocol || ''}</td>
+                                            <td class="details-cell">
+                                                <button class="details-btn" data-timestamp="${log.timestamp || ''}" onclick="showLogDetails(this)">
+                                                    <img src="/images/details.png" alt="">
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
                                     });
                                 }
                             }
@@ -2816,7 +2900,7 @@
             function showLogDetails(button) {
                 const pcName = window.location.pathname.split('/')[2];
                 const timestamp = button.getAttribute('data-timestamp');
-                
+
                 // Show loading state
                 document.getElementById('logTimestamp').textContent = 'Loading...';
                 document.getElementById('logAction').textContent = 'Loading...';
@@ -2827,10 +2911,10 @@
                 document.getElementById('logProtocol').textContent = 'Loading...';
                 document.getElementById('logInterface').textContent = 'Loading...';
                 document.getElementById('logFullLog').textContent = 'Loading...';
-                
+
                 // Show the modal
                 document.getElementById('logDetailModal').style.display = 'block';
-                
+
                 // Fetch log details from server
                 fetch(`/machine/${pcName}/log-details?timestamp=${encodeURIComponent(timestamp)}`)
                     .then(response => {
@@ -2841,24 +2925,24 @@
                     })
                     .then(data => {
                         if (data.success) {
-        const details = data.logDetails;
-        document.getElementById('logTimestamp').textContent = details.timestamp || 'N/A';
-        document.getElementById('logAction').textContent = details.action || 'N/A';
-        document.getElementById('logSourceIp').textContent = details.sourceIp || 'N/A';
-        document.getElementById('logSourcePort').textContent = details.sourcePort || 'N/A';
-        document.getElementById('logDestIp').textContent = details.destinationIp || 'N/A';
-        document.getElementById('logDestPort').textContent = details.destinationPort || 'N/A';
-        document.getElementById('logProtocol').textContent = details.protocol || 'N/A';
-        document.getElementById('logInterface').textContent = details.interface || 'N/A';
-        document.getElementById('logFullLog').textContent = details.fullLog || 'N/A';
-    } else {
-        console.error('Error fetching log details:', data.message);
-        ['logTimestamp', 'logAction', 'logSourceIp', 'logSourcePort', 'logDestIp', 'logDestPort', 'logProtocol', 'logInterface'].forEach(id => {
-            document.getElementById(id).textContent = 'N/A';
-        });
-        document.getElementById('logFullLog').textContent = `Error: ${data.message}`;
-        alert(`Failed to load log details: ${data.message}`);
-    }
+                            const details = data.logDetails;
+                            document.getElementById('logTimestamp').textContent = details.timestamp || 'N/A';
+                            document.getElementById('logAction').textContent = details.action || 'N/A';
+                            document.getElementById('logSourceIp').textContent = details.sourceIp || 'N/A';
+                            document.getElementById('logSourcePort').textContent = details.sourcePort || 'N/A';
+                            document.getElementById('logDestIp').textContent = details.destinationIp || 'N/A';
+                            document.getElementById('logDestPort').textContent = details.destinationPort || 'N/A';
+                            document.getElementById('logProtocol').textContent = details.protocol || 'N/A';
+                            document.getElementById('logInterface').textContent = details.interface || 'N/A';
+                            document.getElementById('logFullLog').textContent = details.fullLog || 'N/A';
+                        } else {
+                            console.error('Error fetching log details:', data.message);
+                            ['logTimestamp', 'logAction', 'logSourceIp', 'logSourcePort', 'logDestIp', 'logDestPort', 'logProtocol', 'logInterface'].forEach(id => {
+                                document.getElementById(id).textContent = 'N/A';
+                            });
+                            document.getElementById('logFullLog').textContent = `Error: ${data.message}`;
+                            alert(`Failed to load log details: ${data.message}`);
+                        }
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -2875,6 +2959,45 @@
             }
             function closeLogDetailModal() {
                 document.getElementById('logDetailModal').style.display = 'none';
+            }
+
+            //xuat log 
+            function exportLogsToCSV() {
+                const table = document.querySelector('.logging-table');
+                let csv = [];
+
+                // Get headers
+                const headers = [];
+                table.querySelectorAll('thead th').forEach(th => {
+                    headers.push(th.textContent.trim());
+                });
+                csv.push(headers.join(','));
+
+                // Get data rows
+                table.querySelectorAll('tbody tr').forEach(tr => {
+                    if (!tr.querySelector('td[colspan]')) { // Skip "No entries found" row
+                        const row = [];
+                        tr.querySelectorAll('td').forEach((td, index) => {
+                            if (index !== 4) { // Skip the Details column
+                                row.push('"' + td.textContent.trim() + '"');
+                            }
+                        });
+                        csv.push(row.join(','));
+                    }
+                });
+
+                // Create and trigger download
+                const csvContent = csv.join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'firewall_logs.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
 
             function editRule(element) {
@@ -3005,19 +3128,19 @@
                 if (closeModalBtn) {
                     closeModalBtn.addEventListener('click', closeLogDetailModal);
                 }
-                
+
                 // Close modal when clicking outside the modal content
                 const modal = document.getElementById('logDetailModal');
                 if (modal) {
-                    modal.addEventListener('click', function(event) {
+                    modal.addEventListener('click', function (event) {
                         if (event.target === modal) {
                             closeLogDetailModal();
                         }
                     });
                 }
-                
+
                 // Close modal with Escape key
-                document.addEventListener('keydown', function(event) {
+                document.addEventListener('keydown', function (event) {
                     if (event.key === 'Escape' && modal.style.display === 'block') {
                         closeLogDetailModal();
                     }
