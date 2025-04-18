@@ -16,9 +16,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -273,9 +276,10 @@ public class LoggingController {
             }
 
             String fullTimestamp = line.substring(0, timestampEnd);
+            System.out.println("Full Timestamp: " + fullTimestamp);
             String[] timestampParts = fullTimestamp.split("\\s+");
             String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
-            logEntry.put("timestamp", timestamp);
+            logEntry.put("timestamp", fullTimestamp);
 
             int ufwIndex = line.indexOf("[UFW");
             if (ufwIndex < 0) {
@@ -419,6 +423,7 @@ public class LoggingController {
         return response;
     }
 
+    //xu ly chi tiet log
     @GetMapping("/machine/{pcName}/log-details")
     @ResponseBody
     public Map<String, Object> getLogDetails(
@@ -428,31 +433,195 @@ public class LoggingController {
         Map<String, Object> response = new HashMap<>();
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
-            logger.warn("Unauthorized attempt to fetch log details for pcName={} - User not logged in", pcName);
             response.put("success", false);
             response.put("message", "User not logged in");
             return response;
         }
-
+    
+        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (computerOptional.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Computer not found");
+            return response;
+        }
+    
+        PC computer = computerOptional.get();
+        Session sshSession = null;
+    
         try {
-            logger.info("Fetching log details for pcName={}, timestamp={}", pcName, timestamp);
-            LoggingUFW logDetails = ufwService.getLogDetailsByTimestamp(pcName, timestamp, ownerUsername);
-            if (logDetails == null) {
-                logger.warn("No log details found for pcName={}, timestamp={}", pcName, timestamp);
+            sshSession = connectSSH.establishSSH(
+                    computer.getIpAddress(),
+                    computer.getPort(),
+                    computer.getPcUsername(),
+                    computer.getPassword());
+            
+            logger.info("Searching for log entry with timestamp: {}", timestamp);
+            
+            // Search for the log entry in both log files
+            String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+            String matchingLogLine = null;
+            
+            // First try direct grep search with the timestamp
+            String searchCommand = "echo '" + computer.getPassword() + "' | sudo -S grep -h \"" + timestamp + "\" /var/log/ufw.log /var/log/ufw.log.1 2>/dev/null";
+            String grepResult = ubuntuInfo.executeCommand(sshSession, searchCommand);
+            
+            if (grepResult != null && !grepResult.trim().isEmpty()) {
+                // If multiple lines are returned, take the first one
+                matchingLogLine = grepResult.split("\n")[0];
+                logger.debug("Found matching log line via grep: {}", matchingLogLine);
+            } else {
+                // If grep fails, try reading the entire files
+                for (String logFile : logFiles) {
+                    String command = "echo '" + computer.getPassword() + "' | sudo -S cat " + logFile;
+                    String logOutput = ubuntuInfo.executeCommand(sshSession, command);
+                    
+                    if (logOutput != null && !logOutput.trim().isEmpty()) {
+                        String[] lines = logOutput.split("\n");
+                        for (String line : lines) {
+                            if (line.contains(timestamp)) {
+                                matchingLogLine = line;
+                                logger.debug("Found matching log line via file scan: {}", matchingLogLine);
+                                break;
+                            }
+                        }
+                        
+                        if (matchingLogLine != null) {
+                            break; // Found the log entry, no need to check other files
+                        }
+                    }
+                }
+            }
+            
+            if (matchingLogLine == null) {
+                logger.warn("No log entry found for timestamp: {}", timestamp);
                 response.put("success", false);
                 response.put("message", "Log entry not found for timestamp: " + timestamp);
                 return response;
             }
-
+            
+            // Create and populate LoggingUFW object
+            LoggingUFW logDetails = new LoggingUFW();
+            logDetails.setFullLog(matchingLogLine);
+            
+            // Extract timestamp
+            int timestampEnd = matchingLogLine.indexOf(".");
+            if (timestampEnd > 0) {
+                String fullTimestamp = matchingLogLine.substring(0, timestampEnd);
+                logDetails.setTimestamp(fullTimestamp);
+            } else {
+                logDetails.setTimestamp("N/A");
+            }
+            
+            // Extract action
+            int ufwIndex = matchingLogLine.indexOf("[UFW");
+            int closeBracketIndex = matchingLogLine.indexOf("]", ufwIndex);
+            if (ufwIndex > 0 && closeBracketIndex > ufwIndex) {
+                String ufwPart = matchingLogLine.substring(ufwIndex + 1, closeBracketIndex);
+                String[] ufwParts = ufwPart.split("\\s+", 2);
+                String action = ufwParts.length > 1 ? ufwParts[1] : "UNDEFINED";
+                logDetails.setAction(action);
+            } else {
+                logDetails.setAction("N/A");
+            }
+            
+            // Extract other details using helper method
+            extractAndSetLogInfo(matchingLogLine, logDetails, "SRC=", "sourceIp");
+            extractAndSetLogInfo(matchingLogLine, logDetails, "DST=", "destinationIp");
+            extractAndSetLogInfo(matchingLogLine, logDetails, "SPT=", "sourcePort");
+            extractAndSetLogInfo(matchingLogLine, logDetails, "DPT=", "destinationPort");
+            extractAndSetLogInfo(matchingLogLine, logDetails, "PROTO=", "protocol");
+            extractAndSetLogInfo(matchingLogLine, logDetails, "IN=", "interface");
+            
             logger.debug("Log details retrieved: {}", logDetails.getFullLog());
             response.put("success", true);
             response.put("logDetails", logDetails);
+            
         } catch (Exception e) {
             logger.error("Error fetching log details for pcName={}, timestamp={}: {}", pcName, timestamp, e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Error fetching log details: " + e.getMessage());
+        } finally {
+            if (sshSession != null) {
+                sshSession.disconnect();
+                logger.info("SSH session disconnected for pcName={}", pcName);
+            }
         }
-
+    
         return response;
     }
+        
+    private void extractAndSetLogInfo(String line, LoggingUFW logEntry, String prefix, String field) {
+        int startIndex = line.indexOf(prefix);
+        if (startIndex >= 0) {
+            startIndex += prefix.length();
+            int endIndex = line.indexOf(" ", startIndex);
+            String value;
+            if (endIndex > startIndex) {
+                value = line.substring(startIndex, endIndex);
+            } else {
+                value = line.substring(startIndex).trim();
+            }
+
+            // Convert protocol numbers to names
+            if (prefix.equals("PROTO=")) {
+                switch (value) {
+                    case "2":
+                        value = "IGMP";
+                        break;
+                    case "6":
+                        value = "TCP";
+                        break;
+                    case "17":
+                        value = "UDP";
+                        break;
+                }
+            }
+            
+            // Set the appropriate field in the LoggingUFW object
+            switch (field) {
+                case "sourceIp":
+                    logEntry.setSourceIp(value);
+                    break;
+                case "destinationIp":
+                    logEntry.setDestinationIp(value);
+                    break;
+                case "sourcePort":
+                    logEntry.setSourcePort(value);
+                    break;
+                case "destinationPort":
+                    logEntry.setDestinationPort(value);
+                    break;
+                case "protocol":
+                    logEntry.setProtocol(value);
+                    break;
+                case "interface":
+                    logEntry.setInterface(value);
+                    break;
+            }
+        } else {
+            // Set default value if the field is not found
+            switch (field) {
+                case "sourceIp":
+                    logEntry.setSourceIp("N/A");
+                    break;
+                case "destinationIp":
+                    logEntry.setDestinationIp("N/A");
+                    break;
+                case "sourcePort":
+                    logEntry.setSourcePort("N/A");
+                    break;
+                case "destinationPort":
+                    logEntry.setDestinationPort("N/A");
+                    break;
+                case "protocol":
+                    logEntry.setProtocol("N/A");
+                    break;
+                case "interface":
+                    logEntry.setInterface("N/A");
+                    break;
+            }
+        }
+    }
+
+    
 }

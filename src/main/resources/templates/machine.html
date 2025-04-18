@@ -2000,7 +2000,7 @@
                                     <td th:text="${logEntry.destinationIp}">Destination IP</td>
                                     <td th:text="${logEntry.protocol}">Protocol</td>
                                     <td class="details-cell">
-                                        <button class="details-btn" onclick="showLogDetails(this)">
+                                        <button class="details-btn" th:attr="data-timestamp=${logEntry.timestamp}" onclick="showLogDetails(this)">
                                             <img src="/images/details.png" alt="">
                                         </button>
                                     </td>
@@ -2013,52 +2013,52 @@
                     </div>
                 </div>
 
-                <div id="logDetailModal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2>Log Details</h2>
-                            <span class="close-modal" onclick="closeLogDetailModal()">&times;</span>
-                        </div>
-                        <div class="modal-body">
-                            <div class="log-detail-item">
-                                <strong>Timestamp:</strong>
-                                <span id="logTimestamp"></span>
+                    <div id="logDetailModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>Log Details</h2>
+                                <span class="close-modal" onclick="closeLogDetailModal()">&times;</span>
                             </div>
-                            <div class="log-detail-item">
-                                <strong>Action:</strong>
-                                <span id="logAction"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Source IP:</strong>
-                                <span id="logSourceIp"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Source Port:</strong>
-                                <span id="logSourcePort"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Destination IP:</strong>
-                                <span id="logDestIp"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Destination Port:</strong>
-                                <span id="logDestPort"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Protocol:</strong>
-                                <span id="logProtocol"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Interface:</strong>
-                                <span id="logInterface"></span>
-                            </div>
-                            <div class="log-detail-item">
-                                <strong>Full Log:</strong>
-                                <pre id="logFullLog"></pre>
+                            <div class="modal-body">
+                                <div class="log-detail-item">
+                                    <strong>Timestamp:</strong>
+                                    <span id="logTimestamp"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Action:</strong>
+                                    <span id="logAction"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Source IP:</strong>
+                                    <span id="logSourceIp"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Source Port:</strong>
+                                    <span id="logSourcePort"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Destination IP:</strong>
+                                    <span id="logDestIp"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Destination Port:</strong>
+                                    <span id="logDestPort"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Protocol:</strong>
+                                    <span id="logProtocol"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Interface:</strong>
+                                    <span id="logInterface"></span>
+                                </div>
+                                <div class="log-detail-item">
+                                    <strong>Full Log:</strong>
+                                    <pre id="logFullLog"></pre>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
 
             <div th:case="'terminal'" class="section" id="terminal-section"
@@ -2814,21 +2814,65 @@
             }
 
             function showLogDetails(button) {
-                // Get data from button attributes
-                document.getElementById('logTimestamp').textContent = button.getAttribute('data-timestamp') || 'N/A';
-                document.getElementById('logAction').textContent = button.getAttribute('data-action') || 'N/A';
-                document.getElementById('logSourceIp').textContent = button.getAttribute('data-source-ip') || 'N/A';
-                document.getElementById('logSourcePort').textContent = button.getAttribute('data-source-port') || 'N/A';
-                document.getElementById('logDestIp').textContent = button.getAttribute('data-destination-ip') || 'N/A';
-                document.getElementById('logDestPort').textContent = button.getAttribute('data-destination-port') || 'N/A';
-                document.getElementById('logProtocol').textContent = button.getAttribute('data-protocol') || 'N/A';
-                document.getElementById('logInterface').textContent = button.getAttribute('data-interface') || 'N/A';
-                document.getElementById('logFullLog').textContent = button.getAttribute('data-full-log') || 'N/A';
+                const pcName = window.location.pathname.split('/')[2];
+                const timestamp = button.getAttribute('data-timestamp');
+                
+                // Show loading state
+                document.getElementById('logTimestamp').textContent = 'Loading...';
+                document.getElementById('logAction').textContent = 'Loading...';
+                document.getElementById('logSourceIp').textContent = 'Loading...';
+                document.getElementById('logSourcePort').textContent = 'Loading...';
+                document.getElementById('logDestIp').textContent = 'Loading...';
+                document.getElementById('logDestPort').textContent = 'Loading...';
+                document.getElementById('logProtocol').textContent = 'Loading...';
+                document.getElementById('logInterface').textContent = 'Loading...';
+                document.getElementById('logFullLog').textContent = 'Loading...';
                 
                 // Show the modal
                 document.getElementById('logDetailModal').style.display = 'block';
+                
+                // Fetch log details from server
+                fetch(`/machine/${pcName}/log-details?timestamp=${encodeURIComponent(timestamp)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+        const details = data.logDetails;
+        document.getElementById('logTimestamp').textContent = details.timestamp || 'N/A';
+        document.getElementById('logAction').textContent = details.action || 'N/A';
+        document.getElementById('logSourceIp').textContent = details.sourceIp || 'N/A';
+        document.getElementById('logSourcePort').textContent = details.sourcePort || 'N/A';
+        document.getElementById('logDestIp').textContent = details.destinationIp || 'N/A';
+        document.getElementById('logDestPort').textContent = details.destinationPort || 'N/A';
+        document.getElementById('logProtocol').textContent = details.protocol || 'N/A';
+        document.getElementById('logInterface').textContent = details.interface || 'N/A';
+        document.getElementById('logFullLog').textContent = details.fullLog || 'N/A';
+    } else {
+        console.error('Error fetching log details:', data.message);
+        ['logTimestamp', 'logAction', 'logSourceIp', 'logSourcePort', 'logDestIp', 'logDestPort', 'logProtocol', 'logInterface'].forEach(id => {
+            document.getElementById(id).textContent = 'N/A';
+        });
+        document.getElementById('logFullLog').textContent = `Error: ${data.message}`;
+        alert(`Failed to load log details: ${data.message}`);
+    }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('logTimestamp').textContent = 'Error';
+                        document.getElementById('logAction').textContent = 'Error';
+                        document.getElementById('logSourceIp').textContent = 'Error';
+                        document.getElementById('logSourcePort').textContent = 'Error';
+                        document.getElementById('logDestIp').textContent = 'Error';
+                        document.getElementById('logDestPort').textContent = 'Error';
+                        document.getElementById('logProtocol').textContent = 'Error';
+                        document.getElementById('logInterface').textContent = 'Error';
+                        document.getElementById('logFullLog').textContent = 'Error: ' + error.message;
+                    });
             }
-
             function closeLogDetailModal() {
                 document.getElementById('logDetailModal').style.display = 'none';
             }
