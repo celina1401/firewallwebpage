@@ -281,6 +281,7 @@ public class LoggingController {
             System.out.println("Full Timestamp: " + fullTimestamp);
             String[] timestampParts = fullTimestamp.split("\\s+");
             String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
+            // Mới add cái timestamp
             logEntry.put("timestamp", fullTimestamp);
 
             int ufwIndex = line.indexOf("[UFW");
@@ -298,7 +299,9 @@ public class LoggingController {
             String ufwPart = line.substring(ufwIndex + 1, closeBracketIndex);
             String[] ufwParts = ufwPart.split("\\s+", 2);
             String action = ufwParts.length > 1 ? ufwParts[1] : "UNDEFINED";
+            // Cái action
             logEntry.put("action", action);
+
 
             extractLogInfo(line, logEntry, "DST=", "destinationIp");
             extractLogInfo(line, logEntry, "PROTO=", "protocol");
@@ -425,7 +428,7 @@ public class LoggingController {
         return response;
     }
 
-    //xu ly chi tiet log
+    //xu ly chi tiet log - cái này alf phần nảy chị mở lên
     @GetMapping("/machine/{pcName}/log-details")
     @ResponseBody
     public Map<String, Object> getLogDetails(

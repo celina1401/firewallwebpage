@@ -1,6 +1,12 @@
 package com.b2110941.firewallweb.model;
 
+
+import java.time.LocalDateTime;
+
 public class LoggingUFW {
+
+    private String id;
+
     private String timestamp;
     private String action;
     private String sourceIp;
@@ -8,8 +14,14 @@ public class LoggingUFW {
     private String destinationIp;
     private String destinationPort;
     private String protocol;
-    private String interface_;
+
+    private String interface_; // Tránh dùng từ khóa interface
+
     private String fullLog;
+
+    private String pcName;
+
+    private LocalDateTime loggedAt = LocalDateTime.now();
 
     public LoggingUFW() {
     }
@@ -22,6 +34,15 @@ public class LoggingUFW {
     }
 
     // Getters and Setters
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getTimestamp() {
         return timestamp;
     }
@@ -92,5 +113,21 @@ public class LoggingUFW {
 
     public void setFullLog(String fullLog) {
         this.fullLog = fullLog;
+    }
+
+    public String getPcName() {
+        return pcName;
+    }
+
+    public void setPcName(String pcName) {
+        this.pcName = pcName;
+    }
+
+    public LocalDateTime getLoggedAt() {
+        return loggedAt;
+    }
+
+    public void setLoggedAt(LocalDateTime loggedAt) {
+        this.loggedAt = loggedAt;
     }
 }

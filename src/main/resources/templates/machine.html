@@ -724,7 +724,7 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-            width: 20%;
+            width: 320px;
             z-index: 1000;
             opacity: 0;
             transform: translateY(-10px);
@@ -2010,7 +2010,8 @@
                     </div>
                 </div>
 
-                <div class="toggle-container-logging" id="filterContainer" style="display: none">
+                <div th:action="@{/machine/{pcName}/logging-filter(pcName=${computer.pcName})}" method="get"
+                    class="toggle-container-logging" id="filterContainer" style="display: none">
                     <div class="filter-header">
                         <h3>Filter Options</h3>
                         <button class="close-filter" onclick="toggleFilterContainer()">×</button>
@@ -2018,23 +2019,23 @@
                     <div class="filter-content">
                         <div class="date-filter">
                             <label for="logDate">Date:</label>
-                            <input type="date" id="logDate" name="logDate" onchange="filterLogsByDate(this.value)"
-                                pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD">
+                            <input type="date" id="logDate" name="logDate" th:value="${selectedDate}">
                         </div>
 
                         <div class="action-filter">
                             <label for="actionFilter">Action:</label>
-                            <select id="actionFilter" onchange="filterLogsByAction(this.value)">
+                            <select id="actionFilter" name="action" th:value="${selectedAction}">
                                 <option value="all">All</option>
                                 <option value="ALLOW">Allow</option>
                                 <option value="DENY">Deny</option>
+                                <option value="AUDIT">Audit</option>
                                 <option value="BLOCK">Block</option>
-                            </select>
+                                </select>
                         </div>
 
                         <div class="proto-filter">
                             <label for="protocolFilter">Protocol:</label>
-                            <select id="protocolFilter" onchange="filterLogsByProtocol(this.value)">
+                            <select id="protocolFilter" name="protocol" th:value="${selectedProtocol}">
                                 <option value="all">All</option>
                                 <option value="TCP">TCP</option>
                                 <option value="UDP">UDP</option>
@@ -2044,10 +2045,13 @@
 
                         <div class="rows-filter">
                             <label for="rowsToShow">Show rows:</label>
-                            <input type="number" id="rowsToShow" min="1" max="100" value="10"
-                                onchange="filterLogsByRows(this.value)">
+                            <input type="number" id="rowsToShow" name="rows" min="1" max="30" th:value="${rowsToShow}">
                         </div>
                     </div>
+
+                    <button class="filter-btn" onclick="applyFilters()">
+                        <span>Done</span>
+                    </button>
                 </div>
 
 
@@ -2297,153 +2301,9 @@
                     });
             }
 
-            function filterLogsByAction(action) {
-                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
-                if (!pcName) {
-                    console.error("PC name not found");
-                    return;
-                }
 
-                const dateValue = document.getElementById('logDate').value;
 
-                fetch(`/machine/${pcName}/logging-filter`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `action=${action}&date=${dateValue}`
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const tbody = document.querySelector('.logging-table tbody');
-                            if (tbody) {
-                                tbody.innerHTML = '';
-                                if (data.ufwLogs.length === 0) {
-                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
-                                } else {
-                                    data.ufwLogs.forEach(log => {
-                                        tbody.innerHTML += `
-                                        <tr>
-                                            <td>${log.timestamp || ''}</td>
-                                            <td>${log.action || ''}</td>
-                                            <td>${log.destinationIp || ''}</td>
-                                            <td>${log.protocol || ''}</td>
-                                        </tr>
-                                    `;
-                                    });
-                                }
-                            }
-                        } else {
-                            console.error('Failed to filter logs:', data.message);
-                            alert('Failed to filter logs: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error filtering logs');
-                    });
-            }
-
-            function filterLogsByProtocol(protocol) {
-                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
-                if (!pcName) {
-                    console.error("PC name not found");
-                    return;
-                }
-
-                const dateValue = document.getElementById('logDate').value;
-                const actionValue = document.getElementById('actionFilter').value;
-
-                fetch(`/machine/${pcName}/logging-filter`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `protocol=${protocol}&date=${dateValue}&action=${actionValue}`
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const tbody = document.querySelector('.logging-table tbody');
-                            if (tbody) {
-                                tbody.innerHTML = '';
-                                if (data.ufwLogs.length === 0) {
-                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
-                                } else {
-                                    data.ufwLogs.forEach(log => {
-                                        tbody.innerHTML += `
-                                        <tr>
-                                            <td>${log.timestamp || ''}</td>
-                                            <td>${log.action || ''}</td>
-                                            <td>${log.destinationIp || ''}</td>
-                                            <td>${log.protocol || ''}</td>
-                                        </tr>
-                                    `;
-                                    });
-                                }
-                            }
-                        } else {
-                            console.error('Failed to filter logs:', data.message);
-                            alert('Failed to filter logs: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error filtering logs');
-                    });
-            }
-
-            function filterLogsByRows(rows) {
-                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
-                if (!pcName) {
-                    console.error("PC name not found");
-                    return;
-                }
-
-                const dateValue = document.getElementById('logDate').value;
-                const actionValue = document.getElementById('actionFilter').value;
-                const protocolValue = document.getElementById('protocolFilter').value;
-
-                fetch(`/machine/${pcName}/logging-filter`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `rows=${rows}&date=${dateValue}&action=${actionValue}&protocol=${protocolValue}`
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const tbody = document.querySelector('.logging-table tbody');
-                            if (tbody) {
-                                tbody.innerHTML = '';
-                                if (data.ufwLogs.length === 0) {
-                                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No log entries found for selected filters.</td></tr>';
-                                } else {
-                                    data.ufwLogs.forEach(log => {
-                                        tbody.innerHTML += `
-                                        <tr>
-                                            <td>${log.timestamp || ''}</td>
-                                            <td>${log.action || ''}</td>
-                                            <td>${log.destinationIp || ''}</td>
-                                            <td>${log.protocol || ''}</td>
-                                        </tr>
-                                    `;
-                                    });
-                                }
-                            }
-                        } else {
-                            console.error('Failed to filter logs:', data.message);
-                            alert('Failed to filter logs: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error filtering logs');
-                    });
-            }
-
+            //hien thi filter log
             function toggleFilterContainer() {
                 const container = document.getElementById('filterContainer');
                 const isHidden = window.getComputedStyle(container).display === 'none';
@@ -2458,6 +2318,84 @@
                     container.addEventListener('transitionend', function hideContainer() {
                         container.style.display = 'none';
                         container.removeEventListener('transitionend', hideContainer);
+                    });
+                }
+            }
+
+            function applyFilters(event) {
+                if (event) event.preventDefault(); // Prevent default only if event exists
+
+                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
+
+                const logDate = document.getElementById("logDate").value;
+                const action = document.getElementById("actionFilter").value;
+                const protocol = document.getElementById("protocolFilter").value;
+                const rows = document.getElementById("rowsToShow").value;
+
+                // Format date if needed
+                let formattedDate = '';
+                if (logDate) {
+                    const rawDate = new Date(logDate);
+                    const yyyy = rawDate.getFullYear();
+                    const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(rawDate.getDate()).padStart(2, '0');
+                    formattedDate = `${yyyy}-${mm}-${dd}`;
+                }
+
+                // Use AJAX instead of page navigation
+                fetch(`/machine/${pcName}/logging-filter?date=${formattedDate}&action=${action}&protocol=${protocol}&rows=${rows}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        updateLogsTable(data.ufwLogs);
+                        toggleFilterContainer(); // Close the filter container
+                    } else {
+                        console.error('Failed to filter logs:', data.message);
+                        alert('Failed to filter logs: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error filtering logs: ' + error.message);
+                });
+            }
+
+            function updateLogsTable(logs) {
+                const tbody = document.querySelector('.logging-table tbody');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                if (!logs || logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected filters.</td></tr>';
+                } else {
+                    logs.forEach(log => {
+                        tbody.innerHTML += `
+                        <tr>
+                            <td>${log.timestamp || ''}</td>
+                            <td>${log.action || ''}</td>
+                            <td>${log.destinationIp || ''}</td>
+                            <td>${log.protocol || ''}</td>
+                            <td class="details-cell">
+                                <button class="details-btn" data-timestamp="${log.timestamp || ''}" onclick="showLogDetails(this)">
+                                    <img src="/images/details.png" alt="">
+                                </button>
+                            </td>
+                        </tr>
+                        `;
                     });
                 }
             }
@@ -2960,6 +2898,57 @@
             function closeLogDetailModal() {
                 document.getElementById('logDetailModal').style.display = 'none';
             }
+
+            //             function applyFilters() {
+            //     const pcName = getCurrentPcName(); // Hàm này bạn tự định nghĩa nếu cần
+            //     const date = document.getElementById('logDate').value;
+            //     const action = document.getElementById('actionFilter').value;
+            //     const protocol = document.getElementById('protocolFilter').value;
+            //     const rows = document.getElementById('rowsToShow').value;
+
+            //     const filterData = {
+            //         date: date,
+            //         action: action,
+            //         protocol: protocol,
+            //         rows: parseInt(rows)
+            //     };
+
+            //     fetch(`/machine/${pcName}/filter-logs`, {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         },
+            //         body: JSON.stringify(filterData)
+            //     })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         if (data.success) {
+            //             updateLogsTable(data.ufwLogs);
+            //         } else {
+            //             alert(data.message || "Failed to fetch logs");
+            //         }
+            //     })
+            //     .catch(error => {
+            //         console.error("Error fetching logs:", error);
+            //         alert("Something went wrong while filtering logs.");
+            //     });
+            // }
+
+            // function updateLogsTable(logs) {
+            //     const tableBody = document.querySelector('#ufwLogsTable tbody');
+            //     tableBody.innerHTML = ''; // Clear existing logs
+
+            //     logs.forEach(log => {
+            //         const row = document.createElement('tr');
+            //         row.innerHTML = `
+            //             <td>${log.timestamp || ''}</td>
+            //             <td>${log.action || ''}</td>
+            //             <td>${log.destinationIp || ''}</td>
+            //             <td>${log.protocol || ''}</td>
+            //         `;
+            //         tableBody.appendChild(row);
+            //     });
+            // }
 
             //xuat log 
             function exportLogsToCSV() {
