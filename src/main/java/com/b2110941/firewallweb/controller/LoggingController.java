@@ -101,7 +101,7 @@ public class LoggingController {
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
                 // Check multiple log files to handle rotation
-                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String[] logFiles = { "/var/log/ufw.log", "/var/log/ufw.log.1" };
                 String logsOutput = null;
                 for (String logFile : logFiles) {
                     String logsCommand = "echo '" + computer.getPassword()
@@ -155,10 +155,13 @@ public class LoggingController {
     @ResponseBody
     public Map<String, Object> toggleLogging(
             @PathVariable("pcName") String pcName,
-            @RequestParam("status") String status,
+            @RequestParam("enable") boolean enable,
             HttpSession session) {
+
+        logger.info("Toggle logging request received for pcName={}, enable={}", pcName, enable);
         Map<String, Object> response = new HashMap<>();
-        boolean enable = "on".equalsIgnoreCase(status);
+        Session sshSession = null;
+
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
             logger.warn("Unauthorized attempt to toggle logging for pcName={} - User not logged in", pcName);
@@ -171,21 +174,19 @@ public class LoggingController {
         if (computerOptional.isEmpty()) {
             logger.error("Computer not found: pcName={}, ownerUsername={}", pcName, ownerUsername);
             response.put("success", false);
-            response.put("message", "Computer " + pcName + " not found");
+            response.put("message", "Computer not found");
             return response;
         }
 
         PC computer = computerOptional.get();
-        Session sshSession = null;
         try {
             sshSession = connectSSH.establishSSH(
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword());
-            logger.info("SSH connection established successfully for toggle UFW logging: pcName={}", pcName);
+            logger.info("SSH connection established successfully for pcName={}", pcName);
 
-            // Toggle UFW logging
             String command = enable
                     ? "echo '" + computer.getPassword() + "' | sudo -S ufw logging on"
                     : "echo '" + computer.getPassword() + "' | sudo -S ufw logging off";
@@ -211,7 +212,7 @@ public class LoggingController {
             List<Map<String, String>> ufwLogs = new ArrayList<>();
             if ("ON".equals(loggingStatus)) {
                 // Check multiple log files to handle rotation
-                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String[] logFiles = { "/var/log/ufw.log", "/var/log/ufw.log.1" };
                 String logsOutput = null;
                 for (String logFile : logFiles) {
                     String logsCommand = "echo '" + computer.getPassword()
@@ -302,7 +303,6 @@ public class LoggingController {
             // Cái action
             logEntry.put("action", action);
 
-
             extractLogInfo(line, logEntry, "DST=", "destinationIp");
             extractLogInfo(line, logEntry, "PROTO=", "protocol");
             extractLogInfo(line, logEntry, "IN=", "interface");
@@ -382,10 +382,12 @@ public class LoggingController {
                         computer.getPort(),
                         computer.getPcUsername(),
                         computer.getPassword());
-                logger.info("SSH connection established successfully for fetching logs after changing logging level: pcName={}", pcName);
+                logger.info(
+                        "SSH connection established successfully for fetching logs after changing logging level: pcName={}",
+                        pcName);
 
                 // Fetch updated logs
-                String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+                String[] logFiles = { "/var/log/ufw.log", "/var/log/ufw.log.1" };
                 String logsOutput = null;
                 for (String logFile : logFiles) {
                     String logsCommand = "echo '" + computer.getPassword()
@@ -428,7 +430,7 @@ public class LoggingController {
         return response;
     }
 
-    //xu ly chi tiet log - cái này alf phần nảy chị mở lên
+    // xu ly chi tiet log - cái này alf phần nảy chị mở lên
     @GetMapping("/machine/{pcName}/log-details")
     @ResponseBody
     public Map<String, Object> getLogDetails(
@@ -442,34 +444,35 @@ public class LoggingController {
             response.put("message", "User not logged in");
             return response;
         }
-    
+
         Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
         if (computerOptional.isEmpty()) {
             response.put("success", false);
             response.put("message", "Computer not found");
             return response;
         }
-    
+
         PC computer = computerOptional.get();
         Session sshSession = null;
-    
+
         try {
             sshSession = connectSSH.establishSSH(
                     computer.getIpAddress(),
                     computer.getPort(),
                     computer.getPcUsername(),
                     computer.getPassword());
-            
+
             logger.info("Searching for log entry with timestamp: {}", timestamp);
-            
+
             // Search for the log entry in both log files
-            String[] logFiles = {"/var/log/ufw.log", "/var/log/ufw.log.1"};
+            String[] logFiles = { "/var/log/ufw.log", "/var/log/ufw.log.1" };
             String matchingLogLine = null;
-            
+
             // First try direct grep search with the timestamp
-            String searchCommand = "echo '" + computer.getPassword() + "' | sudo -S grep -h \"" + timestamp + "\" /var/log/ufw.log /var/log/ufw.log.1 2>/dev/null";
+            String searchCommand = "echo '" + computer.getPassword() + "' | sudo -S grep -h \"" + timestamp
+                    + "\" /var/log/ufw.log /var/log/ufw.log.1 2>/dev/null";
             String grepResult = ubuntuInfo.executeCommand(sshSession, searchCommand);
-            
+
             if (grepResult != null && !grepResult.trim().isEmpty()) {
                 // If multiple lines are returned, take the first one
                 matchingLogLine = grepResult.split("\n")[0];
@@ -479,7 +482,7 @@ public class LoggingController {
                 for (String logFile : logFiles) {
                     String command = "echo '" + computer.getPassword() + "' | sudo -S cat " + logFile;
                     String logOutput = ubuntuInfo.executeCommand(sshSession, command);
-                    
+
                     if (logOutput != null && !logOutput.trim().isEmpty()) {
                         String[] lines = logOutput.split("\n");
                         for (String line : lines) {
@@ -489,25 +492,25 @@ public class LoggingController {
                                 break;
                             }
                         }
-                        
+
                         if (matchingLogLine != null) {
                             break; // Found the log entry, no need to check other files
                         }
                     }
                 }
             }
-            
+
             if (matchingLogLine == null) {
                 logger.warn("No log entry found for timestamp: {}", timestamp);
                 response.put("success", false);
                 response.put("message", "Log entry not found for timestamp: " + timestamp);
                 return response;
             }
-            
+
             // Create and populate LoggingUFW object
             LoggingUFW logDetails = new LoggingUFW();
             logDetails.setFullLog(matchingLogLine);
-            
+
             // Extract timestamp
             int timestampEnd = matchingLogLine.indexOf(".");
             if (timestampEnd > 0) {
@@ -516,7 +519,7 @@ public class LoggingController {
             } else {
                 logDetails.setTimestamp("N/A");
             }
-            
+
             // Extract action
             int ufwIndex = matchingLogLine.indexOf("[UFW");
             int closeBracketIndex = matchingLogLine.indexOf("]", ufwIndex);
@@ -528,7 +531,7 @@ public class LoggingController {
             } else {
                 logDetails.setAction("N/A");
             }
-            
+
             // Extract other details using helper method
             extractAndSetLogInfo(matchingLogLine, logDetails, "SRC=", "sourceIp");
             extractAndSetLogInfo(matchingLogLine, logDetails, "DST=", "destinationIp");
@@ -540,9 +543,10 @@ public class LoggingController {
             logger.debug("Log details retrieved: {}", logDetails.getFullLog());
             response.put("success", true);
             response.put("logDetails", logDetails);
-            
+
         } catch (Exception e) {
-            logger.error("Error fetching log details for pcName={}, timestamp={}: {}", pcName, timestamp, e.getMessage(), e);
+            logger.error("Error fetching log details for pcName={}, timestamp={}: {}", pcName, timestamp,
+                    e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Error fetching log details: " + e.getMessage());
         } finally {
@@ -551,15 +555,15 @@ public class LoggingController {
                 logger.info("SSH session disconnected for pcName={}", pcName);
             }
         }
-    
+
         return response;
     }
 
-    //tach interface tu IN, OUT
+    // tach interface tu IN, OUT
     private void extractInterface(String logLine, LoggingUFW logDetails) {
         String inInterface = extractValue(logLine, "IN=");
         String outInterface = extractValue(logLine, "OUT=");
-        
+
         if (!inInterface.isEmpty()) {
             logDetails.setInterface(inInterface);
         } else if (!outInterface.isEmpty()) {
@@ -569,13 +573,12 @@ public class LoggingController {
         }
     }
 
-    
     private String extractValue(String logLine, String prefix) {
         Pattern pattern = Pattern.compile(prefix + "([^\\s]+)");
         Matcher matcher = pattern.matcher(logLine);
         return matcher.find() ? matcher.group(1) : "";
     }
-        
+
     private void extractAndSetLogInfo(String line, LoggingUFW logEntry, String prefix, String field) {
         int startIndex = line.indexOf(prefix);
         if (startIndex >= 0) {
@@ -602,7 +605,7 @@ public class LoggingController {
                         break;
                 }
             }
-            
+
             // Set the appropriate field in the LoggingUFW object
             switch (field) {
                 case "sourceIp":
@@ -649,5 +652,4 @@ public class LoggingController {
         }
     }
 
-    
 }

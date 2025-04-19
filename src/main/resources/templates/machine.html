@@ -1984,7 +1984,7 @@
                             <span class="slider"></span>
                         </label>
 
-                        <span class="toggle-label"
+                        <span class="toggle-logging-label"
                             th:text="${loggingStatus == 'ON' ? 'Logging Status: ON' : 'Logging Status: OFF'}">
                         </span>
                     </div>
@@ -2030,7 +2030,7 @@
                                 <option value="DENY">Deny</option>
                                 <option value="AUDIT">Audit</option>
                                 <option value="BLOCK">Block</option>
-                                </select>
+                            </select>
                         </div>
 
                         <div class="proto-filter">
@@ -2353,31 +2353,31 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        updateLogsTable(data.ufwLogs);
-                        toggleFilterContainer(); // Close the filter container
-                    } else {
-                        console.error('Failed to filter logs:', data.message);
-                        alert('Failed to filter logs: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error filtering logs: ' + error.message);
-                });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            updateLogsTable(data.ufwLogs);
+                            toggleFilterContainer(); // Close the filter container
+                        } else {
+                            console.error('Failed to filter logs:', data.message);
+                            alert('Failed to filter logs: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error filtering logs: ' + error.message);
+                    });
             }
-            
+
             function updateLogsTable(logs) {
                 const tbody = document.querySelector('.logging-table tbody');
                 if (!tbody) return;
-                
+
                 tbody.innerHTML = '';
                 if (!logs || logs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected filters.</td></tr>';
@@ -2792,9 +2792,9 @@
                 const isChecked = element.checked;
                 const url = `/machine/${pcName}/toggle-logging`;
                 element.disabled = true;
-                const label = document.querySelector('.toggle-label');
-                const originalLabel = label.textContent;
-                label.textContent = 'Đang xử lý...';
+                const label = document.querySelector('.toggle-logging-label');
+                const originalLabel = label ? label.textContent : '';
+                if (label) label.textContent = 'Đang xử lý...';
 
                 fetch(url, {
                     method: 'POST',
@@ -2813,11 +2813,14 @@
                     .then(data => {
                         element.disabled = false;
                         if (data.success) {
-                            label.textContent = isChecked ? 'Logging: ON' : 'Logging: OFF';
+                            if (label) label.textContent = isChecked ? 'Logging Status: ON' : 'Logging Status: OFF';
                             const loggingTable = document.getElementById('loggingTable');
                             if (loggingTable) {
                                 loggingTable.style.display = isChecked ? 'block' : 'none';
                             }
+                            if (data.ufwLogs && data.ufwLogs.length > 0) {
+                updateLogsTable(data.ufwLogs);
+            }
                             console.log(`Logging đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
                         } else {
                             console.error('Không thể bật/tắt logging:', data.message);
