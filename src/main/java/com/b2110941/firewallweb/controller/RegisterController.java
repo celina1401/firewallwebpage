@@ -9,6 +9,7 @@ import com.b2110941.firewallweb.model.UserAccount;
 import com.b2110941.firewallweb.repository.userAccountRepository;
 import com.b2110941.firewallweb.repository.userRepository;
 import jakarta.servlet.http.HttpSession;
+
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -16,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  *
@@ -39,6 +41,7 @@ public class RegisterController {
                            @RequestParam String password,
                            @RequestParam String confirm_password,
                            @RequestParam String email,
+                           RedirectAttributes redirectAttrs,
                            Model model,
                            HttpSession session){
         
@@ -46,16 +49,15 @@ public class RegisterController {
         
         Optional<User>  existingUserByUsername = userRepository.findByUsername(username);
         System.out.println(existingUserByUsername);
-//        Optional<User>  existingUserByEmail = userRepository.findByEmail(email);
-
+ 
         if (!existingUserByUsername.equals(Optional.empty()) ) {
-            model.addAttribute("error", "Account already exists");
+            model.addAttribute("error", "Username already exists");
             return "register"; // Trả về trang đăng ký với thông báo lỗi
         }
 
         // Kiểm tra mật khẩu và xác nhận mật khẩu
         if (!password.equals(confirm_password)) {
-            model.addAttribute("error", "Passwords do not match");
+            redirectAttrs.addFlashAttribute("error", "Passwords do not match");
             return "register"; // Trả về trang đăng ký với thông báo lỗi
         }
 
@@ -68,7 +70,9 @@ public class RegisterController {
         UserAccount newUserAccount = new UserAccount(normalizedUsername, password);
         userAccountRepository.save(newUserAccount);
 
-        model.addAttribute("message", "Registration successful! Please login.");
-        return "login"; // Trả về trang đăng nhập sau khi đăng ký thành công
+        redirectAttrs.addFlashAttribute("toastMessage", "Register successfully!");
+        redirectAttrs.addFlashAttribute("toastType", "success");
+
+        return "redirect:/";
     }
 }

@@ -18,7 +18,8 @@ public class LogInController {
     private userAccountRepository userAccountRepository;
 
     @GetMapping("/")
-    public String showLoginPage() {
+    public String showLoginPage(Model model) {
+        // This will make flash attributes available to the view
         return "login";
     }
 
@@ -32,13 +33,17 @@ public class LogInController {
         Optional<UserAccount> userOptional = userAccountRepository.findByUsername(normalizedUsername);
 
         if (!userOptional.isPresent()) {
-            model.addAttribute("error", "Username does not exist");
-            return "login";
+            redirectAttrs.addFlashAttribute("error", "Username does not exist");
+            redirectAttrs.addFlashAttribute("toastMessage", "Username does not exist");
+            redirectAttrs.addFlashAttribute("toastType", "error");
+            return "redirect:/";
         }
         UserAccount user = userOptional.get();
         if (!user.getPassword().equals(password)) {
-            model.addAttribute("error", "Incorrect password");
-            return "login";
+            redirectAttrs.addFlashAttribute("error", "Incorrect password");
+            redirectAttrs.addFlashAttribute("toastMessage", "Incorrect password");
+            redirectAttrs.addFlashAttribute("toastType", "error");
+            return "redirect:/";
         }
 
         // thành công → dùng flash attribute
