@@ -279,6 +279,115 @@
             color: #084298;
             text-decoration: underline;
         }
+
+        /* ===== TOAST CSS ===== */
+        :root {
+            --toast-success: #28a745;
+            --toast-error: #dc3545;
+            --toast-info: #0d6efd;
+            --toast-warning: #ffc107;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            min-width: 350px;
+            max-width: 450px;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            z-index: 1000;
+            border-left: 8px solid var(--toast-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 15px 45px rgba(var(--toast-shadow-color), 0.5);
+            }
+
+            100% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .toast--visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast--success {
+            --toast-color: var(--toast-success);
+            --toast-shadow-color: 40, 167, 69;
+            /* background: linear-gradient(to right, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05), white); */
+        }
+
+        .toast--error {
+            --toast-color: var(--toast-error);
+            --toast-shadow-color: 220, 53, 69;
+            /* background: linear-gradient(to right, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05), white); */
+        }
+
+        .toast__icon {
+            font-size: 28px;
+            margin-right: 16px;
+            color: var(--toast-color);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .toast__message {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .toast__close {
+            margin-left: 16px;
+            font-size: 24px;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .toast__close:hover {
+            color: var(--toast-color);
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .toast__progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 5px;
+            background: linear-gradient(to right, var(--toast-color), rgba(var(--toast-shadow-color), 0.6));
+            transition: width linear 4s;
+            border-radius: 0 2px 2px 0;
+        }
     </style>
 </head>
 
@@ -294,8 +403,6 @@
         <div class="register-box">
             <h1 class="title">Create Account</h1>
             <p class="subtitle">Join our firewall management system</p>
-
-            <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
             <form th:action="@{/register}" method="post">
                 <div class="input-contain">
                     <input type="text" class="input-field" name="fullname" required>
@@ -328,10 +435,27 @@
                 </p>
             </form>
         </div>
+
+        <div th:if="${error}" id="toast-error" class="toast toast--error">
+            <div class="toast__icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="toast__message" th:text="${error}">Error!</div>
+            <div class="toast__close" onclick="hideToast(this)">&times;</div>
+            <div class="toast__progress"></div>
+        </div>
     </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".toast").forEach(toast => {
+                // show
+                toast.classList.add("toast--visible");
+                // start progress bar
+                const bar = toast.querySelector(".toast__progress");
+                setTimeout(() => bar.style.width = '100%', 50);
+                // auto hide sau 4s
+                setTimeout(() => hideToast(null, toast), 4000);
+            });
+
             // Xử lý hiệu ứng label cho input
             let inputs = document.querySelectorAll(".input-field");
             inputs.forEach(input => {
@@ -347,6 +471,12 @@
                 }
             });
         });
+
+        // hide toast (thisBtn optional)
+        function hideToast(btn, toastEl) {
+            const toast = toastEl || btn.closest(".toast");
+            toast.classList.remove("toast--visible");
+        }
 
         function togglePassword(element) {
             // Tìm input gần nhất trong cùng một .input-contain

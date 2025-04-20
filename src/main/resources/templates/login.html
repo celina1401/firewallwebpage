@@ -321,6 +321,113 @@
                 display: none;
             }
         }
+
+        /* ===== TOAST CSS ===== */
+        :root {
+            --toast-success: #28a745;
+            --toast-error: #dc3545;
+            --toast-info: #0d6efd;
+            --toast-warning: #ffc107;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            min-width: 350px;
+            max-width: 450px;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            z-index: 1000;
+            border-left: 8px solid var(--toast-color);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 15px 45px rgba(var(--toast-shadow-color), 0.5);
+            }
+            100% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+        }
+        
+        .toast--visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast--success { 
+            --toast-color: var(--toast-success);
+            --toast-shadow-color: 40, 167, 69;
+            /* background: linear-gradient(to right, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05), white); */
+        }
+        
+        .toast--error { 
+            --toast-color: var(--toast-error);
+            --toast-shadow-color: 220, 53, 69;
+            /* background: linear-gradient(to right, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05), white); */
+        }
+
+        .toast__icon {
+            font-size: 28px;
+            margin-right: 16px;
+            color: var(--toast-color);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .toast__message {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .toast__close {
+            margin-left: 16px;
+            font-size: 24px;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .toast__close:hover {
+            color: var(--toast-color);
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .toast__progress {
+            position: absolute;
+            bottom: 0; 
+            left: 0;
+            width: 0;
+            height: 5px;
+            background: linear-gradient(to right, var(--toast-color), rgba(var(--toast-shadow-color), 0.6));
+            transition: width linear 4s;
+            border-radius: 0 2px 2px 0;
+        }
     </style>
 
     </style>
@@ -328,77 +435,99 @@
 
 <body>
     <div class="login-container">
+        <!-- … left‑panel + login‑box như cũ … -->
         <div class="left-panel">
-            <div class="logo">
-                <img th:src="@{/images/logo.png}" alt="Logo">
-            </div>
+            <div class="logo"><img th:src="@{/images/logo.png}" alt="Logo" /></div>
             <h1 class="title">Firewall</h1>
-            <p class="subtitle">Secure your network with our advanced firewall management system</p>
+            <p class="subtitle">
+                Secure your network with our advanced firewall management system
+            </p>
         </div>
         <div class="login-box">
             <h1 class="title">Welcome Back</h1>
             <p class="subtitle">Login to your account</p>
-
-            <div th:if="${message}" th:text="${message}" style="color: green; margin-bottom: 20px;"></div>
-            <div th:if="${error}" th:text="${error}" style="color: red; margin-bottom: 20px;"></div>
-
             <form th:action="@{/}" method="post">
                 <div class="input-contain">
-                    <input id="username" type="text" class="input-field" name="username" required>
+                    <input id="username" name="username" class="input-field" required />
                     <label for="username">Username</label>
                 </div>
-
                 <div class="input-contain">
-                    <input id="password" type="password" class="input-field" name="password" required>
+                    <input id="password" type="password" name="password" class="input-field" required />
                     <label for="password">Password</label>
                     <span class="eye-icon" onclick="togglePassword()">
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
-
                 <div class="forgot-password">
                     <a th:href="@{/forgot-password}">Forgot password?</a>
                 </div>
-
                 <div class="buttons">
                     <button type="submit" class="login-btn">Sign In</button>
-                    <button type="button" class="register-btn" onclick="window.location.href='/register'">Sign
-                        Up</button>
+                    <button type="button" class="register-btn" onclick="window.location.href='/register'">
+                        Sign Up
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- === TOASTs: sẽ chỉ render khi có message hoặc error === -->
+    <div th:if="${message}" id="toast-success" class="toast toast--success">
+        <div class="toast__icon"><i class="fas fa-check-circle"></i></div>
+        <div class="toast__message" th:text="${message}">Success!</div>
+        <div class="toast__close" onclick="hideToast(this)">&times;</div>
+        <div class="toast__progress"></div>
+    </div>
+    <div th:if="${error}" id="toast-error" class="toast toast--error">
+        <div class="toast__icon"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="toast__message" th:text="${error}">Error!</div>
+        <div class="toast__close" onclick="hideToast(this)">&times;</div>
+        <div class="toast__progress"></div>
+    </div>
+
     <script>
+        // toggle mật khẩu
         function togglePassword() {
-            const passwordInput = document.querySelector("input[name='password']");
-            const eyeIcon = document.querySelector(".eye-icon i");
-            if (passwordInput.type === "password") {
-                passwordInput.type = "text";
-                eyeIcon.classList.remove("fa-eye");
-                eyeIcon.classList.add("fa-eye-slash");
+            const inp = document.querySelector("input[name='password']");
+            const icon = document.querySelector(".eye-icon i");
+            if (inp.type === "password") {
+                inp.type = "text";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
             } else {
-                passwordInput.type = "password";
-                eyeIcon.classList.remove("fa-eye-slash");
-                eyeIcon.classList.add("fa-eye");
+                inp.type = "password";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
             }
         }
 
+        // Khi DOM load, show bất kỳ toast nào tồn tại
         document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".toast").forEach(toast => {
+                // show
+                toast.classList.add("toast--visible");
+                // start progress bar
+                const bar = toast.querySelector(".toast__progress");
+                setTimeout(() => bar.style.width = '100%', 50);
+                // auto hide sau 4s
+                setTimeout(() => hideToast(null, toast), 4000);
+            });
+
+            // floating‑label cho inputs
             document.querySelectorAll(".input-field").forEach(input => {
                 input.addEventListener("blur", () => {
-                    if (input.value.trim() !== "") {
-                        input.classList.add("has-content");
-                    } else {
-                        input.classList.remove("has-content");
-                    }
+                    input.value.trim() !== ""
+                        ? input.classList.add("has-content")
+                        : input.classList.remove("has-content");
                 });
-                // nếu page reload mà đã có value
-                if (input.value.trim() !== "") {
+                if (input.value.trim() !== "")
                     input.classList.add("has-content");
-                }
             });
         });
+
+        // hide toast (thisBtn optional)
+        function hideToast(btn, toastEl) {
+            const toast = toastEl || btn.closest(".toast");
+            toast.classList.remove("toast--visible");
+        }
     </script>
 </body>
 

@@ -10,39 +10,42 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class LogInController {
     @Autowired
-     private userAccountRepository userAccountRepository;
+    private userAccountRepository userAccountRepository;
 
     @GetMapping("/")
-    public String showLoginPage(Model model) {
-        return "login"; // Chỉ hoạt động nếu login.html nằm trong templates/
-    }    
-    
+    public String showLoginPage() {
+        return "login";
+    }
+
     @PostMapping("/")
     public String login(@RequestParam String username,
-                        @RequestParam String password,
-                        Model model,
-                        HttpSession session){
+            @RequestParam String password,
+            RedirectAttributes redirectAttrs,
+            HttpSession session,
+            Model model) {
         String normalizedUsername = username.toLowerCase();
-
-        // Tìm user trong database với username đã chuẩn hóa
         Optional<UserAccount> userOptional = userAccountRepository.findByUsername(normalizedUsername);
-        
-        if (!userOptional.isPresent()){
+
+        if (!userOptional.isPresent()) {
             model.addAttribute("error", "Username does not exist");
+            return "login";
         }
-        
         UserAccount user = userOptional.get();
         if (!user.getPassword().equals(password)) {
             model.addAttribute("error", "Incorrect password");
             return "login";
-        } else {
-            model.addAttribute("message", "Login successful! Welcome, " + normalizedUsername);
-            session.setAttribute("username", normalizedUsername); // Lưu username chữ thường vào session
-            return "redirect:/home_" + normalizedUsername + "/manageSystem"; // Redirect với username chữ thường
-        }       
+        }
+
+        // thành công → dùng flash attribute
+        redirectAttrs.addFlashAttribute("loginSuccess", true);
+        redirectAttrs.addFlashAttribute("loginUser", normalizedUsername);
+
+        session.setAttribute("username", normalizedUsername);
+        return "redirect:/home_" + normalizedUsername + "/manageSystem";
     }
 }

@@ -295,51 +295,52 @@ public class HomeController {
             @PathVariable String username,
             @PathVariable String pcName,
             HttpSession session) {
-        
+
         java.util.Map<String, Object> response = new java.util.HashMap<>();
-        
+
         // Verify user authentication
         String sessionUsername = (String) session.getAttribute("username");
         if (sessionUsername == null || !sessionUsername.equals(username)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
         }
-        
+
         // Find the PC
         Optional<PC> pcOpt = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
         if (pcOpt.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found");
         }
-        
+
         PC pc = pcOpt.get();
-        
+
         try {
             Session sshSession = connectSSH.establishSSH(
                     pc.getIpAddress(),
                     pc.getPort(),
                     pc.getPcUsername(),
                     pc.getPassword());
-            
+
             if (sshSession == null || !sshSession.isConnected()) {
                 response.put("success", false);
                 response.put("message", "Failed to establish SSH connection");
                 return response;
             }
-            
+
             // Check UFW status
             String ufwStatusCommand = "echo '" + pc.getPassword() + "' | sudo -S ufw status";
-            
+
             com.jcraft.jsch.ChannelExec channel = (com.jcraft.jsch.ChannelExec) sshSession.openChannel("exec");
             channel.setCommand(ufwStatusCommand);
-            
+
             java.io.InputStream in = channel.getInputStream();
             channel.connect();
-            
+
             byte[] tmp = new byte[1024];
             StringBuilder output = new StringBuilder();
             while (true) {
                 while (in.available() > 0) {
                     int i = in.read(tmp, 0, 1024);
-                    if (i < 0) break;
+                    if (i < 0)
+                        break;
                     output.append(new String(tmp, 0, i));
                 }
                 if (channel.isClosed()) {
@@ -351,27 +352,27 @@ public class HomeController {
                     // Ignore
                 }
             }
-            
+
             channel.disconnect();
             sshSession.disconnect();
-            
+
             String ufwOutput = output.toString();
             boolean isActive = ufwOutput.contains("Status: active");
-            
+
             response.put("success", true);
             response.put("ufwActive", isActive);
             response.put("status", isActive ? "ON" : "OFF");
             response.put("rawOutput", ufwOutput);
-            
-            System.out.println("UFW Status for " + pc.getPcName() + ": " + 
+
+            System.out.println("UFW Status for " + pc.getPcName() + ": " +
                     (isActive ? "ON" : "OFF"));
-            
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Error checking UFW status: " + e.getMessage());
             e.printStackTrace();
         }
-        
+
         return response;
     }
 
@@ -391,19 +392,20 @@ public class HomeController {
                 try {
                     // Check UFW status
                     String ufwStatusCommand = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
-                    
+
                     com.jcraft.jsch.ChannelExec channel = (com.jcraft.jsch.ChannelExec) sshSession.openChannel("exec");
                     channel.setCommand(ufwStatusCommand);
-                    
+
                     java.io.InputStream in = channel.getInputStream();
                     channel.connect();
-                    
+
                     byte[] tmp = new byte[1024];
                     StringBuilder output = new StringBuilder();
                     while (true) {
                         while (in.available() > 0) {
                             int i = in.read(tmp, 0, 1024);
-                            if (i < 0) break;
+                            if (i < 0)
+                                break;
                             output.append(new String(tmp, 0, i));
                         }
                         if (channel.isClosed()) {
@@ -415,16 +417,16 @@ public class HomeController {
                             // Ignore
                         }
                     }
-                    
+
                     channel.disconnect();
-                    
+
                     String ufwOutput = output.toString();
                     boolean isUfwActive = ufwOutput.contains("Status: active");
-                    
+
                     // Store UFW status in the PC object
                     computer.setUfwStatus(isUfwActive ? "ON" : "OFF");
-                    
-                    System.out.println("UFW Status for " + computer.getPcName() + ": " + 
+
+                    System.out.println("UFW Status for " + computer.getPcName() + ": " +
                             (isUfwActive ? "ON" : "OFF"));
                 } catch (Exception e) {
                     System.out.println("Error checking UFW status: " + e.getMessage());

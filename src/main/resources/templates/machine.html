@@ -1667,6 +1667,125 @@
                 padding: 15px;
             }
         }
+
+        /* ===== TOAST CSS ===== */
+        :root {
+            --toast-success: #28a745;
+            --toast-error: #dc3545;
+            --toast-info: #0d6efd;
+            --toast-warning: #ffc107;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            min-width: 350px;
+            max-width: 450px;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            z-index: 1000;
+            border-left: 8px solid var(--toast-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 15px 45px rgba(var(--toast-shadow-color), 0.5);
+            }
+
+            100% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        .toast--visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast--success {
+            --toast-color: var(--toast-success);
+            --toast-shadow-color: 40, 167, 69;
+            /* background: linear-gradient(to right, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05), white); */
+        }
+
+        .toast__icon {
+            font-size: 28px;
+            margin-right: 16px;
+            color: var(--toast-color);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .toast__message {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .toast__close {
+            margin-left: 16px;
+            font-size: 24px;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .toast__close:hover {
+            color: var(--toast-color);
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .toast__progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 5px;
+            background: linear-gradient(to right, var(--toast-color), rgba(var(--toast-shadow-color), 0.6));
+            transition: width linear 4s;
+            border-radius: 0 2px 2px 0;
+        }
+
+        #toast-login {
+            min-width: 380px;
+            max-width: 520px;
+            padding: 18px 24px;
+            border-left-width: 10px;
+        }
+
+        #toast-login .toast__icon {
+            font-size: 32px;
+        }
+
+        #toast-login .toast__message {
+            font-size: 18px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -2158,6 +2277,16 @@
                     Error: Could not resolve pcName. Check server logs.
                 </div>
                 <div id="terminal-container" style="height: 50vh; width: 100%; background: black;"></div>
+            </div>
+
+            <div th:if="${loginSuccess}" id="toast-login" class="toast toast--success">
+                <div class="toast__icon"><i class="fas fa-check-circle"></i></div>
+                <div class="toast__message">
+                    Đăng nhập thành công! Chào&nbsp;
+                    <strong th:text="${loginUser}">User</strong>
+                </div>
+                <div class="toast__close" onclick="hideToast(this)">&times;</div>
+                <div class="toast__progress"></div>
             </div>
         </div>
 
@@ -2819,8 +2948,8 @@
                                 loggingTable.style.display = isChecked ? 'block' : 'none';
                             }
                             if (data.ufwLogs && data.ufwLogs.length > 0) {
-                updateLogsTable(data.ufwLogs);
-            }
+                                updateLogsTable(data.ufwLogs);
+                            }
                             console.log(`Logging đã được ${isChecked ? 'bật' : 'tắt'} thành công`);
                         } else {
                             console.error('Không thể bật/tắt logging:', data.message);
@@ -2901,57 +3030,6 @@
             function closeLogDetailModal() {
                 document.getElementById('logDetailModal').style.display = 'none';
             }
-
-            //             function applyFilters() {
-            //     const pcName = getCurrentPcName(); // Hàm này bạn tự định nghĩa nếu cần
-            //     const date = document.getElementById('logDate').value;
-            //     const action = document.getElementById('actionFilter').value;
-            //     const protocol = document.getElementById('protocolFilter').value;
-            //     const rows = document.getElementById('rowsToShow').value;
-
-            //     const filterData = {
-            //         date: date,
-            //         action: action,
-            //         protocol: protocol,
-            //         rows: parseInt(rows)
-            //     };
-
-            //     fetch(`/machine/${pcName}/filter-logs`, {
-            //         method: 'POST',
-            //         headers: {
-            //             'Content-Type': 'application/json'
-            //         },
-            //         body: JSON.stringify(filterData)
-            //     })
-            //     .then(response => response.json())
-            //     .then(data => {
-            //         if (data.success) {
-            //             updateLogsTable(data.ufwLogs);
-            //         } else {
-            //             alert(data.message || "Failed to fetch logs");
-            //         }
-            //     })
-            //     .catch(error => {
-            //         console.error("Error fetching logs:", error);
-            //         alert("Something went wrong while filtering logs.");
-            //     });
-            // }
-
-            // function updateLogsTable(logs) {
-            //     const tableBody = document.querySelector('#ufwLogsTable tbody');
-            //     tableBody.innerHTML = ''; // Clear existing logs
-
-            //     logs.forEach(log => {
-            //         const row = document.createElement('tr');
-            //         row.innerHTML = `
-            //             <td>${log.timestamp || ''}</td>
-            //             <td>${log.action || ''}</td>
-            //             <td>${log.destinationIp || ''}</td>
-            //             <td>${log.protocol || ''}</td>
-            //         `;
-            //         tableBody.appendChild(row);
-            //     });
-            // }
 
             //xuat log 
             function exportLogsToCSV() {
@@ -3108,6 +3186,17 @@
 
             // Main Initialization
             document.addEventListener('DOMContentLoaded', function () {
+                //TOAST
+                document.querySelectorAll(".toast").forEach(toast => {
+                    // show
+                    toast.classList.add("toast--visible");
+                    // start progress bar
+                    const bar = toast.querySelector(".toast__progress");
+                    setTimeout(() => bar.style.width = '100%', 50);
+                    // auto hide sau 4s
+                    setTimeout(() => hideToast(null, toast), 4000);
+                });
+
                 const menuButtons = document.querySelectorAll('.menu-btn');
                 const contentArea = document.getElementById('content-area');
                 let activeButton = document.querySelector('.menu-btn.active');
@@ -3264,6 +3353,12 @@
                     document.getElementById('sidebar')?.classList.add('collapsed');
                 }
             });
+
+            // hide toast (thisBtn optional)
+            function hideToast(btn, toastEl) {
+                const toast = toastEl || btn.closest(".toast");
+                toast.classList.remove("toast--visible");
+            }
         </script>
 
 </body>
