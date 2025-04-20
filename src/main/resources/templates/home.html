@@ -755,20 +755,16 @@
 </head>
 
 <body>
-    <div th:if="${toastMessage}" id="toast-login" class="toast toast--success">
-        <div class="toast__icon"><i class="fas fa-check-circle"></i></div>
+    <div th:if="${toastMessage}" id="toast-message" 
+         class="toast" th:classappend="${toastType == 'error'} ? 'toast--error' : 'toast--success'">
+        <div class="toast__icon">
+            <i th:class="${toastType == 'error'} ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
+        </div>
         <div class="toast__message" th:utext="${toastMessage}">…</div>
-
         <div class="toast__close" onclick="hideToast(this)">&times;</div>
         <div class="toast__progress"></div>
     </div>
-
-    <div th:if="${error}" id="toast-error" class="toast toast--error">
-        <div class="toast__icon"><i class="fas fa-exclamation-circle"></i></div>
-        <div class="toast__message" th:text="${error}">Error!</div>
-        <div class="toast__close" onclick="hideToast(this)">&times;</div>
-        <div class="toast__progress"></div>
-    </div>
+    
     <div class="sidebar" id="sidebar">
         <div class="toggle-btn" id="sidebarToggle">
             <img src="/images/toggle.png" alt="toggle" />
@@ -847,6 +843,7 @@
                             <button type="button" id="deleteBtn" onclick="confirmDelete()">Delete Account</button>
                         </div>
                     </form>
+                    
                 </div>
 
                 <div th:case="*" class="section">

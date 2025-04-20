@@ -12,7 +12,14 @@ import com.b2110941.firewallweb.service.ConnectSSH;
 import com.jcraft.jsch.Session;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -102,16 +109,20 @@ public class HomeController {
         Optional<PC> existIPPC = pcRepository.findByIpAddressAndOwnerUsername(trimmedIpAddress, username);
 
         if (existPC.isPresent() && existPC.get().getOwnerUsername().equals(username)) {
-            redirectAttrs.addFlashAttribute("error", "PC name already exists!");
+            redirectAttrs.addFlashAttribute("toastType", "error");
+            redirectAttrs.addFlashAttribute("toastMessage", "PC name already exists!");
             return "redirect:/home_{username}";
         } else if (existIPPC.isPresent() && existIPPC.get().getOwnerUsername().equals(username)) {
-            redirectAttrs.addFlashAttribute("error", "A computer with this IP address already exists!");
+            redirectAttrs.addFlashAttribute("toastType", "error");
+            redirectAttrs.addFlashAttribute("toastMessage", "A computer with this IP address already exists!");
             return "redirect:/home_{username}";
         }else {
             // Kiểm tra kết nối SSH trước khi lưu
             boolean sshSuccess = connectSSH.checkConnectSSH(trimmedIpAddress, port, trimmedPcUsername, trimmedPassword);
             if (!sshSuccess) {
-                redirectAttrs.addFlashAttribute("error", "Failed to connect to SSH. Please check your credentials.");
+                redirectAttrs.addFlashAttribute("toastType", "error");
+                redirectAttrs.addFlashAttribute("toastMessage", "Failed to connect to SSH. Please check your credentials.");
+                return "redirect:/home_{username}";
             } else {
                 // Luu vao db
                 PC newPC = new PC(trimmedPcName, trimmedPcUsername, trimmedIpAddress, port, trimmedPassword, username);
@@ -121,6 +132,7 @@ public class HomeController {
                 PCAccount newPCAccount = new PCAccount(trimmedPcUsername, trimmedPassword);
                 pcAccountRepository.save(newPCAccount);
 
+                redirectAttrs.addFlashAttribute("toastType", "success");
                 redirectAttrs.addFlashAttribute("toastMessage", "PC added successfully!");
             }
 
