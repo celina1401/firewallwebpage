@@ -19,6 +19,7 @@ public interface pcRepository extends MongoRepository<PC, String>{
     Optional<PC> findBypcName(String pcName);
     List<PC> findByOwnerUsername(String ownerUsername); 
     Optional<PC> findByPcNameAndOwnerUsername(String pcName, String ownerUsername);
+    Optional<PC> findByIpAddressAndOwnerUsername(String ipAddress, String ownerUsername);
 
     @Transactional
     @DeleteQuery("{ 'ownerUsername' : ?0 }")

@@ -42,9 +42,17 @@ public class LogInController {
         }
 
         // thành công → dùng flash attribute
-        redirectAttrs.addFlashAttribute("loginSuccess", true);
-        redirectAttrs.addFlashAttribute("loginUser", normalizedUsername);
+        String displayName = normalizedUsername.substring(0, 1).toUpperCase()
+                + normalizedUsername.substring(1);
 
+        // Chèn <strong>…</strong> quanh tên
+        String welcomeMsg = "Login successful! Welcome <strong>"
+                + displayName
+                + "</strong>!";
+        redirectAttrs.addFlashAttribute("toastMessage", welcomeMsg);
+        redirectAttrs.addFlashAttribute("toastType", "success");
+        
+        // lưu session và redirect
         session.setAttribute("username", normalizedUsername);
         return "redirect:/home_" + normalizedUsername + "/manageSystem";
     }

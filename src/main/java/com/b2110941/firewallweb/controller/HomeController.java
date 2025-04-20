@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class HomeController {
@@ -41,7 +43,9 @@ public class HomeController {
     private ConnectSSH connectSSH;
 
     @RequestMapping("/home_{username}")
-    public String home(@PathVariable String username, Model model, HttpSession session) {
+    public String home(@PathVariable String username, 
+                       RedirectAttributes redirectAttr,
+                       Model model, HttpSession session) {
         // Lay username tu session
         String sessionUsername = (String) session.getAttribute("username");
 
@@ -51,7 +55,7 @@ public class HomeController {
         }
 
         // Lấy danh sách tất cả PCs từ database
-        List<PC> computers = pcRepository.findByOwnerUsername(username);
+        List<PC> computers = pcRepository.findByOwnerUsername(username);    
         model.addAttribute("computers", computers);
         model.addAttribute("username", username);
         return "home";
@@ -65,6 +69,7 @@ public class HomeController {
             @RequestParam String ipAddress,
             @RequestParam int port,
             @RequestParam String password,
+            RedirectAttributes redirectAttrs,
             Model model,
             HttpSession session) {
 
@@ -72,8 +77,8 @@ public class HomeController {
         String sessionUsername = (String) session.getAttribute("username");
 
         if (sessionUsername == null || !sessionUsername.equals(username)) {
-            model.addAttribute("error", "Unauthorized access! You can only add PCs to your own account");
-            return "error";
+            redirectAttrs.addFlashAttribute("error", "Unauthorized access! You can only add PCs to your own home page");
+            return "redirect:/home_{username}";
         }
 
         // Loại bỏ khoảng trắng ở đầu và cuối cho tất cả các trường nhập liệu
@@ -85,23 +90,28 @@ public class HomeController {
         // Kiểm tra xem các trường có rỗng sau khi trim không
         if (trimmedPcName.isEmpty() || trimmedPcUsername.isEmpty()
                 || trimmedIpAddress.isEmpty() || trimmedPassword.isEmpty()) {
-            model.addAttribute("error", "All fields are required and cannot be empty!");
+            redirectAttrs.addFlashAttribute("error", "All fields are required!");
             List<PC> computers = pcRepository.findByOwnerUsername(username);
             model.addAttribute("computers", computers);
             model.addAttribute("username", username);
-            return "home";
+            return "redirect:/home_{username}";
         }
 
+        //Kiem tra ton tai (trung IP vs trung pcName)
         Optional<PC> existPC = pcRepository.findByPcNameAndOwnerUsername(trimmedPcName, username);
+        Optional<PC> existIPPC = pcRepository.findByIpAddressAndOwnerUsername(trimmedIpAddress, username);
 
         if (existPC.isPresent() && existPC.get().getOwnerUsername().equals(username)) {
-            model.addAttribute("error", "PC name already exists");
-            return "home";
-        } else {
+            redirectAttrs.addFlashAttribute("error", "PC name already exists!");
+            return "redirect:/home_{username}";
+        } else if (existIPPC.isPresent() && existIPPC.get().getOwnerUsername().equals(username)) {
+            redirectAttrs.addFlashAttribute("error", "A computer with this IP address already exists!");
+            return "redirect:/home_{username}";
+        }else {
             // Kiểm tra kết nối SSH trước khi lưu
             boolean sshSuccess = connectSSH.checkConnectSSH(trimmedIpAddress, port, trimmedPcUsername, trimmedPassword);
             if (!sshSuccess) {
-                model.addAttribute("error", "SSH connection failed!");
+                redirectAttrs.addFlashAttribute("error", "Failed to connect to SSH. Please check your credentials.");
             } else {
                 // Luu vao db
                 PC newPC = new PC(trimmedPcName, trimmedPcUsername, trimmedIpAddress, port, trimmedPassword, username);
@@ -111,8 +121,7 @@ public class HomeController {
                 PCAccount newPCAccount = new PCAccount(trimmedPcUsername, trimmedPassword);
                 pcAccountRepository.save(newPCAccount);
 
-                model.addAttribute("message", "PC added successfully and SSH connected!");
-
+                redirectAttrs.addFlashAttribute("toastMessage", "PC added successfully!");
             }
 
         }
@@ -122,7 +131,15 @@ public class HomeController {
         model.addAttribute("computers", computers);
         model.addAttribute("username", username);
 
-        return "redirect:/home_{username}";
+        if (model.containsAttribute("toastMessage")) {
+            // Keep the toast message in the model
+            String toastMessage = (String) model.asMap().get("toastMessage");
+            String toastType = (String) model.asMap().getOrDefault("toastType", "success");
+            model.addAttribute("toastMessage", toastMessage);
+            model.addAttribute("toastType", toastType);
+        }
+
+        return "home";
     }
 
     @GetMapping("/home_{username}/{menuOption}")
@@ -160,6 +177,7 @@ public class HomeController {
             @RequestParam("fullname") String fullname,
             @RequestParam("email") String email,
             @RequestParam("password") String password,
+            RedirectAttributes redirectAttrs,
             Model model) {
 
         // Lấy user từ CSDL dựa trên username
@@ -167,7 +185,7 @@ public class HomeController {
         Optional<UserAccount> updateUserAcc = userAccountRepository.findByUsername(username);
         if (updateUser == null) {
             // Xử lý nếu không tìm thấy user, trả về trang lỗi hoặc redirect
-            return "error-page";
+            redirectAttrs.addFlashAttribute("error", "User not found");
         }
         User user = updateUser.get();
         UserAccount userAcc = updateUserAcc.get();
@@ -185,18 +203,21 @@ public class HomeController {
         // Sau khi cập nhật, có thể đưa user đã cập nhật vào model
         model.addAttribute("userInfo", user);
 
+        redirectAttrs.addFlashAttribute("toastMessage", "User information updated successfully!");
+
         return "redirect:/home_" + username + "/information";
 
     }
 
     @GetMapping("/delete-account/{username}")
     public String deleteAccount(@PathVariable String username,
+            RedirectAttributes redirectAttrs,
             HttpSession session,
             Model model) {
         try {
             // Check if user exists
             if (!userRepository.existsByUsername(username)) {
-                model.addAttribute("error", "User not found");
+                redirectAttrs.addFlashAttribute("error", "User not found");
                 return "redirect:/home_" + username + "/information";
             }
 
@@ -206,17 +227,18 @@ public class HomeController {
                 pcAccountRepository.deleteByUsername(pc.getPcUsername());
                 pcRepository.delete(pc);
             }
-
+            
             // Delete user and user account
             userAccountRepository.deleteByUsername(username);
             userRepository.deleteByUsername(username);
-
+            
+            redirectAttrs.addFlashAttribute("toastMessage", "Account deleted successfully!");
             // Clear session
             session.invalidate();
 
             return "redirect:/";
         } catch (Exception e) {
-            model.addAttribute("error", "Failed to delete account. Please try again.");
+            redirectAttrs.addFlashAttribute("error", "Failed to delete account. Please try again.");
             return "redirect:/home_" + username + "/information";
         }
     }
@@ -224,35 +246,35 @@ public class HomeController {
     @GetMapping("/delete-pc/{username}/{pcName}")
     public String deletePC(@PathVariable String username,
             @PathVariable String pcName,
+            RedirectAttributes redirectAttrs,
             HttpSession session,
             Model model) {
         String sessionUsername = (String) session.getAttribute("username");
 
         // Kiểm tra đăng nhập
         if (sessionUsername == null || !sessionUsername.equals(username)) {
-            model.addAttribute("error", "Unauthorized access! You can only delete your own PC.");
-            return "error";
+            redirectAttrs.addFlashAttribute("error", "Unauthorized access! You can only delete PCs on your own home page");
+            return "redirect:/home_{username}";
         }
 
         try {
             // Tìm máy theo pcName và username
             Optional<PC> optionalPC = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
             if (optionalPC.isEmpty()) {
-                model.addAttribute("error", "PC not found or does not belong to this user.");
+                redirectAttrs.addFlashAttribute("error", "PC not found");
                 return "redirect:/home_" + username;
             }
 
             PC pc = optionalPC.get();
-
             // Xoá tài khoản SSH của máy (nếu có)
             pcAccountRepository.deleteByUsername(pc.getPcUsername());
 
             // Xoá máy
             pcRepository.delete(pc);
-
-            model.addAttribute("message", "PC deleted successfully.");
+            redirectAttrs.addFlashAttribute("toastMessage", "PC deleted successfully!");
+            
         } catch (Exception e) {
-            model.addAttribute("error", "Failed to delete PC. Please try again.");
+            redirectAttrs.addFlashAttribute("error", "Failed to delete PC. Please try again.");
         }
 
         return "redirect:/home_" + username;
