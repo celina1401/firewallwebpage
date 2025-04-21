@@ -9,6 +9,7 @@ import com.jcraft.jsch.Session;
 
 import jakarta.servlet.http.HttpSession;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -188,78 +189,133 @@ public class RuleController {
     }
 
     @PostMapping("/machine/{pcName}/rule/update")
-    public String updateRule(
-            @PathVariable String pcName,
-            @RequestParam String ruleId,
-            @RequestParam String action,
-            @RequestParam(required = false) String portCheck,
-            @RequestParam String protocol,
-            @RequestParam String toType,
-            @RequestParam(required = false) String toIp,
-            @RequestParam(required = false) String portRangeStart,
-            @RequestParam(required = false) String portRangeEnd,
-            @RequestParam(required = false) String port,
-            @RequestParam String fromType,
-            @RequestParam(required = false) String fromIp,
-            @RequestParam(required = false) String toApp,
-            @RequestParam(required = false) String toInterface,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-
-        // 1) Xác thực login
+    @ResponseBody
+    public Map<String, Object> updateRule(
+            @PathVariable("pcName") String pcName,
+            @RequestParam("ruleId") String ruleId,
+            @RequestParam("action") String action,
+            @RequestParam(value = "portCheck", required = false) Boolean isOutgoing,
+            @RequestParam("protocol") String protocol,
+            @RequestParam(value = "fromType", required = false) String fromType,
+            @RequestParam(value = "fromIp", required = false) String fromIp,
+            @RequestParam(value = "toType", required = false) String toType,
+            @RequestParam(value = "toIp", required = false) String toIp,
+            @RequestParam(value = "toInterface", required = false) String toInterface,
+            @RequestParam(value = "toApp", required = false) String toApp,
+            @RequestParam(value = "portType", required = false) String portType,
+            @RequestParam(value = "port", required = false) String port,
+            @RequestParam(value = "portRangeStart", required = false) String portRangeStart,
+            @RequestParam(value = "portRangeEnd", required = false) String portRangeEnd,
+            HttpSession session) {
+        
+        Map<String, Object> response = new HashMap<>();
         String ownerUsername = (String) session.getAttribute("username");
+        
         if (ownerUsername == null) {
-            redirectAttributes.addFlashAttribute("error", "Please login!");
-            return "redirect:/";
+            response.put("success", false);
+            response.put("message", "User not logged in");
+            return response;
         }
-
-        // 2) Tìm PC
-        Optional<PC> opt = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-        if (opt.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Computer not found");
-            return "redirect:/machine/" + pcName + "/rule";
+        
+        Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (computerOptional.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Computer " + pcName + " not found");
+            return response;
         }
-        PC pc = opt.get();
-
-        // 3) Xóa rule cũ
-        String intRuleId = Integer.toString(Integer.parseInt(ruleId));
-        String deleteResult = ufwService.deleteRule(pc, intRuleId);
-        System.out.println("Delete result: " + ruleId);
-        if (!deleteResult.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("error", "Failed to delete old rule: " + deleteResult);
-            return "redirect:/machine/" + pcName + "/rule";
+        
+        PC computer = computerOptional.get();
+        
+        try {
+            // First delete the existing rule
+            String deleteResult = ufwService.deleteRule(computer, ruleId);
+            
+            if (!deleteResult.startsWith("success")) {
+                response.put("success", false);
+                response.put("message", "Failed to delete existing rule: " + deleteResult);
+                return response;
+            }
+            
+            // Then add a new rule with the updated information
+            String addResult;
+            
+            // Handle app rule
+            if (toType != null && toType.equals("app") && toApp != null && !toApp.isEmpty()) {
+                addResult = ufwService.addRuleFromForm(
+                        computer, 
+                        action, 
+                        isOutgoing != null && isOutgoing, 
+                        protocol, 
+                        "app", 
+                        null, // toIp 
+                        null, // portRangeStart 
+                        null, // portRangeEnd
+                        null, // port 
+                        fromType, 
+                        fromIp, 
+                        toApp  // app
+                );
+            } else if (toType != null && toType.equals("interface") && toInterface != null && !toInterface.isEmpty()) {
+                // Handle interface rule
+                addResult = ufwService.addRuleFromForm(
+                        computer, 
+                        action, 
+                        isOutgoing != null && isOutgoing, 
+                        protocol, 
+                        "interface", 
+                        toInterface, // using toInterface as the interface name
+                        null, // portRangeStart 
+                        null, // portRangeEnd
+                        null, // port 
+                        fromType, 
+                        fromIp, 
+                        null  // app
+                );
+            } else {
+                // Handle regular IP rule
+                String portValue = null;
+                String rangeStart = null;
+                String rangeEnd = null;
+                
+                if (portType != null) {
+                    if (portType.equals("specific")) {
+                        portValue = port;
+                    } else if (portType.equals("range")) {
+                        rangeStart = portRangeStart;
+                        rangeEnd = portRangeEnd;
+                    }
+                }
+                
+                addResult = ufwService.addRuleFromForm(
+                        computer, 
+                        action, 
+                        isOutgoing != null && isOutgoing, 
+                        protocol, 
+                        toType, 
+                        toIp, 
+                        rangeStart, 
+                        rangeEnd, 
+                        portValue, 
+                        fromType, 
+                        fromIp, 
+                        null  // app
+                );
+            }
+            
+            if (addResult.startsWith("success")) {
+                response.put("success", true);
+                response.put("message", "Rule updated successfully");
+            } else {
+                response.put("success", false);
+                response.put("message", "Failed to add updated rule: " + addResult);
+            }
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error updating rule: " + e.getMessage());
         }
-
-        // 4) Add rule mới
-        boolean isOutgoing = portCheck != null;
-        String app = "";
-        if ("app".equals(toType)) {
-            app = toApp != null ? toApp : "";
-        } else if ("interface".equals(toType)) {
-            app = toInterface != null ? toInterface : "";
-        }
-    
-        String addResult = ufwService.addRuleFromForm(
-            pc,
-            action,
-            isOutgoing,
-            protocol,
-            toType,
-            toIp,
-            portRangeStart,
-            portRangeEnd,
-            port,
-            fromType,
-            fromIp,
-            app
-        );
-        if (!addResult.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("error", "Failed to add updated rule: " + addResult);
-        } else {
-            redirectAttributes.addFlashAttribute("success", "Rule updated successfully.");
-        }
-
-        return "redirect:/machine/" + pcName + "/rule";
+        
+        return response;
     }
 
     @GetMapping("/machine/{pcName}/rule/{ruleId}")

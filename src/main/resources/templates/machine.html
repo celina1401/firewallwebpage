@@ -2151,8 +2151,8 @@
                                 <!-- Destination (To) -->
                                 <div class="form-group">
                                     <select id="editToType" name="toType" onchange="toggleEditToFields()" required>
-                                        <option value="any">Any</option>                                        
-                                        <option value="app">App</option>
+                                        <option value="any">Any</option>
+                                        <option value="app">Application</option>
                                         <option value="ipaddress">IP Address</option>
                                         <option value="interface">Interface</option>
                                     </select>
@@ -2170,6 +2170,12 @@
                                         <!-- … -->
                                     </select>
                                     <label for="editToInterface">Interface</label>
+                                </div>
+                                <div id="editToAppFields" class="form-group hidden">
+                                    <label for="editToApp">Application:</label>
+                                    <select id="editToApp" name="toApp">
+                                        <option value="">Select an application</option>
+                                    </select>
                                 </div>
 
                                 <!-- Port Type -->
@@ -3197,22 +3203,20 @@
                         }
 
                         // 5) DESTINATION
-                        if (r.interface) {
-                            document.getElementById('editToType').value = 'interface';
-                            toggleEditToFields();
-                            fetchEditInterfaceList(pcName);
-                            setTimeout(() => {
-                                document.getElementById('editToInterface').value = r.interface;
-                            }, 200);
-
-                        } else if (r.app) {
+                        if (r.app && r.app !== '') {
                             document.getElementById('editToType').value = 'app';
                             toggleEditToFields();
                             fetchEditAppList(pcName);
                             setTimeout(() => {
                                 document.getElementById('editToApp').value = r.app;
                             }, 200);
-
+                        } else if (r.interface && r.interface !== '') {
+                            document.getElementById('editToType').value = 'interface';
+                            toggleEditToFields();
+                            fetchEditInterfaceList(pcName);
+                            setTimeout(() => {
+                                document.getElementById('editToInterface').value = r.interface;
+                            }, 200);
                         } else if (r.destinationIp && r.destinationIp !== 'any') {
                             document.getElementById('editToType').value = 'ipaddress';
                             toggleEditToFields();
@@ -3258,6 +3262,35 @@
                     .catch(err => alert('Error fetching rule: ' + err));
             }
 
+            function fetchEditAppList(pcName) {
+                fetch(`/machine/${pcName}/app-list`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(r => {
+                        if (!r.ok) throw new Error('Failed to fetch app list: ' + r.statusText);
+                        return r.json();
+                    })
+                    .then(apps => {
+                        const sel = document.getElementById('editToApp');
+                        sel.innerHTML = '<option value="">Select an application</option>';
+                        if (apps[0]?.startsWith("Error:")) {
+                            alert(apps[0]);
+                        } else {
+                            apps.forEach(app => {
+                                const opt = document.createElement('option');
+                                opt.value = app;
+                                opt.textContent = app;
+                                sel.appendChild(opt);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Failed to load application list');
+                    });
+            }
+
             function toggleEditFromFields() {
                 const type = document.getElementById('editFromType').value;
                 const div = document.getElementById('editFromIpFields');
@@ -3272,12 +3305,25 @@
                 const type = document.getElementById('editToType').value;
                 const ipDiv = document.getElementById('editToIpFields');
                 const ifaceDiv = document.getElementById('editToInterfaceFields');
+                const appDiv = document.getElementById('editToAppFields');
+
                 ipDiv.classList.add('hidden');
                 ifaceDiv.classList.add('hidden');
+                appDiv.classList.add('hidden');
+
                 document.getElementById('editToIp').value = '';
 
-                if (type === 'ipaddress') ipDiv.classList.remove('hidden');
-                else if (type === 'interface') ifaceDiv.classList.remove('hidden');
+                if (type === 'ipaddress') {
+                    ipDiv.classList.remove('hidden');
+                } else if (type === 'interface') {
+                    ifaceDiv.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
+                    fetchEditInterfaceList(pcName);
+                } else if (type === 'app') {
+                    appDiv.classList.remove('hidden');
+                    const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
+                    fetchEditAppList(pcName);
+                }
             }
 
             function toggleEditPortFields() {
