@@ -189,8 +189,7 @@ public class RuleController {
     }
 
     @PostMapping("/machine/{pcName}/rule/update")
-    @ResponseBody
-    public Map<String, Object> updateRule(
+    public String updateRule(
             @PathVariable("pcName") String pcName,
             @RequestParam("ruleId") String ruleId,
             @RequestParam("action") String action,
@@ -206,22 +205,20 @@ public class RuleController {
             @RequestParam(value = "port", required = false) String port,
             @RequestParam(value = "portRangeStart", required = false) String portRangeStart,
             @RequestParam(value = "portRangeEnd", required = false) String portRangeEnd,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         
-        Map<String, Object> response = new HashMap<>();
         String ownerUsername = (String) session.getAttribute("username");
         
         if (ownerUsername == null) {
-            response.put("success", false);
-            response.put("message", "User not logged in");
-            return response;
+            redirectAttributes.addFlashAttribute("error", "User not logged in");
+            return "redirect:/machine/" + pcName + "/rule";
         }
         
         Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
         if (computerOptional.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Computer " + pcName + " not found");
-            return response;
+            redirectAttributes.addFlashAttribute("error", "Computer " + pcName + " not found");
+            return "redirect:/machine/" + pcName + "/rule";
         }
         
         PC computer = computerOptional.get();
@@ -231,9 +228,8 @@ public class RuleController {
             String deleteResult = ufwService.deleteRule(computer, ruleId);
             
             if (!deleteResult.startsWith("success")) {
-                response.put("success", false);
-                response.put("message", "Failed to delete existing rule: " + deleteResult);
-                return response;
+                redirectAttributes.addFlashAttribute("error", "Failed to delete existing rule: " + deleteResult);
+                return "redirect:/machine/" + pcName + "/rule";
             }
             
             // Then add a new rule with the updated information
@@ -303,19 +299,16 @@ public class RuleController {
             }
             
             if (addResult.startsWith("success")) {
-                response.put("success", true);
-                response.put("message", "Rule updated successfully");
+                redirectAttributes.addFlashAttribute("success", "Rule updated successfully");
             } else {
-                response.put("success", false);
-                response.put("message", "Failed to add updated rule: " + addResult);
+                redirectAttributes.addFlashAttribute("error", "Failed to add updated rule: " + addResult);
             }
             
         } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Error updating rule: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Error updating rule: " + e.getMessage());
         }
         
-        return response;
+        return "redirect:/machine/" + pcName + "/rule";
     }
 
     @GetMapping("/machine/{pcName}/rule/{ruleId}")

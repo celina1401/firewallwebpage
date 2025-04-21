@@ -2165,17 +2165,14 @@
                                 <div class="form-group hidden" id="editToInterfaceFields">
                                     <select id="editToInterface" name="toInterface">
                                         <option value="" disabled>Select Interface</option>
-                                        <option value="eth0">eth0</option>
-                                        <option value="wlan0">wlan0</option>
-                                        <!-- … -->
                                     </select>
                                     <label for="editToInterface">Interface</label>
                                 </div>
-                                <div id="editToAppFields" class="form-group hidden">
-                                    <label for="editToApp">Application:</label>
+                                <div class="form-group hidden" id="editToAppFields">
                                     <select id="editToApp" name="toApp">
-                                        <option value="">Select an application</option>
+                                        <option value="" disabled selected>Select Application</option>
                                     </select>
+                                    <label for="editToApp">Application</label>
                                 </div>
 
                                 <!-- Port Type -->
@@ -2821,26 +2818,28 @@
             }
 
             function toggleToFields() {
-                const toType = document.getElementById('toType')?.value;
+                const toType = document.getElementById('toType').value;
                 const toIpFields = document.getElementById('toIpFields');
-                const toRangeFields = document.getElementById('toRangeFields');
                 const toAppFields = document.getElementById('toAppFields');
                 const toInterfaceFields = document.getElementById('toInterfaceFields');
+                const portTypeFields = document.getElementById('portTypeFields');
 
-                [toIpFields, toRangeFields, toAppFields, toInterfaceFields].forEach(field => {
-                    field?.classList.add('hidden');
-                });
+                // Ẩn tất cả các trường
+                if (toIpFields) toIpFields.classList.add('hidden');
+                if (toAppFields) toAppFields.classList.add('hidden');
+                if (toInterfaceFields) toInterfaceFields.classList.add('hidden');
+                if (portTypeFields) portTypeFields.classList.add('hidden');
 
-                if (toType === 'ipaddress') {
-                    toIpFields?.classList.remove('hidden');
-                } else if (toType === 'app') {
-                    toAppFields?.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                    fetchUFWAppList(pcName);
-                } else if (toType === 'interface') {
-                    toInterfaceFields?.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname') || 'wsl';
-                    fetchInterfaceList(pcName);
+                // Hiển thị trường tương ứng
+                if (toType === 'ipaddress' && toIpFields) {
+                    toIpFields.classList.remove('hidden');
+                    if (portTypeFields) portTypeFields.classList.remove('hidden');
+                } else if (toType === 'app' && toAppFields) {
+                    toAppFields.classList.remove('hidden');
+                    fetchAppList();
+                } else if (toType === 'interface' && toInterfaceFields) {
+                    toInterfaceFields.classList.remove('hidden');
+                    fetchInterfaceList();
                 }
             }
 
@@ -2884,6 +2883,63 @@
                 }
             }
 
+            function fetchAppList() {
+                const pcName = document.querySelector('[data-pcname]').getAttribute('data-pcname');
+                fetch(`/machine/${pcName}/app-list`, {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(apps => {
+                        const toAppSelect = document.getElementById('toApp');
+                        toAppSelect.innerHTML = '<option value="" disabled selected>Select Application</option>';
+                        apps.forEach(app => {
+                            if (!app.startsWith('Error:')) {
+                                const option = document.createElement('option');
+                                option.value = app;
+                                option.textContent = app;
+                                toAppSelect.appendChild(option);
+                            }
+                        });
+                    })
+                    .catch(error => console.error('Error fetching app list:', error));
+            }
+
+            function fetchInterfaceList() {
+                // Lấy đúng pcName từ nút đang active
+                const activeBtn = document.querySelector('.menu-btn.active');
+                if (!activeBtn) return console.error('Không tìm thấy máy đang chọn.');
+
+                const pcName = activeBtn.getAttribute('data-pcname');
+                fetch(`/machine/${pcName}/interface-list`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(interfaces => {
+                        const sel = document.getElementById('toInterface');
+                        // reset trước khi thêm
+                        sel.innerHTML = `<option value="" disabled selected>Select Interface</option>`;
+                        interfaces.forEach(iface => {
+                            if (!iface.startsWith('Error')) {
+                                const opt = document.createElement('option');
+                                opt.value = iface;
+                                opt.textContent = iface;
+                                sel.appendChild(opt);
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Lỗi fetch interface-list:', err);
+                        alert('Không tải được danh sách interface:\n' + err.message);
+                    });
+            }
+
             function fetchUFWAppList(pcName) {
                 fetch(`/machine/${pcName}/app-list`, {
                     method: 'POST',
@@ -2914,39 +2970,6 @@
                     .catch(error => {
                         console.error('Error fetching UFW app list:', error);
                         alert('Failed to load application list');
-                    });
-            }
-
-            function fetchInterfaceList(pcName) {
-                fetch(`/machine/${pcName}/interface-list`, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Failed to fetch interface list: ' + response.statusText);
-                        }
-                        return response.json();
-                    })
-                    .then(interfaces => {
-                        const toInterfaceSelect = document.getElementById('toInterface');
-                        if (toInterfaceSelect) {
-                            toInterfaceSelect.innerHTML = '<option value="">Select an interface</option>';
-                            if (interfaces[0]?.startsWith("Error:")) {
-                                alert(interfaces[0]);
-                            } else {
-                                interfaces.forEach(iface => {
-                                    const option = document.createElement('option');
-                                    option.value = iface;
-                                    option.textContent = iface;
-                                    toInterfaceSelect.appendChild(option);
-                                });
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching interface list:', error);
-                        alert('Failed to load interface list');
                     });
             }
 
@@ -3165,21 +3188,16 @@
 
             function openEditRuleModal(btn) {
                 const ruleId = btn.dataset.ruleId;
-                const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
-                const form = document.getElementById('editRuleForm');
+                const pcName = document.querySelector('.menu-btn.active').getAttribute('data-pcname');
 
-                // 0) gán đúng URL trước khi submit
+                if (!pcName) {
+                    alert('Lỗi: Không tìm thấy tên máy tính');
+                    return;
+                }
+
+                const form = document.getElementById('editRuleForm');
                 form.action = `/machine/${pcName}/rule/update`;
 
-                // 1) reset toàn bộ các trường phụ
-                // document.getElementById('editFromType').value = 'any';
-                // document.getElementById('editToType').value = 'any';
-                // document.getElementById('editPortType').value = 'any';
-                // toggleEditFromFields();
-                // toggleEditToFields();
-                // toggleEditPortFields();
-
-                // 2) fetch chi tiết rule
                 fetch(`/machine/${pcName}/rule/${ruleId}`)
                     .then(r => {
                         if (!r.ok) throw new Error(`Server trả về ${r.status} ${r.statusText}`);
@@ -3189,106 +3207,89 @@
                         if (!data.success) throw new Error(data.message);
                         const r = data.rule;
 
-                        // 3) set các field cơ bản
+                        // Set các field cơ bản
                         document.getElementById('editRuleId').value = r.id;
                         document.getElementById('editAction').value = r.action;
                         document.getElementById('editPortCheck').checked = (r.direction === 'out');
                         document.getElementById('editProtocol').value = r.protocol;
 
-                        // 4) SOURCE
+                        // SOURCE
                         if (r.sourceIp && r.sourceIp !== 'any') {
                             document.getElementById('editFromType').value = 'ipaddress';
                             toggleEditFromFields();
                             document.getElementById('editFromIp').value = r.sourceIp;
                         }
 
-                        // 5) DESTINATION
-                        if (r.app && r.app !== '') {
-                            document.getElementById('editToType').value = 'app';
-                            toggleEditToFields();
-                            fetchEditAppList(pcName);
-                            setTimeout(() => {
-                                document.getElementById('editToApp').value = r.app;
-                            }, 200);
-                        } else if (r.interface && r.interface !== '') {
+                        // DESTINATION
+                        if (r.interface && r.interface !== '') {
+                            // document.getElementById('editToType').value = 'interface';
+                            // toggleEditToFields();
+                            // // Đợi danh sách interface được tải xong
+                            // setTimeout(() => {
+                            //     const interfaceSelect = document.getElementById('editToInterface');
+                            //     if (interfaceSelect) {
+                            //         interfaceSelect.value = r.interface;
+                            //     }
+                            // }, 500);
                             document.getElementById('editToType').value = 'interface';
                             toggleEditToFields();
                             fetchEditInterfaceList(pcName);
                             setTimeout(() => {
                                 document.getElementById('editToInterface').value = r.interface;
                             }, 200);
+                        } else if (r.app && r.app !== '') {
+                            document.getElementById('editToType').value = 'app';
+                            toggleEditToFields();
+                            // Đợi danh sách app được tải xong
+                            setTimeout(() => {
+                                const appSelect = document.getElementById('editToApp');
+                                if (appSelect) {
+                                    appSelect.value = r.app;
+                                }
+                            }, 500);
                         } else if (r.destinationIp && r.destinationIp !== 'any') {
                             document.getElementById('editToType').value = 'ipaddress';
                             toggleEditToFields();
                             document.getElementById('editToIp').value = r.destinationIp;
                         }
 
-                        // 6) PORT
+                        // PORT
                         if (r.portType === 'specific') {
                             document.getElementById('editPortType').value = 'specific';
-                        }
-                        else if (r.portType === 'range') {
-                            document.getElementById('editPortType').value = 'range';
-                        }
-                        toggleEditPortFields();
-
-                        if (r.portType === 'specific') {
+                            toggleEditPortFields();
                             document.getElementById('editPort').value = r.port;
-                        }
-                        else if (r.portType === 'range') {
-                            document.getElementById('editPortRangeStart').value =
-                                r.portStart;
-                            document.getElementById('editPortRangeEnd').value =
-                                r.portEnd;
-                        }
-
-                        // To: nếu interface
-                        document.getElementById('editToType').value = r.interface ? 'interface' : r.destinationIp !== 'any' ? 'ipaddress' : 'any';
-                        toggleEditToFields();
-                        if (r.interface) {
-                            // nạp danh sách và set giá trị
-                            fetchEditInterfaceList(pcName);
-                            // sau khi nạp xong thì set giá trị chọn
-                            setTimeout(() => {
-                                document.getElementById('editToInterface').value = r.interface;
-                            }, 200);
-                        } else if (r.destinationIp && r.destinationIp !== 'any') {
-                            document.getElementById('editToIp').value = r.destinationIp;
+                        } else if (r.portType === 'range') {
+                            document.getElementById('editPortType').value = 'range';
+                            toggleEditPortFields();
+                            document.getElementById('editPortRangeStart').value = r.portStart;
+                            document.getElementById('editPortRangeEnd').value = r.portEnd;
                         }
 
-                        // 7) show modal
+                        // Hiển thị modal
                         document.getElementById('modifyRuleModal').style.display = 'block';
                     })
-                    .catch(err => alert('Error fetching rule: ' + err));
+                    .catch(err => alert('Lỗi: ' + err.message));
             }
 
-            function fetchEditAppList(pcName) {
+            function fetchEditAppList() {
+                const pcName = document.querySelector('[data-pcname]').getAttribute('data-pcname');
                 fetch(`/machine/${pcName}/app-list`, {
-                    method: 'POST',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    method: 'POST'
                 })
-                    .then(r => {
-                        if (!r.ok) throw new Error('Failed to fetch app list: ' + r.statusText);
-                        return r.json();
-                    })
+                    .then(response => response.json())
                     .then(apps => {
-                        const sel = document.getElementById('editToApp');
-                        sel.innerHTML = '<option value="">Select an application</option>';
-                        if (apps[0]?.startsWith("Error:")) {
-                            alert(apps[0]);
-                        } else {
-                            apps.forEach(app => {
-                                const opt = document.createElement('option');
-                                opt.value = app;
-                                opt.textContent = app;
-                                sel.appendChild(opt);
-                            });
-                        }
+                        const toAppSelect = document.getElementById('editToApp');
+                        toAppSelect.innerHTML = '<option value="" disabled selected>Select Application</option>';
+                        apps.forEach(app => {
+                            if (!app.startsWith('Error:')) {
+                                const option = document.createElement('option');
+                                option.value = app;
+                                option.textContent = app;
+                                toAppSelect.appendChild(option);
+                            }
+                        });
                     })
-                    .catch(err => {
-                        console.error(err);
-                        alert('Failed to load application list');
-                    });
+                    .catch(error => console.error('Error fetching app list:', error));
             }
 
             function toggleEditFromFields() {
@@ -3302,27 +3303,37 @@
             }
 
             function toggleEditToFields() {
-                const type = document.getElementById('editToType').value;
-                const ipDiv = document.getElementById('editToIpFields');
-                const ifaceDiv = document.getElementById('editToInterfaceFields');
-                const appDiv = document.getElementById('editToAppFields');
+                const toType = document.getElementById('editToType').value;
+                const toIpFields = document.getElementById('editToIpFields');
+                const toAppFields = document.getElementById('editToAppFields');
+                const toInterfaceFields = document.getElementById('editToInterfaceFields');
+                const portTypeFields = document.getElementById('editPortTypeFields');
 
-                ipDiv.classList.add('hidden');
-                ifaceDiv.classList.add('hidden');
-                appDiv.classList.add('hidden');
+                // Ẩn tất cả các trường
+                if (toIpFields) toIpFields.classList.add('hidden');
+                if (toAppFields) toAppFields.classList.add('hidden');
+                if (toInterfaceFields) toInterfaceFields.classList.add('hidden');
+                if (portTypeFields) portTypeFields.classList.add('hidden');
 
-                document.getElementById('editToIp').value = '';
+                // Hiển thị trường tương ứng
+                if (toType === 'ipaddress' && toIpFields) {
+                    toIpFields.classList.remove('hidden');
+                    if (portTypeFields) portTypeFields.classList.remove('hidden');
+                } else if (toType === 'app' && toAppFields) {
+                    toAppFields.classList.remove('hidden');
+                    fetchEditAppList();
+                } else if (toType === 'interface' && toInterfaceFields) {
+                    toInterfaceFields.classList.remove('hidden');
 
-                if (type === 'ipaddress') {
-                    ipDiv.classList.remove('hidden');
-                } else if (type === 'interface') {
-                    ifaceDiv.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
+                    // grab it once
+                    const pcName = document.querySelector('.menu-btn.active')
+                        .getAttribute('data-pcname');
+                    if (!pcName) {
+                        return alert('Error: could not determine the computer name');
+                    }
+
+                    // call only the parameterized version
                     fetchEditInterfaceList(pcName);
-                } else if (type === 'app') {
-                    appDiv.classList.remove('hidden');
-                    const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
-                    fetchEditAppList(pcName);
                 }
             }
 
