@@ -150,7 +150,7 @@ public class RuleController {
     public String[] getInterfaceList(
             @PathVariable("pcName") String pcName,
             HttpSession session) {
-        
+
         // Check if user is logged in
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
@@ -167,25 +167,131 @@ public class RuleController {
 
         try {
             Session sshSession = connectSSH.establishSSH(
-                pc.getIpAddress(),
-                pc.getPort(),
-                pc.getPcUsername(),
-                pc.getPassword()
-            );
+                    pc.getIpAddress(),
+                    pc.getPort(),
+                    pc.getPcUsername(),
+                    pc.getPassword());
 
             // Execute ip link command and parse output to get interface names
             String command = "ip link | grep -E '^[0-9]+:' | cut -d: -f2 | awk '{print $1}'";
             String output = ubuntuInfo.executeCommand(sshSession, command);
-            
+
             if (output != null && !output.trim().isEmpty()) {
                 return output.trim().split("\n");
             }
-            
+
             return new String[] { "No interfaces found" };
-            
+
         } catch (Exception e) {
             return new String[] { "Error: " + e.getMessage() };
         }
+    }
+
+    @PostMapping("/machine/{pcName}/rule/update")
+    public String updateRule(
+            @PathVariable String pcName,
+            @RequestParam String ruleId,
+            @RequestParam String action,
+            @RequestParam(required = false) String portCheck,
+            @RequestParam String protocol,
+            @RequestParam String toType,
+            @RequestParam(required = false) String toIp,
+            @RequestParam(required = false) String portRangeStart,
+            @RequestParam(required = false) String portRangeEnd,
+            @RequestParam(required = false) String port,
+            @RequestParam String fromType,
+            @RequestParam(required = false) String fromIp,
+            @RequestParam(required = false) String toApp,
+            @RequestParam(required = false) String toInterface,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+
+        // 1) Xác thực login
+        String ownerUsername = (String) session.getAttribute("username");
+        if (ownerUsername == null) {
+            redirectAttributes.addFlashAttribute("error", "Please login!");
+            return "redirect:/";
+        }
+
+        // 2) Tìm PC
+        Optional<PC> opt = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
+        if (opt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("error", "Computer not found");
+            return "redirect:/machine/" + pcName + "/rule";
+        }
+        PC pc = opt.get();
+
+        // 3) Xóa rule cũ
+        String intRuleId = Integer.toString(Integer.parseInt(ruleId));
+        String deleteResult = ufwService.deleteRule(pc, intRuleId);
+        System.out.println("Delete result: " + ruleId);
+        if (!deleteResult.startsWith("success")) {
+            redirectAttributes.addFlashAttribute("error", "Failed to delete old rule: " + deleteResult);
+            return "redirect:/machine/" + pcName + "/rule";
+        }
+
+        // 4) Add rule mới
+        boolean isOutgoing = portCheck != null;
+        String app = "";
+        if ("app".equals(toType)) {
+            app = toApp != null ? toApp : "";
+        } else if ("interface".equals(toType)) {
+            app = toInterface != null ? toInterface : "";
+        }
+    
+        String addResult = ufwService.addRuleFromForm(
+            pc,
+            action,
+            isOutgoing,
+            protocol,
+            toType,
+            toIp,
+            portRangeStart,
+            portRangeEnd,
+            port,
+            fromType,
+            fromIp,
+            app
+        );
+        if (!addResult.startsWith("success")) {
+            redirectAttributes.addFlashAttribute("error", "Failed to add updated rule: " + addResult);
+        } else {
+            redirectAttributes.addFlashAttribute("success", "Rule updated successfully.");
+        }
+
+        return "redirect:/machine/" + pcName + "/rule";
+    }
+
+    @GetMapping("/machine/{pcName}/rule/{ruleId}")
+    @ResponseBody
+    public Map<String, Object> fetchRuleDetails(
+            @PathVariable String pcName,
+            @PathVariable String ruleId,
+            HttpSession session) {
+
+        // 1) Xác thực login
+        String owner = (String) session.getAttribute("username");
+        if (owner == null) {
+            return Map.of("success", false, "message", "Please login!");
+        }
+
+        // 2) Tìm PC
+        Optional<PC> opt = pcService.findByPcNameAndOwnerUsername(pcName, owner);
+        if (opt.isEmpty()) {
+            return Map.of("success", false, "message", "Computer not found");
+        }
+        PC pc = opt.get();
+
+        // 3) gọi service lấy chi tiết rule
+        Map<String, String> rule = ufwService.fetchRuleDetailsById(pc, ruleId);
+        if (rule == null || rule.isEmpty()) {
+            return Map.of("success", false, "message", "Cannot fetch rule details");
+        }
+
+        // 4) trả về JSON
+        return Map.of(
+                "success", true,
+                "rule", rule);
     }
 
 }

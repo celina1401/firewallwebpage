@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Controller
 public class MachineController {
@@ -382,8 +385,9 @@ public class MachineController {
                     computer.getPassword());
             // System.out.println("Kết nối SSH thành công");
 
-            String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status";
+            String command = "echo '" + computer.getPassword() + "' | sudo -S ufw status numbered";
             String ufwOutput = ubuntuInfo.executeCommand(sshSession, command);
+            List<Map<String,String>> rules = parseNumberedUfw(ufwOutput);
             System.out.println("UFW Output: " + ufwOutput);
 
             // Set firewall status
@@ -414,6 +418,60 @@ public class MachineController {
         return "machine";
     }
 
+    private List<Map<String,String>> parseNumberedUfw(String output) {
+        List<Map<String,String>> list = new ArrayList<>();
+        if (output == null) return list;
+    
+        // Regex để tách: [ ID ]  To        (ALLOW|DENY)  (IN|OUT)   From   (…)
+        Pattern p = Pattern.compile(
+            "^\\[\\s*(\\d+)\\]\\s+" +       // 1) ID
+            "(.+?)\\s+" +                   // 2) To (có thể là "22/tcp" hay "on enp0s3")
+            "(ALLOW|DENY)\\s+" +            // 3) Action
+            "(IN|OUT)\\s+" +                // 4) Direction
+            "(.+?)(?:\\s+\\(.+\\))?$"       // 5) From (bỏ qua phần (out) hoặc (v6))
+        );
+    
+        for (String line : output.split("\\r?\\n")) {
+            line = line.trim();
+            Matcher m = p.matcher(line);
+            if (!m.find()) continue;
+    
+            String id   = m.group(1);
+            String to   = m.group(2).trim();
+            String act  = m.group(3);
+            String dir  = m.group(4);
+            String from = m.group(5).trim();
+    
+            // tách protocol nếu có dạng "port/proto"
+            String proto = "any", dest = to;
+            if (to.contains("/")) {
+                String[] A = to.split("/");
+                dest  = A[0];
+                proto = A[1];
+            }
+    
+            // interface nếu có tiền tố "on "
+            String iface = null;
+            if (to.startsWith("on ")) {
+                iface = to.substring(3).trim();
+                dest  = "";  // khi edit sẽ dùng iface thay cho dest
+            }
+    
+            Map<String,String> rule = new LinkedHashMap<>();
+            rule.put("id",          id);
+            rule.put("sourceIp",    from);
+            rule.put("destination", dest);
+            rule.put("protocol",    proto);
+            rule.put("action",      act + " " + dir);
+            rule.put("outgoing",    dir.equals("OUT") ? "true" : "false");
+            if (iface != null) rule.put("interface", iface);
+    
+            list.add(rule);
+        }
+        return list;
+    }
+    
+
     private List<Map<String, String>> parseUfwOutput(String ufwOutput) {
         List<Map<String, String>> firewallRules = new ArrayList<>();
 
@@ -438,7 +496,9 @@ public class MachineController {
             }
 
             // Extract fields
-            String to = columns[0].trim(); // e.g., "22/tcp" or "22/tcp (v6)"
+            String to = columns[0]
+                     .replaceFirst("^\\[\\s*\\d+\\]\\s*", "")  // bỏ [ số ]
+                     .trim();
             String action = columns[1].trim(); // e.g., "ALLOW IN"
             String from = columns[2].trim(); // e.g., "Anywhere" or "203.0.113.103"
 

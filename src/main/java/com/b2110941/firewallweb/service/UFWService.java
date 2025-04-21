@@ -1,25 +1,17 @@
 package com.b2110941.firewallweb.service;
 
 import com.b2110941.firewallweb.model.FirewallRule;
-import com.b2110941.firewallweb.model.LoggingUFW;
 import com.b2110941.firewallweb.model.PC;
-// import com.b2110941.firewallweb.repository.loggingUFWRepository;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,13 +29,7 @@ public class UFWService {
     private ConnectSSH connectSSH;
 
     @Autowired
-    private PCService pcService;
-
-    // @Autowired
-// private loggingUFWRepository loggingUFWRepository;
-
-    // private final Map<String, Map<String, LoggingUFW>> logCache = new
-    // HashMap<>();
+    private UbuntuInfo ubuntuInfo;
 
     public String addRuleFromForm(PC pc, String action, boolean isOutgoing,
             String protocol, String toType, String toIp,
@@ -352,7 +338,7 @@ public class UFWService {
         return new String[0]; // Placeholder
     }
 
-    //logging status
+    // logging status
     public String getUFWLogging(PC pc) {
         StringBuilder outBuilder = new StringBuilder();
         try {
@@ -475,6 +461,96 @@ public class UFWService {
         } catch (Exception e) {
             logger.error("Error changing UFW logging level", e);
             return "error: " + e.getMessage();
+        }
+    }
+
+    public Map<String, String> fetchRuleDetailsById(PC pc, String ruleId) {
+        // 1) show raw line
+        String intRuleId = Integer.toString(Integer.parseInt(ruleId) + 1);
+        String cmd = "echo '" + pc.getPassword() + "' | sudo -S ufw show added | sed -n '"
+                + intRuleId + "p'";
+        String line;
+        try {
+            Session session = connectSSH.establishSSH(
+                    pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword());
+            line = ubuntuInfo.executeCommand(session, cmd);
+            session.disconnect();
+        } catch (Exception e) {
+            logger.error("Error fetching raw ufw line", e);
+            return null;
+        }
+        if (line == null || line.isBlank()) {
+            return null;
+        }
+        line = line.trim();
+
+        // 2) parse với regex
+        Map<String, String> m = new HashMap<>();
+        m.put("id", ruleId);
+
+        // action: allow|deny
+        Matcher actM = Pattern.compile("\\bufw\\s+(allow|deny)\\b").matcher(line);
+        m.put("action", actM.find() ? actM.group(1) : "");
+
+        // direction: in|out
+        m.put("direction", line.contains(" out ") ? "out" : "in");
+
+        // interface: on <iface>
+        Matcher ifM = Pattern.compile("\\bon\\s+(\\S+)").matcher(line);
+        m.put("interface", ifM.find() ? ifM.group(1) : "");
+
+        // protocol: proto <proto>
+        Matcher protoM = Pattern.compile("\\bproto\\s+(\\w+)").matcher(line);
+        m.put("protocol", protoM.find() ? protoM.group(1) : "");
+
+        // from: from <ip>
+        Matcher fromM = Pattern.compile("\\bfrom\\s+(\\S+)").matcher(line);
+        m.put("sourceIp", fromM.find() ? fromM.group(1) : "any");
+
+        // to: to <ip>
+        Matcher toM = Pattern.compile("\\bto\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)").matcher(line);
+        m.put("destinationIp", toM.find() ? toM.group(1) : "any");
+
+        // app: app "<app>"
+        Matcher appM = Pattern.compile("\\bapp\\s+['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE).matcher(line);
+        m.put("app", appM.find() ? appM.group(1) : "");
+
+        // port or port range
+        Matcher prangeM = Pattern.compile("\\bport\\s+(\\d+):(\\d+)").matcher(line);
+        if (prangeM.find()) {
+            m.put("portType", "range");
+            m.put("portStart", prangeM.group(1));
+            m.put("portEnd", prangeM.group(2));
+            m.put("port", "");
+        } else {
+            Matcher portM = Pattern.compile("\\bport\\s+(\\d+)").matcher(line);
+            if (portM.find()) {
+                m.put("portType", "specific");
+                m.put("port", portM.group(1));
+            } else {
+                m.put("portType", "any");
+                m.put("port", "");
+            }
+            m.put("portStart", "");
+            m.put("portEnd", "");
+        }
+
+        return m;
+    }
+
+    public String getRawAddedRuleLine(PC pc, String ruleId) {
+        String command = "echo '" + pc.getPassword() + "' | sudo -S ufw show added | sed -n '"
+                + ruleId + "p'";
+        try {
+            Session session = connectSSH.establishSSH(
+                    pc.getIpAddress(), pc.getPort(), pc.getPcUsername(), pc.getPassword());
+            String output = ubuntuInfo.executeCommand(session, command);
+            session.disconnect();
+            return output == null ? "" : output.trim();
+        } catch (Exception e) {
+            logger.error("Error fetching raw added rule line", e);
+            return "";
         }
     }
 

@@ -132,8 +132,8 @@ public class FillterController {
                 // Extract timestamp
                 String fullTimestamp = line.substring(0, timestampEnd);
             System.out.println("Full Timestamp: " + fullTimestamp);
-            String[] timestampParts = fullTimestamp.split("\\s+");
-            String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
+            // String[] timestampParts = fullTimestamp.split("\\s+");
+            // String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
             // Mới add cái timestamp
             logEntry.put("timestamp", fullTimestamp);
                 

@@ -357,7 +357,7 @@
         }
 
         .rule-table-container {
-            width: 62%;
+            width: 68%;
             border-radius: 16px;
             margin-bottom: 30px;
             overflow-x: auto;
@@ -385,13 +385,13 @@
             background: linear-gradient(145deg, #1a2942, #2c3e50);
             color: white;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 1.2px;
         }
 
         .rule-table td {
-            font-size: 16px;
+            font-size: 14px;
             color: #2c3e50;
             transition: all 0.3s ease;
         }
@@ -432,23 +432,23 @@
         }
 
         /* Style for ALLOW rows */
-        .rule-table tr td[data-action="ALLOW"],
+        .rule-table tr td[data-action="ALLOW IN"],
         .rule-table tr td[data-action="ALLOW OUT"] {
             color: #27ae60;
         }
 
-        .rule-table tr:has(td[data-action="ALLOW"]),
+        .rule-table tr:has(td[data-action="ALLOW IN"]),
         .rule-table tr:has(td[data-action="ALLOW OUT"]) {
             background-color: rgba(39, 174, 96, 0.05);
         }
 
         /* Style for DENY rows */
-        .rule-table tr td[data-action="DENY"],
+        .rule-table tr td[data-action="DENY IN"],
         .rule-table tr td[data-action="DENY OUT"] {
             color: #e74c3c;
         }
 
-        .rule-table tr:has(td[data-action="DENY"]),
+        .rule-table tr:has(td[data-action="DENY IN"]),
         .rule-table tr:has(td[data-action="DENY OUT"]) {
             background-color: rgba(231, 76, 60, 0.05);
         }
@@ -1150,8 +1150,8 @@
             height: fit-content;
             position: fixed;
             top: 53.5%;
-            left: 50%;
-            width: 27%;
+            left: 57%;
+            width: 24%;
             margin: 20px auto;
             background: #ffffff;
             padding: 30px;
@@ -1955,7 +1955,7 @@
                                         <td th:attr="data-action=${rule.action}" th:text="${rule.action}"></td>
                                         <td>
                                             <button class="edit-btn" th:attr="data-rule-id=${rule.id}"
-                                                onclick="editRule(this)">
+                                                onclick="openEditRuleModal(this)">
                                                 <img src="/images/editing.png" alt="" />
                                             </button>
                                             <button class="delete-btn" th:attr="data-rule-id=${rule.id}"
@@ -1990,8 +1990,8 @@
 
                                 <!-- Outgoing checkbox for direction -->
                                 <div class="form-group checkbox-like">
-                                    <input type="checkbox" id="portCheck" name="portCheck"
-                                        onchange="togglePortFields()">
+                                    <input type="checkbox" id="portCheck" name="portCheck">
+                                    <!-- onchange="togglePortFields()"> -->
                                     <p for="portCheck">Out coming</p>
                                 </div>
 
@@ -2095,7 +2095,122 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Edit Firewall Rule Modal -->
+                <div id="modifyRuleModal" class="modal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h2>Edit Firewall Rule</h2>
+                            <span class="close-modal" onclick="closeEditRuleModal()">&times;</span>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editRuleForm" method="post"
+                                th:action="@{/machine/{pcName}/rule/update(pcName=${computer.pcName})}">
+
+                                <input type="hidden" id="editRuleId" name="ruleId" value="">
+
+                                <!-- Action -->
+                                <div class="form-group">
+                                    <select id="editAction" name="action" required>
+                                        <option value="allow">allow</option>
+                                        <option value="deny">deny</option>
+                                    </select>
+                                    <label for="editAction">Action</label>
+                                </div>
+
+                                <!-- Outgoing -->
+                                <div class="form-group checkbox-like">
+                                    <input type="checkbox" id="editPortCheck" name="portCheck">
+                                    <label for="editPortCheck">Out coming</label>
+                                </div>
+
+                                <!-- Protocol -->
+                                <div class="form-group">
+                                    <select id="editProtocol" name="protocol" required>
+                                        <option value="tcp">tcp</option>
+                                        <option value="udp">udp</option>
+                                        <option value="none">none</option>
+                                    </select>
+                                    <label for="editProtocol">Protocol</label>
+                                </div>
+
+                                <!-- Source (From) -->
+                                <div class="form-group">
+                                    <select id="editFromType" name="fromType" onchange="toggleEditFromFields()"
+                                        required>
+                                        <option value="any">Any</option>
+                                        <option value="ipaddress">IP Address</option>
+                                    </select>
+                                    <label for="editFromType">Source</label>
+                                </div>
+                                <div class="form-group hidden" id="editFromIpFields">
+                                    <input type="text" id="editFromIp" name="fromIp" placeholder=" ">
+                                    <label for="editFromIp">Source IP</label>
+                                </div>
+
+                                <!-- Destination (To) -->
+                                <div class="form-group">
+                                    <select id="editToType" name="toType" onchange="toggleEditToFields()" required>
+                                        <option value="any">Any</option>                                        
+                                        <option value="app">App</option>
+                                        <option value="ipaddress">IP Address</option>
+                                        <option value="interface">Interface</option>
+                                    </select>
+                                    <label for="editToType">Destination</label>
+                                </div>
+                                <div class="form-group hidden" id="editToIpFields">
+                                    <input type="text" id="editToIp" name="toIp" placeholder=" ">
+                                    <label for="editToIp">Destination IP</label>
+                                </div>
+                                <div class="form-group hidden" id="editToInterfaceFields">
+                                    <select id="editToInterface" name="toInterface">
+                                        <option value="" disabled>Select Interface</option>
+                                        <option value="eth0">eth0</option>
+                                        <option value="wlan0">wlan0</option>
+                                        <!-- … -->
+                                    </select>
+                                    <label for="editToInterface">Interface</label>
+                                </div>
+
+                                <!-- Port Type -->
+                                <div class="form-group">
+                                    <select id="editPortType" name="portType" onchange="toggleEditPortFields()"
+                                        required>
+                                        <option value="any">Any</option>
+                                        <option value="specific">Specific Port</option>
+                                        <option value="range">Port Range</option>
+                                    </select>
+                                    <label for="editPortType">Port Type</label>
+                                </div>
+                                <div class="form-group hidden" id="editPortFields">
+                                    <input type="number" id="editPort" name="port" min="1" max="65535" placeholder=" ">
+                                    <label for="editPort">Port Number</label>
+                                </div>
+                                <div class="form-group hidden" id="editPortRangeStartFields">
+                                    <input type="number" id="editPortRangeStart" name="portStart" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="editPortRangeStart">Start Port</label>
+                                </div>
+                                <div class="form-group hidden" id="editPortRangeEndFields">
+                                    <input type="number" id="editPortRangeEnd" name="portEnd" min="1" max="65535"
+                                        placeholder=" ">
+                                    <label for="editPortRangeEnd">End Port</label>
+                                </div>
+
+                                <!-- Submit/Cancel -->
+                                <div class="form-actions" style="text-align: right; margin-top: 20px;">
+                                    <button type="button" class="btn" onclick="closeEditRuleModal()">Cancel</button>
+                                    <button type="submit" class="btn" style="margin-left: 10px;">Update</button>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <p>Chức năng chỉnh sửa đang được cập nhật! Vui lòng</p>
             </div>
+
 
             <div th:case="'logging'" class="section" id="logging-section">
                 <h1 class="section-title">Logging Firewall</h1>
@@ -2169,7 +2284,8 @@
 
                         <div class="rows-filter">
                             <label for="rowsToShow">Show rows:</label>
-                            <input type="number" id="rowsToShow" name="rows" min="1" max="1000" th:value="${rowsToShow}">
+                            <input type="number" id="rowsToShow" name="rows" min="1" max="1000"
+                                th:value="${rowsToShow}">
                         </div>
                     </div>
 
@@ -2680,9 +2796,7 @@
                             if (systemLoggingTable) {
                                 systemLoggingTable.style.display = isChecked ? 'block' : 'none';
                             }
-                            // if (data.systemLogs && data.systemLogs.length > 0) {
-                            //     updateSystemLogsTable(data.systemLogs);
-                            // }
+
                             console.log(`System logging has been ${isChecked ? 'enabled' : 'disabled'} successfully`);
                         } else {
                             console.error('Could not toggle system logging:', data.message);
@@ -2699,38 +2813,6 @@
                         label.textContent = originalLabel;
                     });
             }
-
-            // function updateSystemLogsTable(logs) {
-            //     const tableBody = document.querySelector('#systemLoggingTable table tbody');
-            //     if (!tableBody)
-            //         return;
-
-            //     tableBody.innerHTML = '';
-
-            //     if (logs.length === 0) {
-            //         const emptyRow = document.createElement('tr');
-            //         emptyRow.innerHTML = '<td colspan="4" style="text-align: center;">No system log entries found.</td>';
-            //         tableBody.appendChild(emptyRow);
-            //         return;
-            //     }
-
-            //     logs.forEach(log => {
-            //         const row = document.createElement('tr');
-            //         const timestampCell = document.createElement('td');
-            //         timestampCell.textContent = log.timestamp;
-            //         const hostnameCell = document.createElement('td');
-            //         hostnameCell.textContent = log.hostname;
-            //         const serviceCell = document.createElement('td');
-            //         serviceCell.textContent = log.service;
-            //         const messageCell = document.createElement('td');
-            //         messageCell.textContent = log.message;
-            //         row.appendChild(timestampCell);
-            //         row.appendChild(hostnameCell);
-            //         row.appendChild(serviceCell);
-            //         row.appendChild(messageCell);
-            //         tableBody.appendChild(row);
-            //     });
-            // }
 
             function toggleToFields() {
                 const toType = document.getElementById('toType')?.value;
@@ -3075,11 +3157,192 @@
                 document.body.removeChild(link);
             }
 
-            function editRule(element) {
-                const ruleId = element.getAttribute('data-rule-id');
-                console.log('Editing rule with ID:', ruleId);
-                alert(`Chỉnh sửa quy tắc với ID: ${ruleId} (Chưa triển khai)`);
+            function openEditRuleModal(btn) {
+                const ruleId = btn.dataset.ruleId;
+                const pcName = document.querySelector('.menu-btn.active').dataset.pcname;
+                const form = document.getElementById('editRuleForm');
+
+                // 0) gán đúng URL trước khi submit
+                form.action = `/machine/${pcName}/rule/update`;
+
+                // 1) reset toàn bộ các trường phụ
+                // document.getElementById('editFromType').value = 'any';
+                // document.getElementById('editToType').value = 'any';
+                // document.getElementById('editPortType').value = 'any';
+                // toggleEditFromFields();
+                // toggleEditToFields();
+                // toggleEditPortFields();
+
+                // 2) fetch chi tiết rule
+                fetch(`/machine/${pcName}/rule/${ruleId}`)
+                    .then(r => {
+                        if (!r.ok) throw new Error(`Server trả về ${r.status} ${r.statusText}`);
+                        return r.json();
+                    })
+                    .then(data => {
+                        if (!data.success) throw new Error(data.message);
+                        const r = data.rule;
+
+                        // 3) set các field cơ bản
+                        document.getElementById('editRuleId').value = r.id;
+                        document.getElementById('editAction').value = r.action;
+                        document.getElementById('editPortCheck').checked = (r.direction === 'out');
+                        document.getElementById('editProtocol').value = r.protocol;
+
+                        // 4) SOURCE
+                        if (r.sourceIp && r.sourceIp !== 'any') {
+                            document.getElementById('editFromType').value = 'ipaddress';
+                            toggleEditFromFields();
+                            document.getElementById('editFromIp').value = r.sourceIp;
+                        }
+
+                        // 5) DESTINATION
+                        if (r.interface) {
+                            document.getElementById('editToType').value = 'interface';
+                            toggleEditToFields();
+                            fetchEditInterfaceList(pcName);
+                            setTimeout(() => {
+                                document.getElementById('editToInterface').value = r.interface;
+                            }, 200);
+
+                        } else if (r.app) {
+                            document.getElementById('editToType').value = 'app';
+                            toggleEditToFields();
+                            fetchEditAppList(pcName);
+                            setTimeout(() => {
+                                document.getElementById('editToApp').value = r.app;
+                            }, 200);
+
+                        } else if (r.destinationIp && r.destinationIp !== 'any') {
+                            document.getElementById('editToType').value = 'ipaddress';
+                            toggleEditToFields();
+                            document.getElementById('editToIp').value = r.destinationIp;
+                        }
+
+                        // 6) PORT
+                        if (r.portType === 'specific') {
+                            document.getElementById('editPortType').value = 'specific';
+                        }
+                        else if (r.portType === 'range') {
+                            document.getElementById('editPortType').value = 'range';
+                        }
+                        toggleEditPortFields();
+
+                        if (r.portType === 'specific') {
+                            document.getElementById('editPort').value = r.port;
+                        }
+                        else if (r.portType === 'range') {
+                            document.getElementById('editPortRangeStart').value =
+                                r.portStart;
+                            document.getElementById('editPortRangeEnd').value =
+                                r.portEnd;
+                        }
+
+                        // To: nếu interface
+                        document.getElementById('editToType').value = r.interface ? 'interface' : r.destinationIp !== 'any' ? 'ipaddress' : 'any';
+                        toggleEditToFields();
+                        if (r.interface) {
+                            // nạp danh sách và set giá trị
+                            fetchEditInterfaceList(pcName);
+                            // sau khi nạp xong thì set giá trị chọn
+                            setTimeout(() => {
+                                document.getElementById('editToInterface').value = r.interface;
+                            }, 200);
+                        } else if (r.destinationIp && r.destinationIp !== 'any') {
+                            document.getElementById('editToIp').value = r.destinationIp;
+                        }
+
+                        // 7) show modal
+                        document.getElementById('modifyRuleModal').style.display = 'block';
+                    })
+                    .catch(err => alert('Error fetching rule: ' + err));
             }
+
+            function toggleEditFromFields() {
+                const type = document.getElementById('editFromType').value;
+                const div = document.getElementById('editFromIpFields');
+                if (type === 'ipaddress') div.classList.remove('hidden');
+                else {
+                    div.classList.add('hidden');
+                    document.getElementById('editFromIp').value = '';
+                }
+            }
+
+            function toggleEditToFields() {
+                const type = document.getElementById('editToType').value;
+                const ipDiv = document.getElementById('editToIpFields');
+                const ifaceDiv = document.getElementById('editToInterfaceFields');
+                ipDiv.classList.add('hidden');
+                ifaceDiv.classList.add('hidden');
+                document.getElementById('editToIp').value = '';
+
+                if (type === 'ipaddress') ipDiv.classList.remove('hidden');
+                else if (type === 'interface') ifaceDiv.classList.remove('hidden');
+            }
+
+            function toggleEditPortFields() {
+                const pt = document.getElementById('editPortType').value;
+                const specDiv = document.getElementById('editPortFields');
+                const startDiv = document.getElementById('editPortRangeStartFields');
+                const endDiv = document.getElementById('editPortRangeEndFields');
+
+                specDiv.classList.add('hidden');
+                startDiv.classList.add('hidden');
+                endDiv.classList.add('hidden');
+                document.getElementById('editPort').value = '';
+                document.getElementById('editPortRangeStart').value = '';
+                document.getElementById('editPortRangeEnd').value = '';
+
+                if (pt === 'specific') specDiv.classList.remove('hidden');
+                else if (pt === 'range') {
+                    startDiv.classList.remove('hidden');
+                    endDiv.classList.remove('hidden');
+                }
+            }
+
+            function fetchEditInterfaceList(pcName) {
+                fetch(`/machine/${pcName}/interface-list`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                    .then(r => {
+                        if (!r.ok) throw new Error('Failed to fetch interface list: ' + r.statusText);
+                        return r.json();
+                    })
+                    .then(interfaces => {
+                        const sel = document.getElementById('editToInterface');
+                        sel.innerHTML = '<option value="">Select an interface</option>';
+                        if (interfaces[0]?.startsWith("Error:")) {
+                            alert(interfaces[0]);
+                        } else {
+                            interfaces.forEach(iface => {
+                                const opt = document.createElement('option');
+                                opt.value = iface;
+                                opt.textContent = iface;
+                                sel.appendChild(opt);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Failed to load interface list');
+                    });
+            }
+
+            function closeEditRuleModal() {
+                document.getElementById('modifyRuleModal').style.display = 'none';
+            }
+
+            window.addEventListener('click', e => {
+                const modal = document.getElementById('modifyRuleModal');
+                if (e.target === modal) closeEditRuleModal();
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('editFromType')?.addEventListener('change', toggleEditFromFields);
+                document.getElementById('editToType')?.addEventListener('change', toggleEditToFields);
+                document.getElementById('editPortType')?.addEventListener('change', toggleEditPortFields);
+            });
 
             function deleteRule(element) {
                 const ruleId = element.getAttribute('data-rule-id');
@@ -3178,15 +3441,15 @@
                 document.getElementById('portType')?.addEventListener('change', togglePortTypeFields);
                 document.getElementById('protocol')?.addEventListener('change', togglePortTypeFields);
 
-                const portCheck = document.getElementById('portCheck');
-                if (portCheck) {
-                    portCheck.addEventListener('change', function () {
-                        const portFields = document.getElementById('portFields');
-                        if (portFields) {
-                            portFields.classList.toggle('hidden', !this.checked);
-                        }
-                    });
-                }
+                // const portCheck = document.getElementById('portCheck');
+                // if (portCheck) {
+                //     portCheck.addEventListener('change', function () {
+                //         const portFields = document.getElementById('portFields');
+                //         if (portFields) {
+                //             portFields.classList.toggle('hidden', !this.checked);
+                //         }
+                //     });
+                // }
             }
 
             // Main Initialization

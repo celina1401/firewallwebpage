@@ -277,8 +277,8 @@ public class LoggingController {
 
             String fullTimestamp = line.substring(0, timestampEnd);
             System.out.println("Full Timestamp: " + fullTimestamp);
-            String[] timestampParts = fullTimestamp.split("\\s+");
-            String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
+            // String[] timestampParts = fullTimestamp.split("\\s+");
+            // String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
             // Mới add cái timestamp
             logEntry.put("timestamp", fullTimestamp);
 
@@ -427,7 +427,7 @@ public class LoggingController {
         return response;
     }
 
-    // xu ly chi tiet log - cái này alf phần nảy chị mở lên
+    // xu ly chi tiet log 
     @GetMapping("/machine/{pcName}/log-details")
     @ResponseBody
     public Map<String, Object> getLogDetails(
@@ -473,7 +473,6 @@ public class LoggingController {
             if (grepResult != null && !grepResult.trim().isEmpty()) {
                 // If multiple lines are returned, take the first one
                 matchingLogLine = grepResult.split("\n")[0];
-                logger.debug("Found matching log line via grep: {}", matchingLogLine);
             } else {
                 // If grep fails, try reading the entire files
                 for (String logFile : logFiles) {
@@ -485,7 +484,6 @@ public class LoggingController {
                         for (String line : lines) {
                             if (line.contains(timestamp)) {
                                 matchingLogLine = line;
-                                logger.debug("Found matching log line via file scan: {}", matchingLogLine);
                                 break;
                             }
                         }

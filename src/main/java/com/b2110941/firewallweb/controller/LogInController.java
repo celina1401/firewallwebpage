@@ -33,14 +33,12 @@ public class LogInController {
         Optional<UserAccount> userOptional = userAccountRepository.findByUsername(normalizedUsername);
 
         if (!userOptional.isPresent()) {
-            redirectAttrs.addFlashAttribute("error", "Username does not exist");
             redirectAttrs.addFlashAttribute("toastMessage", "Username does not exist");
             redirectAttrs.addFlashAttribute("toastType", "error");
             return "redirect:/";
         }
         UserAccount user = userOptional.get();
         if (!user.getPassword().equals(password)) {
-            redirectAttrs.addFlashAttribute("error", "Incorrect password");
             redirectAttrs.addFlashAttribute("toastMessage", "Incorrect password");
             redirectAttrs.addFlashAttribute("toastType", "error");
             return "redirect:/";
