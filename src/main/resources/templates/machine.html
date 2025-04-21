@@ -1985,7 +1985,8 @@
                                         <td th:attr="data-action=${rule.action}" th:text="${rule.action}"></td>
                                         <td>
                                             <button class="edit-btn" th:attr="data-rule-id=${rule.id}"
-                                                onclick="openEditRuleModal(this)">
+                                                onclick="openEditRuleModal(this)"
+                                                th:unless="${#strings.contains(rule.sourceIp, '(v6)')}">
                                                 <img src="/images/editing.png" alt="" />
                                             </button>
                                             <button class="delete-btn" th:attr="data-rule-id=${rule.id}"
@@ -2288,7 +2289,7 @@
                         <h3>Filter Options</h3>
                         <button class="close-filter" onclick="toggleFilterContainer()">×</button>
                     </div>
-                    <div class="filter-content">                        
+                    <div class="filter-content">
                         <div class="action-filter">
                             <label for="actionFilter">Action:</label>
                             <select id="actionFilter" name="action" th:value="${selectedAction}">
