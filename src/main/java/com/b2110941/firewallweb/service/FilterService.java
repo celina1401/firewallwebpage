@@ -8,13 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FilterService {
-    public String dateFormat(LocalDate date) throws ParseException {
-        if (date == null)
-            return null;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        System.out.println(formatter);
-        return date.format(formatter);
-    }
 
     public List<Map<String, String>> filterLogs(
             List<Map<String, String>> logs,
@@ -27,12 +20,12 @@ public class FilterService {
         return logs.stream()
                 .filter(log -> {
                     // Lọc theo ngày nếu có
-                    if (logDate != null) {
-                        String dateStr = log.get("date");
-                        if (dateStr == null || !dateStr.startsWith(logDate.format(logDateFormatter))) {
-                            return false;
-                        }
-                    }
+                    // if (logDate != null) {
+                    //     String dateStr = log.get("date");
+                    //     if (dateStr == null || !dateStr.startsWith(logDate.format(logDateFormatter))) {
+                    //         return false;
+                    //     }
+                    // }
 
                     // Lọc theo hành động (ALLOW, DENY, ...)
                     if (!"all".equalsIgnoreCase(action)) {

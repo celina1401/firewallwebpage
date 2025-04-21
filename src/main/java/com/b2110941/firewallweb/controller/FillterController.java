@@ -33,12 +33,11 @@ public class FillterController {
     @Autowired
     private ConnectSSH connectSSH;
 
-    //cái này để chị lọc, nảy chị hoàn thành cái này xong cái nó bị lỗi, mà chạy đc r nhe cái lỗi ngag
     @GetMapping("/machine/{pcName}/logging-filter")
     @ResponseBody
     public Map<String, Object> filterLogsAjax(
             @PathVariable("pcName") String pcName,
-            @RequestParam(value = "date", required = false) String date,
+            // @RequestParam(value = "date", required = false) String date,
             @RequestParam(value = "action", required = false, defaultValue = "all") String action,
             @RequestParam(value = "protocol", required = false, defaultValue = "all") String protocol,
             @RequestParam(value = "rows", required = false, defaultValue = "10") int rows,
@@ -85,11 +84,6 @@ public class FillterController {
             // Add protocol filter
             if (!"all".equalsIgnoreCase(protocol)) {
                 command.append(" | grep -i \"PROTO=").append(protocol).append("\"");
-            }
-            
-            // Add date filter
-            if (date != null && !date.isEmpty()) {
-                command.append(" | grep \"").append(date).append("\"");
             }
             
             // Limit number of rows

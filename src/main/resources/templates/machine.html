@@ -571,28 +571,6 @@
             border-bottom-right-radius: 12px;
         }
 
-        .date-filter {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            padding: 5px 10px;
-        }
-
-        .date-filter input[type="date"] {
-            font-family: inherit;
-        }
-
-        .date-filter input[type="date"]::-webkit-calendar-picker-indicator {
-            cursor: pointer;
-            opacity: 0.6;
-            transition: 0.3s;
-        }
-
-        .date-filter input[type="date"]::-webkit-calendar-picker-indicator:hover {
-            opacity: 1;
-        }
 
         .action-filter {
             display: flex;
@@ -1494,6 +1472,58 @@
             opacity: 1;
         }
 
+        .filter-btn {
+            background: transparent !important;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .filter-btn:hover {
+            background: transparent !important;
+        }
+
+        .filter-submit-btn {
+            display: inline-flex;
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            color: white;
+            font-weight: 600;
+            padding: 10px 25px;
+            margin: 10px;
+            border: none;
+            border-radius: 30px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .filter-submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+        }
+
+        /* Hiệu ứng pulse nếu muốn giữ lại */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(46, 204, 113, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+            }
+        }
+
+        .filter-submit-btn.with-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
         .toggle-label {
             font-size: 16px;
             font-weight: 500;
@@ -2258,12 +2288,7 @@
                         <h3>Filter Options</h3>
                         <button class="close-filter" onclick="toggleFilterContainer()">×</button>
                     </div>
-                    <div class="filter-content">
-                        <div class="date-filter">
-                            <label for="logDate">Date:</label>
-                            <input type="date" id="logDate" name="logDate" th:value="${selectedDate}">
-                        </div>
-
+                    <div class="filter-content">                        
                         <div class="action-filter">
                             <label for="actionFilter">Action:</label>
                             <select id="actionFilter" name="action" th:value="${selectedAction}">
@@ -2293,7 +2318,7 @@
                     </div>
 
                     <button class="filter-btn" onclick="applyFilters()">
-                        <span>Done</span>
+                        <span class="filter-submit-btn with-pulse" id="doneButton">Done</span>
                     </button>
                 </div>
 
@@ -2584,23 +2609,13 @@
                     return;
                 }
 
-                const logDate = document.getElementById("logDate").value;
+                // const logDate = document.getElementById("logDate").value;
                 const action = document.getElementById("actionFilter").value;
                 const protocol = document.getElementById("protocolFilter").value;
                 const rows = document.getElementById("rowsToShow").value;
 
-                // Format date if needed
-                let formattedDate = '';
-                if (logDate) {
-                    const rawDate = new Date(logDate);
-                    const yyyy = rawDate.getFullYear();
-                    const mm = String(rawDate.getMonth() + 1).padStart(2, '0');
-                    const dd = String(rawDate.getDate()).padStart(2, '0');
-                    formattedDate = `${yyyy}-${mm}-${dd}`;
-                }
-
                 // Use AJAX instead of page navigation
-                fetch(`/machine/${pcName}/logging-filter?date=${formattedDate}&action=${action}&protocol=${protocol}&rows=${rows}`, {
+                fetch(`/machine/${pcName}/logging-filter?action=${action}&protocol=${protocol}&rows=${rows}`, {
                     method: 'GET',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
