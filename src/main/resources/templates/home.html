@@ -328,27 +328,6 @@
             margin-bottom: 20px;
         }
 
-        /* .check-status-btn {
-            background: linear-gradient(to right, #3498db, #2980b9);
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            margin-top: 10%;
-        }
-
-        .check-status-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        } */
-
         /* CSS cho container chứa các nút */
         .action-buttons {
             display: flex;
@@ -486,6 +465,131 @@
             flex-direction: column;
             width: 100%;
             flex-grow: 1;
+        }
+
+        /* ======== BEAUTIFUL DETAIL-MODAL ======== */
+        .detail-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .detail-modal.show {
+            display: flex;
+        }
+
+        .detail-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            ;
+            background: #fff;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+            animation: popIn 0.25s ease-out;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* HEADER */
+        .detail-modal .modal-content .modal-header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #4a6572, #1f2f38);
+            color: #fff;
+        }
+
+        .detail-modal .modal-content .modal-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .detail-modal .modal-content .modal-header .close-modal {
+            font-size: 22px;
+            cursor: pointer;
+            transition: color .2s;
+        }
+
+        .detail-modal .modal-content .modal-header .close-modal:hover {
+            color: #ddd;
+        }
+
+        /* BODY */
+        .detail-modal .modal-content .modal-body {
+            padding: 20px 24px;
+        }
+
+        .detail-modal .modal-content .modal-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .detail-modal .modal-content .modal-body td {
+            padding: 8px 0;
+            vertical-align: top;
+        }
+
+        .detail-modal .modal-content .modal-body td:first-child {
+            font-weight: 600;
+            color: #2c3e50;
+            width: 40%;
+        }
+
+        .detail-modal .modal-content .modal-body td+td {
+            color: #555;
+        }
+
+        /* FOOTER */
+        .detail-modal .modal-content .modal-footer {
+            padding: 12px 24px;
+            text-align: right;
+        }
+
+        .detail-modal .modal-content .modal-footer .close-detail-modal {
+            background: #1f2f38;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background .2s;
+        }
+
+        .detail-modal .modal-content .modal-footer .close-detail-modal:hover {
+            background: #4a6572;
+        }
+
+        .detail-item{
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+        }
+        .off{
+            cursor: pointer;
+            padding: 3px;
+            font-size: 25px;
         }
 
 
@@ -888,7 +992,7 @@
 </head>
 
 <body>
-    <!-- <div th:if="${toastMessage}" id="toast-message" class="toast"
+    <div th:if="${toastMessage}" id="toast-message" class="toast"
         th:classappend="${toastType == 'error'} ? 'toast--error' : 'toast--success'">
         <div class="toast__icon">
             <i th:class="${toastType == 'error'} ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
@@ -896,7 +1000,7 @@
         <div class="toast__message" th:utext="${toastMessage}">…</div>
         <div class="toast__close" onclick="hideToast(this)">&times;</div>
         <div class="toast__progress"></div>
-    </div> -->
+    </div>
 
     <div class="sidebar" id="sidebar">
         <div class="toggle-btn" id="sidebarToggle">
@@ -1062,11 +1166,16 @@
         </div>
     </div>
 
-    <div id="machineDetailModal" class="modal">
+    <div id="machineDetailModal" class="detail-modal">
         <div class="modal-content">
-            <div class="modal-left">
-                <span onclick="closeDetailModal()">&times;</span>
-                <h3>Chi tiết máy: <span id="detail_pcName"></span></h3>
+            <div class="modal-header">
+                <h3>Machine Details: <span id="detail_pcName"></span></h3>
+                <span class="off" onclick="closeDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="detail-item">
+                    <img src="/images/computer.png" alt="">
+                </div>
                 <table>
                     <tr>
                         <td><strong>IP Address</strong></td>
@@ -1089,500 +1198,497 @@
                         <td id="detail_ufwStatus"></td>
                     </tr>
                 </table>
-                <div>
-                    <button class="shutdown-btn" id="detail_shutdownBtn" onclick="shutdownPC(event, this)">
-                        <i class="fas fa-power-off"></i>
-                    </button>
-                    <button class="btn_add_computer" onclick="closeDetailModal()">
+                <div class="modal-footer">
+                    <button class="close-detail-modal" onclick="closeDetailModal()">
                         Close
                     </button>
+
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        const menuButtons = document.querySelectorAll('.menu-btn');
-        const contentArea = document.getElementById('content-area');
-        let activeButton = document.querySelector('.menu-btn.active');
-        const username = document.getElementById('user-name').textContent.trim();
+        <script>
+            const menuButtons = document.querySelectorAll('.menu-btn');
+            const contentArea = document.getElementById('content-area');
+            let activeButton = document.querySelector('.menu-btn.active');
+            const username = document.getElementById('user-name').textContent.trim();
 
-        function openModal() {
-            document.getElementById("computerModal").style.display = "flex";
-        }
-
-        function closeModal() {
-            document.getElementById("computerModal").style.display = "none";
-        }
-
-        function redirectToMachine(element) {
-            let pcName = element.getAttribute("data-pcname") || 'defaultPC';
-            window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
-        }
-
-        function togglePassword() {
-            const passwordInput = document.querySelector(".input-field[name='password']");
-            const eyeIcon = document.querySelector(".eye-icon i");
-            if (passwordInput.type === "password") {
-                passwordInput.type = "text";
-                eyeIcon.classList.remove("fa-eye");
-                eyeIcon.classList.add("fa-eye-slash");
-            } else {
-                passwordInput.type = "password";
-                eyeIcon.classList.remove("fa-eye-slash");
-                eyeIcon.classList.add("fa-eye");
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            //TOAST
-            document.querySelectorAll(".toast").forEach(toast => {
-                // show
-                toast.classList.add("toast--visible");
-                // start progress bar
-                const bar = toast.querySelector(".toast__progress");
-                setTimeout(() => bar.style.width = '100%', 50);
-                // auto hide sau 4s
-                setTimeout(() => hideToast(null, toast), 4000);
-            });
-
-            // Handle input fields
-            let inputs = document.querySelectorAll(".input-field");
-            inputs.forEach(input => {
-                input.addEventListener("blur", function () {
-                    if (this.value.trim() !== "") {
-                        this.classList.add("has-content");
-                    } else {
-                        this.classList.remove("has-content");
-                    }
-                });
-
-                if (input.value.trim() !== "") {
-                    input.classList.add("has-content");
-                }
-            });
-
-            // Activate the active menu button if it exists
-            if (activeButton) {
-                activeButton.click();
+            function openModal() {
+                document.getElementById("computerModal").style.display = "flex";
             }
 
-            // Restore sidebar state on page load
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-            if (isCollapsed) {
-                document.getElementById('sidebar').classList.add('collapsed');
+            function closeModal() {
+                document.getElementById("computerModal").style.display = "none";
             }
 
-            // Add click handlers for computer divs
-            function attachComputerClickHandlers() {
-                const computerDivs = document.querySelectorAll('.computer');
-                computerDivs.forEach(div => {
-                    // Remove any existing click listeners to avoid duplicates
-                    div.removeEventListener('click', handleComputerClick);
-                    div.addEventListener('click', handleComputerClick);
-                });
+            function redirectToMachine(element) {
+                let pcName = element.getAttribute("data-pcname") || 'defaultPC';
+                window.location.href = "/machine/" + encodeURIComponent(pcName) + "/information";
             }
 
-            function handleComputerClick(e) {
-                const div = e.currentTarget;
-                // Only redirect if not clicking the check-status button or delete button
-                if (!e.target.closest('.check-status-btn') && !e.target.closest('.delete-btn')) {
-                    // Only redirect if the div is accessible (SSH connected)
-                    if (div.classList.contains('accessible')) {
-                        redirectToMachine(div);
-                    } else {
-                        console.log('Cannot redirect: Machine is not accessible (SSH disconnected or status unknown).');
-                    }
+            function togglePassword() {
+                const passwordInput = document.querySelector(".input-field[name='password']");
+                const eyeIcon = document.querySelector(".eye-icon i");
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    eyeIcon.classList.remove("fa-eye");
+                    eyeIcon.classList.add("fa-eye-slash");
+                } else {
+                    passwordInput.type = "password";
+                    eyeIcon.classList.remove("fa-eye-slash");
+                    eyeIcon.classList.add("fa-eye");
                 }
             }
 
-            // Initial attachment of click handlers
-            attachComputerClickHandlers();
+            document.addEventListener("DOMContentLoaded", function () {
+                //TOAST
+                document.querySelectorAll(".toast").forEach(toast => {
+                    // show
+                    toast.classList.add("toast--visible");
+                    // start progress bar
+                    const bar = toast.querySelector(".toast__progress");
+                    setTimeout(() => bar.style.width = '100%', 50);
+                    // auto hide sau 4s
+                    setTimeout(() => hideToast(null, toast), 4000);
+                });
 
-            // Auto check status for all computers when page loads
-            setTimeout(function () {
-                const statusButtons = document.querySelectorAll('.check-status-btn');
-                if (statusButtons.length > 0) {
-                    statusButtons.forEach((button, index) => {
-                        setTimeout(() => {
-                            const mockEvent = {
-                                stopPropagation: function () { },
-                                target: null // Not the button, so won't stop propagation
-                            };
-                            checkSSHStatusOne(mockEvent, button);
-                        }), 200; // Check each computer with a 2-second delay
+                // Handle input fields
+                let inputs = document.querySelectorAll(".input-field");
+                inputs.forEach(input => {
+                    input.addEventListener("blur", function () {
+                        if (this.value.trim() !== "") {
+                            this.classList.add("has-content");
+                        } else {
+                            this.classList.remove("has-content");
+                        }
+                    });
+
+                    if (input.value.trim() !== "") {
+                        input.classList.add("has-content");
+                    }
+                });
+
+                // Activate the active menu button if it exists
+                if (activeButton) {
+                    activeButton.click();
+                }
+
+                // Restore sidebar state on page load
+                const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (isCollapsed) {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+
+                // Add click handlers for computer divs
+                function attachComputerClickHandlers() {
+                    const computerDivs = document.querySelectorAll('.computer');
+                    computerDivs.forEach(div => {
+                        // Remove any existing click listeners to avoid duplicates
+                        div.removeEventListener('click', handleComputerClick);
+                        div.addEventListener('click', handleComputerClick);
                     });
                 }
-            }), 100; // Wait 1 second after page load before starting checks
 
-            // Re-attach click handlers after content area updates (e.g., after fetch)
-            const originalFetch = window.fetch;
-            window.fetch = function (...args) {
-                return originalFetch(...args).then(response => {
-                    if (args[0].includes('/home_') && args[1]?.headers['X-Requested-With'] === 'XMLHttpRequest') {
-                        // After fetching new content, re-attach click handlers
-                        setTimeout(attachComputerClickHandlers, 300); // Wait for DOM update
+                function handleComputerClick(e) {
+                    const div = e.currentTarget;
+                    // Only redirect if not clicking the check-status button or delete button
+                    if (!e.target.closest('.check-status-btn') && !e.target.closest('.delete-btn')) {
+                        // Only redirect if the div is accessible (SSH connected)
+                        if (div.classList.contains('accessible')) {
+                            redirectToMachine(div);
+                        } else {
+                            console.log('Cannot redirect: Machine is not accessible (SSH disconnected or status unknown).');
+                        }
                     }
-                    return response;
-                });
-            };
-        });
-
-        // hide toast (thisBtn optional)
-        function hideToast(btn, toastEl) {
-            const toast = toastEl || btn.closest(".toast");
-            toast.classList.remove("toast--visible");
-        }
-
-        // Menu button click handler
-        // Menu button click handler
-        menuButtons.forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault();
-                const menuOption = this.getAttribute('data-menu');
-                const pcName = this.getAttribute('data-pcname');
-                const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-
-                if (activeButton) {
-                    activeButton.classList.remove('active');
                 }
-                this.classList.add('active');
-                activeButton = this;
 
-                if (contentArea) {
-                    contentArea.style.opacity = '0';
-                    window.history.pushState({ menu: menuOption, pcName: pcName }, '', url);
+                // Initial attachment of click handlers
+                attachComputerClickHandlers();
 
-                    fetch(url, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.text();
-                        })
-                        .then(html => {
+                // Auto check status for all computers when page loads
+                setTimeout(function () {
+                    const statusButtons = document.querySelectorAll('.check-status-btn');
+                    if (statusButtons.length > 0) {
+                        statusButtons.forEach((button, index) => {
                             setTimeout(() => {
+                                const mockEvent = {
+                                    stopPropagation: function () { },
+                                    target: null // Not the button, so won't stop propagation
+                                };
+                                checkSSHStatusOne(mockEvent, button);
+                            }), 200; // Check each computer with a 2-second delay
+                        });
+                    }
+                }), 100; // Wait 1 second after page load before starting checks
+
+                // Re-attach click handlers after content area updates (e.g., after fetch)
+                const originalFetch = window.fetch;
+                window.fetch = function (...args) {
+                    return originalFetch(...args).then(response => {
+                        if (args[0].includes('/home_') && args[1]?.headers['X-Requested-With'] === 'XMLHttpRequest') {
+                            // After fetching new content, re-attach click handlers
+                            setTimeout(attachComputerClickHandlers, 300); // Wait for DOM update
+                        }
+                        return response;
+                    });
+                };
+            });
+
+            // hide toast (thisBtn optional)
+            function hideToast(btn, toastEl) {
+                const toast = toastEl || btn.closest(".toast");
+                toast.classList.remove("toast--visible");
+            }
+
+            // Menu button click handler
+            // Menu button click handler
+            menuButtons.forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const menuOption = this.getAttribute('data-menu');
+                    const pcName = this.getAttribute('data-pcname');
+                    const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
+
+                    if (activeButton) {
+                        activeButton.classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    activeButton = this;
+
+                    if (contentArea) {
+                        contentArea.style.opacity = '0';
+                        window.history.pushState({ menu: menuOption, pcName: pcName }, '', url);
+
+                        fetch(url, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                            .then(response => {
+                                if (!response.ok)
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                return response.text();
+                            })
+                            .then(html => {
+                                setTimeout(() => {
+                                    contentArea.innerHTML = html;
+                                    contentArea.style.opacity = '1';
+
+                                    // Check status for all computers if manageSystem section is loaded
+                                    if (menuOption === 'manageSystem') {
+                                        const statusButtons = document.querySelectorAll('.check-status-btn');
+                                        if (statusButtons.length > 0) {
+                                            statusButtons.forEach((button, index) => {
+                                                setTimeout(() => {
+                                                    const mockEvent = {
+                                                        stopPropagation: () => { },
+                                                        target: null
+                                                    };
+                                                    checkSSHStatusOne(mockEvent, button);
+                                                }); // Check each computer with a 2-second delay
+                                            });
+                                        }
+                                    }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Fetch error:', error);
+                                contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                contentArea.style.opacity = '1';
+                            });
+                    } else {
+                        console.error('Content area not found!');
+                    }
+                });
+            });
+
+            // Browser back/forward button handler
+            window.addEventListener('popstate', function (event) {
+                const state = event.state;
+                if (state) {
+                    const menuOption = state.menu || 'information';
+                    const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
+
+                    if (contentArea) {
+                        contentArea.style.opacity = '0';
+                        fetch(url, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                            .then(response => {
+                                if (!response.ok)
+                                    throw new Error('Network response was not ok: ' + response.statusText);
+                                return response.text();
+                            })
+                            .then(html => {
                                 contentArea.innerHTML = html;
                                 contentArea.style.opacity = '1';
 
-                                // Check status for all computers if manageSystem section is loaded
-                                if (menuOption === 'manageSystem') {
-                                    const statusButtons = document.querySelectorAll('.check-status-btn');
-                                    if (statusButtons.length > 0) {
-                                        statusButtons.forEach((button, index) => {
-                                            setTimeout(() => {
-                                                const mockEvent = {
-                                                    stopPropagation: () => { },
-                                                    target: null
-                                                };
-                                                checkSSHStatusOne(mockEvent, button);
-                                            }); // Check each computer with a 2-second delay
-                                        });
+                                menuButtons.forEach(btn => {
+                                    btn.classList.remove('active');
+                                    if (btn.getAttribute('data-menu') === menuOption &&
+                                        btn.getAttribute('data-pcname') === state.pcName) {
+                                        btn.classList.add('active');
+                                        activeButton = btn;
                                     }
-                                }
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Popstate fetch error:', error);
+                                contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
+                                contentArea.style.opacity = '1';
                             });
-                        })
-                        .catch(error => {
-                            console.error('Fetch error:', error);
-                            contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                            contentArea.style.opacity = '1';
-                        });
-                } else {
-                    console.error('Content area not found!');
-                }
-            });
-        });
-
-        // Browser back/forward button handler
-        window.addEventListener('popstate', function (event) {
-            const state = event.state;
-            if (state) {
-                const menuOption = state.menu || 'information';
-                const url = `/home_${encodeURIComponent(username)}/${menuOption}`;
-
-                if (contentArea) {
-                    contentArea.style.opacity = '0';
-                    fetch(url, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    })
-                        .then(response => {
-                            if (!response.ok)
-                                throw new Error('Network response was not ok: ' + response.statusText);
-                            return response.text();
-                        })
-                        .then(html => {
-                            contentArea.innerHTML = html;
-                            contentArea.style.opacity = '1';
-
-                            menuButtons.forEach(btn => {
-                                btn.classList.remove('active');
-                                if (btn.getAttribute('data-menu') === menuOption &&
-                                    btn.getAttribute('data-pcname') === state.pcName) {
-                                    btn.classList.add('active');
-                                    activeButton = btn;
-                                }
-                            });
-                        })
-                        .catch(error => {
-                            console.error('Popstate fetch error:', error);
-                            contentArea.innerHTML = '<div class="error-message">Error loading content: ' + error.message + '</div>';
-                            contentArea.style.opacity = '1';
-                        });
-                } else {
-                    console.error('Content area not found!');
-                }
-            }
-        });
-
-        // User info editing functions
-        function enableEditing() {
-            document.querySelectorAll("#information-section input").forEach(function (input) {
-                if (!input.readOnly) {
-                    input.disabled = false;
-                }
-            });
-
-            document.getElementById("editBtn").style.display = "none";
-            document.getElementById("saveBtn").style.display = "inline-block";
-            document.getElementById("cancelBtn").style.display = "inline-block";
-        }
-
-        function disableEditing() {
-            document.querySelectorAll("#information-section input").forEach(function (input) {
-                if (!input.readOnly) {
-                    input.disabled = true;
-                }
-            });
-
-            document.getElementById("editBtn").style.display = "inline-block";
-            document.getElementById("saveBtn").style.display = "none";
-            document.getElementById("cancelBtn").style.display = "none";
-        }
-
-
-        function confirmDelete() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                const username = document.getElementById('user-name').textContent.trim();
-                window.location.href = `/delete-account/${username}`;
-            }
-        }
-
-        // Sidebar toggle functionality
-        document.getElementById('sidebarToggle').addEventListener('click', function () {
-            // Check if modal is open
-            const computerModal = document.getElementById("computerModal");
-            if (computerModal && window.getComputedStyle(computerModal).display === "flex") {
-                return; // Exit if modal is open
-            }
-
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('collapsed');
-
-            // Save state to localStorage
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
-        });
-
-        function checkSSHStatusOne(event, button) {
-            if (event.target === button) {
-                event.stopPropagation(); // Prevent click on machine only for direct button clicks
-            }
-
-            const pcName = button.getAttribute("data-pcname");
-            const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
-            const sshStatusItem = pcDiv.querySelector(".ssh-status");
-            const sshStatusSpan = sshStatusItem.querySelector("span");
-            const ufwStatusItem = pcDiv.querySelector(".status-item.active");
-            const ufwStatusSpan = ufwStatusItem.querySelector("span");
-
-            // Change button text to indicate loading
-            const originalButtonText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            button.disabled = true;
-
-            // Show checking status and disable clicks
-            sshStatusSpan.textContent = "SSH: Checking...";
-            sshStatusItem.classList.remove("connected");
-            sshStatusItem.style.color = "#2980b9";
-            ufwStatusSpan.textContent = "UFW Status: Checking...";
-            ufwStatusItem.style.color = "#2980b9";
-            pcDiv.classList.add("checking"); // Disable clicks during check
-
-            // First check SSH status
-            fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return res.json();
-                })
-                .then(pc => {
-                    if (pc.sshStatus) {
-                        sshStatusSpan.textContent = "SSH: Connected";
-                        sshStatusItem.classList.add("connected");
-                        sshStatusItem.style.color = "";
-                        pcDiv.classList.add("accessible"); // Mark as clickable
-                        // Now check UFW status since SSH is connected
-                        return fetch(`/api/ufw-status/${username}/${encodeURIComponent(pcName)}`);
                     } else {
-                        sshStatusSpan.textContent = "SSH: Disconnected";
-                        sshStatusItem.classList.remove("connected");
-                        sshStatusItem.style.color = "#e74c3c";
-                        ufwStatusSpan.textContent = "UFW Status: UNKNOWN";
-                        ufwStatusItem.style.color = "#777";
-                        pcDiv.classList.remove("accessible"); // Not clickable
-                        throw new Error('SSH disconnected');
+                        console.error('Content area not found!');
                     }
-                })
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error('Network response was not ok');
+                }
+            });
+
+            // User info editing functions
+            function enableEditing() {
+                document.querySelectorAll("#information-section input").forEach(function (input) {
+                    if (!input.readOnly) {
+                        input.disabled = false;
                     }
-                    return res.json();
-                })
-                .then(data => {
-                    // Update UFW status
-                    if (data.success) {
-                        ufwStatusSpan.textContent = `UFW Status: ${data.status}`;
-                        if (data.ufwActive) {
-                            ufwStatusItem.style.color = "#27ae60"; // Green for ON
-                        } else {
-                            ufwStatusItem.style.color = "#e74c3c"; // Red for OFF
+                });
+
+                document.getElementById("editBtn").style.display = "none";
+                document.getElementById("saveBtn").style.display = "inline-block";
+                document.getElementById("cancelBtn").style.display = "inline-block";
+            }
+
+            function disableEditing() {
+                document.querySelectorAll("#information-section input").forEach(function (input) {
+                    if (!input.readOnly) {
+                        input.disabled = true;
+                    }
+                });
+
+                document.getElementById("editBtn").style.display = "inline-block";
+                document.getElementById("saveBtn").style.display = "none";
+                document.getElementById("cancelBtn").style.display = "none";
+            }
+
+
+            function confirmDelete() {
+                if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                    const username = document.getElementById('user-name').textContent.trim();
+                    window.location.href = `/delete-account/${username}`;
+                }
+            }
+
+            // Sidebar toggle functionality
+            document.getElementById('sidebarToggle').addEventListener('click', function () {
+                // Check if modal is open
+                const computerModal = document.getElementById("computerModal");
+                if (computerModal && window.getComputedStyle(computerModal).display === "flex") {
+                    return; // Exit if modal is open
+                }
+
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.toggle('collapsed');
+
+                // Save state to localStorage
+                localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            });
+
+            function checkSSHStatusOne(event, button) {
+                if (event.target === button) {
+                    event.stopPropagation(); // Prevent click on machine only for direct button clicks
+                }
+
+                const pcName = button.getAttribute("data-pcname");
+                const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
+                const sshStatusItem = pcDiv.querySelector(".ssh-status");
+                const sshStatusSpan = sshStatusItem.querySelector("span");
+                const ufwStatusItem = pcDiv.querySelector(".status-item.active");
+                const ufwStatusSpan = ufwStatusItem.querySelector("span");
+
+                // Change button text to indicate loading
+                const originalButtonText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                button.disabled = true;
+
+                // Show checking status and disable clicks
+                sshStatusSpan.textContent = "SSH: Checking...";
+                sshStatusItem.classList.remove("connected");
+                sshStatusItem.style.color = "#2980b9";
+                ufwStatusSpan.textContent = "UFW Status: Checking...";
+                ufwStatusItem.style.color = "#2980b9";
+                pcDiv.classList.add("checking"); // Disable clicks during check
+
+                // First check SSH status
+                fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('Network response was not ok');
                         }
-                    } else {
-                        ufwStatusSpan.textContent = "UFW Status: ERROR";
-                        ufwStatusItem.style.color = "#e74c3c";
-                        console.error("UFW status check failed:", data.message);
-                    }
-                })
-                .catch(err => {
-                    if (err.message !== 'SSH disconnected') {
-                        console.error("Status check failed:", err);
-                        sshStatusSpan.textContent = "SSH: Error";
-                        sshStatusItem.style.color = "#e74c3c";
-                        ufwStatusSpan.textContent = "UFW Status: ERROR";
-                        ufwStatusItem.style.color = "#e74c3c";
-                        pcDiv.classList.remove("accessible"); // Not clickable
-                    }
-                })
-                .finally(() => {
-                    // Restore button text and re-enable clicks
-                    button.innerHTML = originalButtonText;
-                    button.disabled = false;
-                    pcDiv.classList.remove("checking");
-                });
-        }
-
-        function shutdownPC(event, button) {
-            // NGĂN CHẶN redirect từ click container
-            event.stopPropagation();
-            event.preventDefault();
-
-            const pcName = button.getAttribute('data-pcname');
-            const username = document.querySelector('meta[name="username"]').getAttribute('content');
-
-            if (!confirm(`Are you sure you want to shutdown "${pcName}"?`)) return;
-
-            showToast('info', 'Sending shutdown command...', 3000);
-
-            fetch(`/api/shutdown/${username}/${encodeURIComponent(pcName)}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        showToast('success', 'Shutdown command sent successfully!', 5000);
-                        setTimeout(() => {
-                            // tìm nút check-status tương ứng trong cùng 1 .computer
-                            const statusBtn = button
-                                .closest('.computer')
-                                .querySelector('.check-status-btn');
-                            if (statusBtn) {
-                                // fake event để không redirect container
-                                checkSSHStatusOne({ stopPropagation: () => { } }, statusBtn);
+                        return res.json();
+                    })
+                    .then(pc => {
+                        if (pc.sshStatus) {
+                            sshStatusSpan.textContent = "SSH: Connected";
+                            sshStatusItem.classList.add("connected");
+                            sshStatusItem.style.color = "";
+                            pcDiv.classList.add("accessible"); // Mark as clickable
+                            // Now check UFW status since SSH is connected
+                            return fetch(`/api/ufw-status/${username}/${encodeURIComponent(pcName)}`);
+                        } else {
+                            sshStatusSpan.textContent = "SSH: Disconnected";
+                            sshStatusItem.classList.remove("connected");
+                            sshStatusItem.style.color = "#e74c3c";
+                            ufwStatusSpan.textContent = "UFW Status: UNKNOWN";
+                            ufwStatusItem.style.color = "#777";
+                            pcDiv.classList.remove("accessible"); // Not clickable
+                            throw new Error('SSH disconnected');
+                        }
+                    })
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        // Update UFW status
+                        if (data.success) {
+                            ufwStatusSpan.textContent = `UFW Status: ${data.status}`;
+                            if (data.ufwActive) {
+                                ufwStatusItem.style.color = "#27ae60"; // Green for ON
+                            } else {
+                                ufwStatusItem.style.color = "#e74c3c"; // Red for OFF
                             }
-                        }, 1000);
+                        } else {
+                            ufwStatusSpan.textContent = "UFW Status: ERROR";
+                            ufwStatusItem.style.color = "#e74c3c";
+                            console.error("UFW status check failed:", data.message);
+                        }
+                    })
+                    .catch(err => {
+                        if (err.message !== 'SSH disconnected') {
+                            console.error("Status check failed:", err);
+                            sshStatusSpan.textContent = "SSH: Error";
+                            sshStatusItem.style.color = "#e74c3c";
+                            ufwStatusSpan.textContent = "UFW Status: ERROR";
+                            ufwStatusItem.style.color = "#e74c3c";
+                            pcDiv.classList.remove("accessible"); // Not clickable
+                        }
+                    })
+                    .finally(() => {
+                        // Restore button text and re-enable clicks
+                        button.innerHTML = originalButtonText;
+                        button.disabled = false;
+                        pcDiv.classList.remove("checking");
+                    });
+            }
 
-                    } else {
-                        showToast('error', `Lỗi: ${data.message}`, 5000);
-                    }
+            function shutdownPC(event, button) {
+                // NGĂN CHẶN redirect từ click container
+                event.stopPropagation();
+                event.preventDefault();
+
+                const pcName = button.getAttribute('data-pcname');
+                const username = document.querySelector('meta[name="username"]').getAttribute('content');
+
+                if (!confirm(`Are you sure you want to shutdown "${pcName}"?`)) return;
+
+                showToast('info', 'Sending shutdown command...', 3000);
+
+                fetch(`/api/shutdown/${username}/${encodeURIComponent(pcName)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                 })
-                .catch(err => {
-                    console.error('shutdownPC error:', err);
-                    showToast('error', 'Có lỗi khi gửi lệnh tắt máy', 5000);
-                });
-        }
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('success', 'Shutdown command sent successfully!', 5000);
+                            setTimeout(() => {
+                                // tìm nút check-status tương ứng trong cùng 1 .computer
+                                const statusBtn = button
+                                    .closest('.computer')
+                                    .querySelector('.check-status-btn');
+                                if (statusBtn) {
+                                    // fake event để không redirect container
+                                    checkSSHStatusOne({ stopPropagation: () => { } }, statusBtn);
+                                }
+                            }, 1000);
 
-        function openDetailModal(e, btn) {
-            e.stopPropagation();
-            const pcName = btn.getAttribute('data-pcname');
-            const username = document.querySelector("meta[name='username']").getAttribute('content');
-            // clear trước
-            ["pcName", "ipAddress", "port", "pcUsername", "sshStatus", "ufwStatus"]
-                .forEach(id => document.getElementById("detail_" + id).textContent = "...");
+                        } else {
+                            showToast('error', `Error: ${data.message}`, 5000);
+                        }
+                    })
+                    .catch(err => {
+                        console.error('shutdownPC error:', err);
+                        showToast('error', 'Error sending shutdown command', 5000);
+                    });
+            }
 
-            // fetch chi tiết
-            fetch(`/api/pc-detail/${username}/${encodeURIComponent(pcName)}`)
-                .then(r => {
-                    if (!r.ok) throw new Error(r.statusText);
-                    return r.json();
-                })
-                .then(data => {
-                    document.getElementById("detail_pcName").textContent = data.pcName;
-                    document.getElementById("detail_ipAddress").textContent = data.ipAddress;
-                    document.getElementById("detail_port").textContent = data.port;
-                    document.getElementById("detail_pcUsername").textContent = data.pcUsername;
-                    document.getElementById("detail_sshStatus").textContent = data.sshStatus ? "Connected" : "Disconnected";
-                    document.getElementById("detail_ufwStatus").textContent = data.ufwStatus;
-                    // update nút shutdownBtn data-pcname để dùng chung
-                    const sd = document.getElementById("detail_shutdownBtn");
-                    sd.setAttribute("data-pcname", data.pcName);
-                    // show modal
-                    document.getElementById("machineDetailModal").style.display = "flex";
-                })
-                .catch(err => {
-                    console.error("Lấy chi tiết thất bại:", err);
-                    alert("Không thể load chi tiết máy.");
-                });
-        }
+            function openDetailModal(e, btn) {
+                e.stopPropagation();
+                const pcName = btn.getAttribute('data-pcname');
+                const username = document.querySelector("meta[name='username']").getAttribute('content');
+                // clear trước
+                ["pcName", "ipAddress", "port", "pcUsername", "sshStatus", "ufwStatus"]
+                    .forEach(id => document.getElementById("detail_" + id).textContent = "...");
 
-        function closeDetailModal() {
-            document.getElementById("machineDetailModal").style.display = "none";
-        }
+                // fetch chi tiết
+                fetch(`/api/pc-detail/${username}/${encodeURIComponent(pcName)}`)
+                    .then(r => {
+                        if (!r.ok) throw new Error(r.statusText);
+                        return r.json();
+                    })
+                    .then(data => {
+                        document.getElementById("detail_pcName").textContent = data.pcName;
+                        document.getElementById("detail_ipAddress").textContent = data.ipAddress;
+                        document.getElementById("detail_port").textContent = data.port;
+                        document.getElementById("detail_pcUsername").textContent = data.pcUsername;
+                        document.getElementById("detail_sshStatus").textContent = data.sshStatus ? "Connected" : "Disconnected";
+                        document.getElementById("detail_ufwStatus").textContent = data.ufwStatus;
+                        // update nút shutdownBtn data-pcname để dùng chung
+                        // const sd = document.getElementById("detail_shutdownBtn");
+                        // sd.setAttribute("data-pcname", data.pcName);
+                        // show modal
+                        document.getElementById("machineDetailModal").style.display = "flex";
+                    })
+                    .catch(err => {
+                        console.error("Lấy chi tiết thất bại:", err);
+                        alert("Không thể load chi tiết máy.");
+                    });
+            }
 
-        function showToast(type, message, duration = 3000) {
-            const toast = document.createElement('div');
-            toast.className = `toast toast--visible toast--${type}`;
-            toast.innerHTML = `
+            function closeDetailModal() {
+                document.getElementById("machineDetailModal").style.display = "none";
+            }
+
+            function showToast(type, message, duration = 3000) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast--visible toast--${type}`;
+                toast.innerHTML = `
       <div class="toast__icon">
         <i class="${type === 'error'
-                    ? 'fas fa-exclamation-circle'
-                    : (type === 'success'
-                        ? 'fas fa-check-circle'
-                        : 'fas fa-info-circle')}"></i>
+                        ? 'fas fa-exclamation-circle'
+                        : (type === 'success'
+                            ? 'fas fa-check-circle'
+                            : 'fas fa-info-circle')}"></i>
       </div>
       <div class="toast__message">${message}</div>
       <div class="toast__close" onclick="hideToast(this)">&times;</div>
       <div class="toast__progress"></div>
     `;
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                const bar = toast.querySelector('.toast__progress');
-                if (bar) bar.style.width = '100%';
-            }, 50);
-            setTimeout(() => hideToast(null, toast), duration + 200);
-        }
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    const bar = toast.querySelector('.toast__progress');
+                    if (bar) bar.style.width = '100%';
+                }, 50);
+                setTimeout(() => hideToast(null, toast), duration + 200);
+            }
 
-        function hideToast(btn, toastEl) {
-            const toast = toastEl || btn.closest(".toast");
-            toast.classList.remove("toast--visible");
-            // optional: xóa DOM sau animation
-            setTimeout(() => toast.remove(), 500);
-        }
+            function hideToast(btn, toastEl) {
+                const toast = toastEl || btn.closest(".toast");
+                toast.classList.remove("toast--visible");
+                // optional: xóa DOM sau animation
+                setTimeout(() => toast.remove(), 500);
+            }
 
 
-    </script>
+        </script>
 </body>
 
 </html>

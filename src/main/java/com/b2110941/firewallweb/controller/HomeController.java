@@ -146,7 +146,7 @@ public class HomeController {
             model.addAttribute("toastType", toastType);
         }
 
-        return "home";
+        return "redirect:/home_" + username + "/manageSystem";
     }
 
     @GetMapping("/home_{username}/{menuOption}")
@@ -200,7 +200,6 @@ public class HomeController {
         user.setFullname(fullname);
         user.setEmail(email);
         user.setPassword(password);
-
         userAcc.setPassword(password);
 
         // Lưu thay đổi vào CSDL
@@ -210,6 +209,7 @@ public class HomeController {
         // Sau khi cập nhật, có thể đưa user đã cập nhật vào model
         model.addAttribute("userInfo", user);
 
+        redirectAttrs.addFlashAttribute("toastType", "success");
         redirectAttrs.addFlashAttribute("toastMessage", "User information updated successfully!");
 
         return "redirect:/home_" + username + "/information";

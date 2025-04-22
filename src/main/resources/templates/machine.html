@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <link rel="icon" th:href="@{/images/favicon.png}" />
-    <!--<link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.min.css" />
     <title>Machine Management</title>
 
@@ -382,6 +382,7 @@
         }
 
         .rule-table th {
+            text-align: center;
             background: linear-gradient(145deg, #1a2942, #2c3e50);
             color: white;
             font-weight: 600;
@@ -391,6 +392,7 @@
         }
 
         .rule-table td {
+            text-align: center;
             font-size: 14px;
             color: #2c3e50;
             transition: all 0.3s ease;
@@ -1116,6 +1118,7 @@
 
         .edit-btn img,
         .delete-btn img {
+            width: 50px;
             padding: 6px 12px;
             border: none;
             cursor: pointer;
@@ -2241,8 +2244,9 @@
                         </div>
                     </div>
                 </div>
-
-                <p>Chức năng chỉnh sửa đang được cập nhật! Vui lòng</p>
+                <p style="margin-left: 18%; color: #868686;"> <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+                    <i>Edit function is being updated! Please only edit IPV4 rules</i>
+                </p>
             </div>
 
 
@@ -2443,6 +2447,29 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
         <script>
+
+            function showToast(type, message, duration = 3000) {
+                const toast = document.createElement('div');
+                toast.className = `toast toast--visible toast--${type}`;
+                toast.innerHTML = `
+      <div class="toast__icon">
+        <i class="${type === 'error'
+                        ? 'fas fa-exclamation-circle'
+                        : (type === 'success'
+                            ? 'fas fa-check-circle'
+                            : 'fas fa-info-circle')}"></i>
+      </div>
+      <div class="toast__message">${message}</div>
+      <div class="toast__close" onclick="hideToast(this)">&times;</div>
+      <div class="toast__progress"></div>
+    `;
+                document.body.appendChild(toast);
+                setTimeout(() => {
+                    const bar = toast.querySelector('.toast__progress');
+                    if (bar) bar.style.width = '100%';
+                }, 50);
+                setTimeout(() => hideToast(null, toast), duration + 200);
+            }
             // Utility Functions
             // Validate IP address
             function validateIpAddress(ip) {
@@ -2816,7 +2843,12 @@
                                 systemLoggingTable.style.display = isChecked ? 'block' : 'none';
                             }
 
-                            console.log(`System logging has been ${isChecked ? 'enabled' : 'disabled'} successfully`);
+                            if (isChecked) {
+                                showToast('success', 'Syslog has been enabled successfully!', 4000);
+                            } else {
+                                showToast('info', 'Syslog has been disabled successfully!', 4000);
+                            }
+
                         } else {
                             console.error('Could not toggle system logging:', data.message);
                             alert('Could not toggle system logging: ' + data.message);
@@ -3002,7 +3034,7 @@
                 element.disabled = true;
                 const label = document.querySelector('.toggle-label');
                 const originalLabel = label.textContent;
-                label.textContent = 'Đang xử lý...';
+                label.textContent = 'Processing...';
 
                 fetch(url, {
                     method: 'POST',
@@ -3032,6 +3064,12 @@
                             element.checked = !isChecked;
                             label.textContent = originalLabel;
                         }
+
+                        if (isChecked) {
+        showToast('success', 'Firewall has been enabled successfully!', 3000);
+        } else {
+          showToast('info', 'Firewall has been disabled successfully!', 3000);
+        }
                     })
                     .catch(error => {
                         console.error('Lỗi:', error);
@@ -3055,7 +3093,7 @@
                 element.disabled = true;
                 const label = document.querySelector('.toggle-logging-label');
                 const originalLabel = label ? label.textContent : '';
-                if (label) label.textContent = 'Đang xử lý...';
+                if (label) label.textContent = 'Processing...';
 
                 fetch(url, {
                     method: 'POST',

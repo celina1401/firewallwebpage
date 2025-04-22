@@ -54,14 +54,17 @@ public class RuleController {
         // Kiểm tra đăng nhập
         String ownerUsername = (String) session.getAttribute("username");
         if (ownerUsername == null) {
-            redirectAttributes.addFlashAttribute("error", "Please login your account!");
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Please login your account!");
             return "redirect:/";
         }
 
         // Tìm máy tính
         Optional<PC> pcOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
         if (pcOptional.isEmpty()) {
-            redirectAttributes.addFlashAttribute("error", "Computer " + pcName + " not found");
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Computer " + pcName + " not found");
+
             return "redirect:/machine/" + pcName + "/rule";
         }
 
@@ -82,7 +85,8 @@ public class RuleController {
 
         // Gửi thông báo phản hồi
         if (result.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("success", "Firewall rule added successfully.");
+            redirectAttributes.addFlashAttribute("toastType", "success");
+            redirectAttributes.addFlashAttribute("toastMessage", "Firewall rule added successfully.");
         } else {
             redirectAttributes.addFlashAttribute("error", "Failed to add rule: " + result);
         }
