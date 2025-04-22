@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="username" th:content="${username}" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <link rel="icon" th:href="@{/images/favicon.png}" />
     <title>Control Rule</title>
@@ -327,7 +328,7 @@
             margin-bottom: 20px;
         }
 
-        .check-status-btn {
+        /* .check-status-btn {
             background: linear-gradient(to right, #3498db, #2980b9);
             border: none;
             color: white;
@@ -346,6 +347,138 @@
         .check-status-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        } */
+
+        /* CSS cho container chứa các nút */
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-top: 10%;
+            gap: 8px;
+        }
+
+        /* CSS chung cho tất cả các nút */
+        .action-buttons button,
+        .action-buttons a {
+            border: none;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+            padding: 0;
+        }
+
+        /* CSS cho nút chi tiết (màu xanh lá) */
+        .details-btn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            width: 40px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        /* CSS cho nút tắt máy (màu đỏ) */
+        .shutdown-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            width: 40px;
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        /* CSS cho nút check status (màu xanh dương) */
+        .check-status-btn {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* CSS cho icon trong nút */
+        .details-btn i,
+        .shutdown-btn i,
+        .check-status-btn i {
+            font-size: 1.2em;
+        }
+
+        /* CSS cho hiệu ứng hover */
+        .details-btn:hover,
+        .shutdown-btn:hover,
+        .check-status-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* CSS cho trạng thái loading */
+        .check-status-btn.loading {
+            background: linear-gradient(to right, #3498db, #2980b9);
+        }
+
+        /* CSS cho hiệu ứng loading dots */
+        .loading-dots {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: white;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Xóa margin-top trùng lặp */
+        .check-status-btn {
+            margin-top: 0;
+        }
+
+        /* CSS cho icon quay trong nút checking */
+        .fa-sync-alt {
+            animation: spin 1.5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .menu {
@@ -755,16 +888,16 @@
 </head>
 
 <body>
-    <div th:if="${toastMessage}" id="toast-message" 
-         class="toast" th:classappend="${toastType == 'error'} ? 'toast--error' : 'toast--success'">
+    <!-- <div th:if="${toastMessage}" id="toast-message" class="toast"
+        th:classappend="${toastType == 'error'} ? 'toast--error' : 'toast--success'">
         <div class="toast__icon">
             <i th:class="${toastType == 'error'} ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
         </div>
         <div class="toast__message" th:utext="${toastMessage}">…</div>
         <div class="toast__close" onclick="hideToast(this)">&times;</div>
         <div class="toast__progress"></div>
-    </div>
-    
+    </div> -->
+
     <div class="sidebar" id="sidebar">
         <div class="toggle-btn" id="sidebarToggle">
             <img src="/images/toggle.png" alt="toggle" />
@@ -843,7 +976,7 @@
                             <button type="button" id="deleteBtn" onclick="confirmDelete()">Delete Account</button>
                         </div>
                     </form>
-                    
+
                 </div>
 
                 <div th:case="*" class="section">
@@ -867,10 +1000,21 @@
                                     Unknown</span>
                             </div>
                         </div>
-                        <button class="check-status-btn" th:data-pcname="${computer.pcName}"
-                            onclick="checkSSHStatusOne(event, this)">
-                            <i class="fas fa-sync-alt"></i> Check Status
-                        </button>
+
+                        <div class="action-buttons">
+                            <button type="button" class="details-btn" th:data-pcname="${computer.pcName}"
+                                onclick="openDetailModal(event, this)">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            <button class="check-status-btn" th:data-pcname="${computer.pcName}"
+                                onclick="checkSSHStatusOne(event, this)">
+                                <i class="fa-solid fa-rotate" style="color: #ffffff;"></i>
+                            </button>
+                            <button class="shutdown-btn" th:data-pcname="${computer.pcName}"
+                                onclick="shutdownPC(event, this)">
+                                <i class="fas fa-power-off"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="add-computer" onclick="openModal()">
@@ -914,6 +1058,45 @@
             <div class="modal-right">
                 <h2>ADD <br> YOUR COMPUTER</h2>
                 <img src="/images/close.png" alt="Close" onclick="closeModal()">
+            </div>
+        </div>
+    </div>
+
+    <div id="machineDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-left">
+                <span onclick="closeDetailModal()">&times;</span>
+                <h3>Chi tiết máy: <span id="detail_pcName"></span></h3>
+                <table>
+                    <tr>
+                        <td><strong>IP Address</strong></td>
+                        <td id="detail_ipAddress"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Port</strong></td>
+                        <td id="detail_port"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ubuntu Username</strong></td>
+                        <td id="detail_pcUsername"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>SSH Status</strong></td>
+                        <td id="detail_sshStatus"></td>
+                    </tr>
+                    <tr>
+                        <td><strong>UFW Status</strong></td>
+                        <td id="detail_ufwStatus"></td>
+                    </tr>
+                </table>
+                <div>
+                    <button class="shutdown-btn" id="detail_shutdownBtn" onclick="shutdownPC(event, this)">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                    <button class="btn_add_computer" onclick="closeDetailModal()">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1214,7 +1397,7 @@
 
             // Change button text to indicate loading
             const originalButtonText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             button.disabled = true;
 
             // Show checking status and disable clicks
@@ -1289,6 +1472,115 @@
                     pcDiv.classList.remove("checking");
                 });
         }
+
+        function shutdownPC(event, button) {
+            // NGĂN CHẶN redirect từ click container
+            event.stopPropagation();
+            event.preventDefault();
+
+            const pcName = button.getAttribute('data-pcname');
+            const username = document.querySelector('meta[name="username"]').getAttribute('content');
+
+            if (!confirm(`Are you sure you want to shutdown "${pcName}"?`)) return;
+
+            showToast('info', 'Sending shutdown command...', 3000);
+
+            fetch(`/api/shutdown/${username}/${encodeURIComponent(pcName)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('success', 'Shutdown command sent successfully!', 5000);
+                        setTimeout(() => {
+                            // tìm nút check-status tương ứng trong cùng 1 .computer
+                            const statusBtn = button
+                                .closest('.computer')
+                                .querySelector('.check-status-btn');
+                            if (statusBtn) {
+                                // fake event để không redirect container
+                                checkSSHStatusOne({ stopPropagation: () => { } }, statusBtn);
+                            }
+                        }, 1000);
+
+                    } else {
+                        showToast('error', `Lỗi: ${data.message}`, 5000);
+                    }
+                })
+                .catch(err => {
+                    console.error('shutdownPC error:', err);
+                    showToast('error', 'Có lỗi khi gửi lệnh tắt máy', 5000);
+                });
+        }
+
+        function openDetailModal(e, btn) {
+            e.stopPropagation();
+            const pcName = btn.getAttribute('data-pcname');
+            const username = document.querySelector("meta[name='username']").getAttribute('content');
+            // clear trước
+            ["pcName", "ipAddress", "port", "pcUsername", "sshStatus", "ufwStatus"]
+                .forEach(id => document.getElementById("detail_" + id).textContent = "...");
+
+            // fetch chi tiết
+            fetch(`/api/pc-detail/${username}/${encodeURIComponent(pcName)}`)
+                .then(r => {
+                    if (!r.ok) throw new Error(r.statusText);
+                    return r.json();
+                })
+                .then(data => {
+                    document.getElementById("detail_pcName").textContent = data.pcName;
+                    document.getElementById("detail_ipAddress").textContent = data.ipAddress;
+                    document.getElementById("detail_port").textContent = data.port;
+                    document.getElementById("detail_pcUsername").textContent = data.pcUsername;
+                    document.getElementById("detail_sshStatus").textContent = data.sshStatus ? "Connected" : "Disconnected";
+                    document.getElementById("detail_ufwStatus").textContent = data.ufwStatus;
+                    // update nút shutdownBtn data-pcname để dùng chung
+                    const sd = document.getElementById("detail_shutdownBtn");
+                    sd.setAttribute("data-pcname", data.pcName);
+                    // show modal
+                    document.getElementById("machineDetailModal").style.display = "flex";
+                })
+                .catch(err => {
+                    console.error("Lấy chi tiết thất bại:", err);
+                    alert("Không thể load chi tiết máy.");
+                });
+        }
+
+        function closeDetailModal() {
+            document.getElementById("machineDetailModal").style.display = "none";
+        }
+
+        function showToast(type, message, duration = 3000) {
+            const toast = document.createElement('div');
+            toast.className = `toast toast--visible toast--${type}`;
+            toast.innerHTML = `
+      <div class="toast__icon">
+        <i class="${type === 'error'
+                    ? 'fas fa-exclamation-circle'
+                    : (type === 'success'
+                        ? 'fas fa-check-circle'
+                        : 'fas fa-info-circle')}"></i>
+      </div>
+      <div class="toast__message">${message}</div>
+      <div class="toast__close" onclick="hideToast(this)">&times;</div>
+      <div class="toast__progress"></div>
+    `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                const bar = toast.querySelector('.toast__progress');
+                if (bar) bar.style.width = '100%';
+            }, 50);
+            setTimeout(() => hideToast(null, toast), duration + 200);
+        }
+
+        function hideToast(btn, toastEl) {
+            const toast = toastEl || btn.closest(".toast");
+            toast.classList.remove("toast--visible");
+            // optional: xóa DOM sau animation
+            setTimeout(() => toast.remove(), 500);
+        }
+
 
     </script>
 </body>

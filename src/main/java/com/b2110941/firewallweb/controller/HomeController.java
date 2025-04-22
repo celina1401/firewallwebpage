@@ -13,7 +13,9 @@ import com.jcraft.jsch.Session;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -488,4 +490,135 @@ public class HomeController {
             // Không gọi pcRepository.save(computer) để không lưu trạng thái vào database
         }
     }
+
+        @PostMapping("/api/shutdown/{username}/{pcName}")
+    @ResponseBody
+    public java.util.Map<String, Object> shutdownPC(
+            @PathVariable String username,
+            @PathVariable String pcName,
+            HttpSession session) {
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+
+        // Xác thực người dùng
+        String sessionUsername = (String) session.getAttribute("username");
+        if (sessionUsername == null || !sessionUsername.equals(username)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+        }
+
+        // Tìm máy tính
+        Optional<PC> pcOpt = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+        if (pcOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found");
+        }
+
+        PC pc = pcOpt.get();
+
+        try {
+            Session sshSession = connectSSH.establishSSH(
+                    pc.getIpAddress(),
+                    pc.getPort(),
+                    pc.getPcUsername(),
+                    pc.getPassword());
+
+            if (sshSession == null || !sshSession.isConnected()) {
+                response.put("success", false);
+                response.put("message", "Không thể kết nối SSH");
+                return response;
+            }
+
+            // Gửi lệnh tắt máy
+            String shutdownCommand = "echo '" + pc.getPassword() + "' | sudo -S shutdown -h now";
+
+            com.jcraft.jsch.ChannelExec channel = (com.jcraft.jsch.ChannelExec) sshSession.openChannel("exec");
+            channel.setCommand(shutdownCommand);
+            channel.connect();
+
+            // Đợi một chút để lệnh được thực thi
+            Thread.sleep(1000);
+            
+            channel.disconnect();
+            sshSession.disconnect();
+
+            // Cập nhật trạng thái máy tính
+            pc.setSshStatus(false);
+            pc.setUfwStatus("UNKNOWN");
+            pcRepository.save(pc);
+
+            response.put("success", true);
+            response.put("message", "Lệnh tắt máy đã được gửi thành công");
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi gửi lệnh tắt máy: " + e.getMessage());
+        }
+
+        return response;
+    }
+
+    // HomeController.java
+
+@GetMapping("/machine/{username}/{pcName}")
+public String showMachineDetail(
+        @PathVariable String username,
+        @PathVariable String pcName,
+        HttpSession session,
+        Model model) {
+
+    // 1) Xác thực
+    String sessionUsername = (String) session.getAttribute("username");
+    if (sessionUsername == null || !sessionUsername.equals(username)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized access");
+    }
+
+    // 2) Lấy máy từ DB
+    Optional<PC> pcOpt = pcRepository.findByPcNameAndOwnerUsername(pcName, username);
+    if (pcOpt.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found");
+    }
+    PC pc = pcOpt.get();
+
+    // 3) Cập nhật trạng thái SSH/UFW trước khi hiển thị (tương tự home)
+    updateComputerStatus(pc);
+
+    // 4) Đưa vào model và trả về template
+    model.addAttribute("username", username);
+    model.addAttribute("pc", pc);
+    return "redirect:/machine_" + username + "/" + pcName;
+}
+
+// Trả về JSON chi tiết máy (không lộ password)
+@GetMapping("/api/pc-detail/{username}/{pcName}")
+@ResponseBody
+public Map<String, Object> getPCDetail(
+        @PathVariable String username,
+        @PathVariable String pcName,
+        HttpSession session) {
+
+    // 1. Xác thực
+    String sessionUsername = (String) session.getAttribute("username");
+    if (sessionUsername == null || !sessionUsername.equals(username)) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+    }
+
+    // 2. Lấy PC
+    PC pc = pcRepository
+               .findByPcNameAndOwnerUsername(pcName, username)
+               .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "PC not found"));
+
+    // 3. Cập nhật trạng thái SSH/UFW
+    updateComputerStatus(pc);
+
+    // 4. Build JSON
+    Map<String, Object> resp = new HashMap<>();
+    resp.put("pcName", pc.getPcName());
+    resp.put("ipAddress", pc.getIpAddress());
+    resp.put("port", pc.getPort());
+    resp.put("pcUsername", pc.getPcUsername());
+    resp.put("sshStatus", pc.isSshStatus());
+    resp.put("ufwStatus", pc.getUfwStatus());
+    return resp;
+}
+
+
 }
