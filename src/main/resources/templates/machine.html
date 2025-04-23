@@ -2592,6 +2592,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            showToast('success', data.message);
                             const tbody = document.querySelector('.logging-table tbody');
                             if (tbody) {
                                 tbody.innerHTML = '';

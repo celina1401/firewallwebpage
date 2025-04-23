@@ -235,8 +235,8 @@
         }
 
         .computer {
-            width: 15vw;
-            height: 42vh;
+            width: 16vw;
+            height: 48vh;
             background: white;
             display: flex;
             flex-direction: column;
@@ -278,6 +278,16 @@
             color: #2c3e50;
             margin-bottom: 10px;
             text-align: center;
+        }
+
+        .computer .pc-host {
+            margin-bottom: 10px;
+            color: #005fff;
+            font-size: 0.9em;
+            font-weight: 500;
+            background-color: #f8f9fa;
+            padding: 5px 20px;
+            border-radius: 8px;
         }
 
         .computer .status {
@@ -581,12 +591,13 @@
             background: #4a6572;
         }
 
-        .detail-item{
+        .detail-item {
             margin-bottom: 30px;
             display: flex;
             justify-content: center;
         }
-        .off{
+
+        .off {
             cursor: pointer;
             padding: 3px;
             font-size: 25px;
@@ -595,8 +606,8 @@
 
         /* Add these styles for the add computer button and modal */
         .add-computer {
-            width: 15vw;
-            height: 42vh;
+            width: 16vw;
+            height: 48vh;
             border: 2px dashed #4A4A4A;
             display: flex;
             align-items: center;
@@ -1092,6 +1103,7 @@
                         </a>
                         <img src="/images/computer.png" alt="Computer">
                         <div class="pc-name" th:text="${computer.pcName}">PC NAME</div>
+                        <div class="pc-host" th:text="${computer.ipAddress}">PC NAME</div>
                         <div class="status">
                             <div class="status-item ssh-status" th:classappend="${computer.sshStatus} ? 'connected'"
                                 th:style="${!computer.sshStatus} ? 'color: #e74c3c;' : ''">
@@ -1251,6 +1263,12 @@
                     // auto hide sau 4s
                     setTimeout(() => hideToast(null, toast), 4000);
                 });
+
+                setTimeout(function () {
+                    document.querySelectorAll('.check-status-btn').forEach(function (btn) {
+                        btn.click();
+                    });
+                }, 100);
 
                 // Handle input fields
                 let inputs = document.querySelectorAll(".input-field");
@@ -1490,94 +1508,95 @@
             });
 
             function checkSSHStatusOne(event, button) {
-                if (event.target === button) {
-                    event.stopPropagation(); // Prevent click on machine only for direct button clicks
+                // Nếu bấm vào nút xóa thì thôi, không làm gì thêm
+                if (event.target.closest('.delete-btn')) {
+                    return;
                 }
 
-                const pcName = button.getAttribute("data-pcname");
-                const pcDiv = document.querySelector(`.computer[data-pcname="${CSS.escape(pcName)}"]`);
+                // Chuẩn bị UI loading
+                const pcDiv = button.closest('.computer');
                 const sshStatusItem = pcDiv.querySelector(".ssh-status");
                 const sshStatusSpan = sshStatusItem.querySelector("span");
                 const ufwStatusItem = pcDiv.querySelector(".status-item.active");
                 const ufwStatusSpan = ufwStatusItem.querySelector("span");
+                const originalBtnHTML = button.innerHTML;
 
-                // Change button text to indicate loading
-                const originalButtonText = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 button.disabled = true;
-
-                // Show checking status and disable clicks
                 sshStatusSpan.textContent = "SSH: Checking...";
                 sshStatusItem.classList.remove("connected");
                 sshStatusItem.style.color = "#2980b9";
                 ufwStatusSpan.textContent = "UFW Status: Checking...";
                 ufwStatusItem.style.color = "#2980b9";
-                pcDiv.classList.add("checking"); // Disable clicks during check
+                pcDiv.classList.add("checking");
 
-                // First check SSH status
+                // Lấy user từ meta
+                const username = document.querySelector("meta[name='username']").getAttribute("content");
+                const pcName = button.getAttribute("data-pcname");
+
                 fetch(`/api/ssh-status/${username}/${encodeURIComponent(pcName)}`)
                     .then(res => {
-                        if (!res.ok) {
-                            throw new Error('Network response was not ok');
-                        }
+                        if (!res.ok) throw new Error("Network error");
                         return res.json();
                     })
                     .then(pc => {
                         if (pc.sshStatus) {
+                            // SSH OK: cập nhật UI, đánh dấu accessible, không chặn propagation
                             sshStatusSpan.textContent = "SSH: Connected";
                             sshStatusItem.classList.add("connected");
                             sshStatusItem.style.color = "";
-                            pcDiv.classList.add("accessible"); // Mark as clickable
-                            // Now check UFW status since SSH is connected
+                            pcDiv.classList.add("accessible");
+
+                            // Tiếp tục fetch UFW status
                             return fetch(`/api/ufw-status/${username}/${encodeURIComponent(pcName)}`);
                         } else {
+                            // SSH KO: cập nhật UI, không accessible và chặn propagation để không redirect
                             sshStatusSpan.textContent = "SSH: Disconnected";
                             sshStatusItem.classList.remove("connected");
                             sshStatusItem.style.color = "#e74c3c";
                             ufwStatusSpan.textContent = "UFW Status: UNKNOWN";
                             ufwStatusItem.style.color = "#777";
-                            pcDiv.classList.remove("accessible"); // Not clickable
-                            throw new Error('SSH disconnected');
+                            pcDiv.classList.remove("accessible");
+
+                            // Chặn sự kiện click container
+                            event.stopPropagation();
+                            throw new Error("ssh-failed");
                         }
                     })
                     .then(res => {
-                        if (!res.ok) {
-                            throw new Error('Network response was not ok');
-                        }
+                        if (!res.ok) throw new Error("Network error");
                         return res.json();
                     })
                     .then(data => {
-                        // Update UFW status
+                        // Cập nhật UFW status
                         if (data.success) {
                             ufwStatusSpan.textContent = `UFW Status: ${data.status}`;
-                            if (data.ufwActive) {
-                                ufwStatusItem.style.color = "#27ae60"; // Green for ON
-                            } else {
-                                ufwStatusItem.style.color = "#e74c3c"; // Red for OFF
-                            }
+                            ufwStatusItem.style.color = data.ufwActive ? "#27ae60" : "#e74c3c";
                         } else {
                             ufwStatusSpan.textContent = "UFW Status: ERROR";
                             ufwStatusItem.style.color = "#e74c3c";
-                            console.error("UFW status check failed:", data.message);
+                            console.error("UFW check failed:", data.message);
                         }
                     })
                     .catch(err => {
-                        if (err.message !== 'SSH disconnected') {
-                            console.error("Status check failed:", err);
+                        if (err.message !== "ssh-failed") {
+                            console.error("Status check error:", err);
                             sshStatusSpan.textContent = "SSH: Error";
                             sshStatusItem.style.color = "#e74c3c";
                             ufwStatusSpan.textContent = "UFW Status: ERROR";
                             ufwStatusItem.style.color = "#e74c3c";
-                            pcDiv.classList.remove("accessible"); // Not clickable
+                            pcDiv.classList.remove("accessible");
                         }
+                        // nếu là "ssh-failed" thì đã stopPropagation ở trên
                     })
                     .finally(() => {
-                        // Restore button text and re-enable clicks
-                        button.innerHTML = originalButtonText;
+                        // Hoàn tác UI loading
+                        button.innerHTML = originalBtnHTML;
                         button.disabled = false;
                         pcDiv.classList.remove("checking");
                     });
             }
+
 
             function shutdownPC(event, button) {
                 // NGĂN CHẶN redirect từ click container
