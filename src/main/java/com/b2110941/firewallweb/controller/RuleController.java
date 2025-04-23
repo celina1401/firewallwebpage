@@ -83,12 +83,27 @@ public class RuleController {
         String result = ufwService.addRuleFromForm(pc, action, isOutgoing, protocol,
                 toType, toIp, portRangeStart, portRangeEnd, port, fromType, fromIp, app);
 
+        System.out.println(result);
+
         // Gửi thông báo phản hồi
-        if (result.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("toastType", "success");
-            redirectAttributes.addFlashAttribute("toastMessage", "Firewall rule added successfully.");
-        } else {
-            redirectAttributes.addFlashAttribute("error", "Failed to add rule: " + result);
+        switch (result) {
+            case "added":
+                redirectAttributes.addFlashAttribute("toastType", "success");
+                redirectAttributes.addFlashAttribute("toastMessage", "Rule added successfully.");
+                break;
+            case "existing":
+                redirectAttributes.addFlashAttribute("toastType", "info"); 
+                redirectAttributes.addFlashAttribute("toastMessage", "Rule already exists.");
+                break;
+            case "notfound":
+                redirectAttributes.addFlashAttribute("toastType", "error");
+                redirectAttributes.addFlashAttribute("toastMessage", "Rule not found to add.");
+                break;
+            default:
+                // other errors, e.g. "error: ..."
+                redirectAttributes.addFlashAttribute("toastType", "error");
+                redirectAttributes.addFlashAttribute("toastMessage", result.replaceFirst("^error:\\s*", ""));
+                break;
         }
 
         return "redirect:/machine/" + pcName + "/rule";

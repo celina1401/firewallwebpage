@@ -67,6 +67,7 @@ public class LoggingController {
 
         model.addAttribute("computer", computer);
         model.addAttribute("currentMenu", "logging");
+            
 
         Session sshSession = null;
         try {
@@ -93,6 +94,7 @@ public class LoggingController {
             }
             logger.info("UFW Logging Status: {}", loggingStatus);
             model.addAttribute("loggingStatus", loggingStatus);
+            
 
             // Fetch UFW logs if logging is ON
             List<Map<String, String>> ufwLogs = new ArrayList<>();

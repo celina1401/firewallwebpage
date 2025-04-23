@@ -131,12 +131,12 @@ public class UFWService {
             String output = outBuilder.toString();
             logger.info("Command output: {}", output);
 
-            if (output.contains("Rule added") || output.contains("Skipping")) {
-                result = "success";
-            } else if (output.contains("ERROR")) {
-                result = "error: " + output;
+            if (output.contains("Rule added")) {
+                result = "added";
+            } else if (output.contains("existing")) {
+                result = "existing";
             } else {
-                result = "success"; // Mặc định thành công nếu không có lỗi rõ ràng
+                result = "notfound"; // Mặc định thành công nếu không có lỗi rõ ràng
             }
 
             channel.disconnect();
