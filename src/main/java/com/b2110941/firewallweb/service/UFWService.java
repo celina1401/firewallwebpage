@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
@@ -149,52 +150,32 @@ public class UFWService {
         return result;
     }
 
-    public String deleteRule(PC pc, String ruleId) {
-        String result = "";
-        StringBuilder outBuilder = new StringBuilder();
-
+    public String deleteRule(PC pc, String uiIdStr) {
         try {
-            Session session = connectSSH.establishSSH(pc.getIpAddress(), pc.getPort(),
-                    pc.getPcUsername(), pc.getPassword());
-            ChannelExec channel = (ChannelExec) session.openChannel("exec");
-
-            String command = "echo '" + pc.getPassword() + "' | sudo -S ufw --force delete " + ruleId;
-            channel.setCommand(command);
-            InputStream in = channel.getInputStream();
-            channel.connect();
-
-            byte[] tmp = new byte[1024];
-            while (true) {
-                while (in.available() > 0) {
-                    int i = in.read(tmp, 0, 1024);
-                    if (i < 0) {
-                        break;
-                    }
-                    outBuilder.append(new String(tmp, 0, i));
-                }
-                if (channel.isClosed()) {
-                    break;
-                }
-            }
-
-            String output = outBuilder.toString();
-            logger.info("Delete command output: {}", output);
-
-            if (output.contains("Rule deleted")) {
-                result = "success";
+            int uiId = Integer.parseInt(uiIdStr);
+            // Map<Integer,String> rules = fetchAddedRules(pc);
+            // if (!rules.containsKey(uiId)) {
+            //     return "error: rule id " + uiId + " not found";
+            // }
+            String cmd = "echo '" + pc.getPassword() + "' | sudo -S ufw --force delete " + uiId;
+            String output = ubuntuInfo.executeCommand(
+                connectSSH.establishSSH(
+                    pc.getIpAddress(), pc.getPort(),
+                    pc.getPcUsername(), pc.getPassword()
+                ), cmd
+            );
+            if (output.toLowerCase().contains("deleted")) {
+                return "success";
             } else {
-                result = "error: " + output;
+                return "error: " + output;
             }
-
-            channel.disconnect();
-            session.disconnect();
-        } catch (IOException | JSchException e) {
-            logger.error("Error deleting firewall rule", e);
-            result = "error: " + e.getMessage();
+        } catch (Exception e) {
+            logger.error("Error deleting rule", e);
+            return "error: " + e.getMessage();
         }
-
-        return result;
     }
+    
+    
 
     public String getUFWStatus(PC pc) {
         String result = "inactive";
@@ -464,80 +445,66 @@ public class UFWService {
         }
     }
 
-    public Map<String, String> fetchRuleDetailsById(PC pc, String ruleId) {
-        // 1) show raw line
-        String intRuleId = Integer.toString(Integer.parseInt(ruleId) + 1);
-        String cmd = "echo '" + pc.getPassword() + "' | sudo -S ufw show added | sed -n '"
-                + intRuleId + "p'";
-        String line;
+    public Map<String,String> fetchRuleDetailsById(PC pc, String uiIdStr) {
         try {
-            Session session = connectSSH.establishSSH(
-                    pc.getIpAddress(), pc.getPort(),
-                    pc.getPcUsername(), pc.getPassword());
-            line = ubuntuInfo.executeCommand(session, cmd);
-            session.disconnect();
-        } catch (Exception e) {
-            logger.error("Error fetching raw ufw line", e);
-            return null;
-        }
-        if (line == null || line.isBlank()) {
-            return null;
-        }
-        line = line.trim();
-
-        // 2) parse với regex
-        Map<String, String> m = new HashMap<>();
-        m.put("id", ruleId);
-
-        // action: allow|deny
-        Matcher actM = Pattern.compile("\\bufw\\s+(allow|deny)\\b").matcher(line);
-        m.put("action", actM.find() ? actM.group(1) : "");
-
-        // direction: in|out
-        m.put("direction", line.contains(" out ") ? "out" : "in");
-
-        // interface: on <iface>
-        Matcher ifM = Pattern.compile("\\bon\\s+(\\S+)").matcher(line);
-        m.put("interface", ifM.find() ? ifM.group(1) : "");
-
-        // protocol: proto <proto>
-        Matcher protoM = Pattern.compile("\\bproto\\s+(\\w+)").matcher(line);
-        m.put("protocol", protoM.find() ? protoM.group(1) : "");
-
-        // from: from <ip>
-        Matcher fromM = Pattern.compile("\\bfrom\\s+(\\S+)").matcher(line);
-        m.put("sourceIp", fromM.find() ? fromM.group(1) : "any");
-
-        // to: to <ip>
-        Matcher toM = Pattern.compile("\\bto\\s+(\\d+\\.\\d+\\.\\d+\\.\\d+)").matcher(line);
-        m.put("destinationIp", toM.find() ? toM.group(1) : "any");
-
-        // app: app "<app>"
-        Matcher appM = Pattern.compile("\\bapp\\s+['\"]([^'\"]+)['\"]", Pattern.CASE_INSENSITIVE).matcher(line);
-        m.put("app", appM.find() ? appM.group(1) : "");
-
-        // port or port range
-        Matcher prangeM = Pattern.compile("\\bport\\s+(\\d+):(\\d+)").matcher(line);
-        if (prangeM.find()) {
-            m.put("portType", "range");
-            m.put("portStart", prangeM.group(1));
-            m.put("portEnd", prangeM.group(2));
-            m.put("port", "");
-        } else {
-            Matcher portM = Pattern.compile("\\bport\\s+(\\d+)").matcher(line);
-            if (portM.find()) {
-                m.put("portType", "specific");
-                m.put("port", portM.group(1));
+            int uiId = Integer.parseInt(uiIdStr);
+            Map<Integer,String> rules = fetchAddedRules(pc);
+            String line = rules.get(uiId);
+            if(line == null) return null;
+    
+            Map<String,String> m = new HashMap<>();
+            m.put("id", uiIdStr);
+    
+            // parse action
+            Matcher actM = Pattern.compile("\\bufw\\s+(allow|deny)\\b")
+                                  .matcher(line);
+            m.put("action", actM.find() ? actM.group(1) : "");
+    
+            // parse direction, interface, protocol, from, to, port/app...
+            m.put("direction", line.contains(" out ") ? "out" : "in");
+    
+            Matcher ifM = Pattern.compile("\\bon\\s+(\\S+)").matcher(line);
+            m.put("interface", ifM.find() ? ifM.group(1) : "");
+    
+            Matcher protoM = Pattern.compile("\\bproto\\s+(\\w+)").matcher(line);
+            m.put("protocol", protoM.find() ? protoM.group(1) : "");
+    
+            Matcher fromM = Pattern.compile("\\bfrom\\s+(\\S+)").matcher(line);
+            m.put("sourceIp", fromM.find() ? fromM.group(1) : "any");
+    
+            Matcher toM = Pattern.compile("\\bto\\s+(\\S+)").matcher(line);
+            m.put("destinationIp", toM.find() ? toM.group(1) : "any");
+    
+            Matcher appM = Pattern.compile("\\bapp\\s+['\"]([^'\"]+)['\"]")
+                                   .matcher(line);
+            m.put("app", appM.find() ? appM.group(1) : "");
+    
+            // port / port range
+            Matcher pr = Pattern.compile("\\bport\\s+(\\d+):(\\d+)").matcher(line);
+            if(pr.find()) {
+                m.put("portType","range");
+                m.put("portStart", pr.group(1));
+                m.put("portEnd", pr.group(2));
+                m.put("port","");
             } else {
-                m.put("portType", "any");
-                m.put("port", "");
+                Matcher ps = Pattern.compile("\\bport\\s+(\\d+)").matcher(line);
+                if(ps.find()) {
+                    m.put("portType","specific");
+                    m.put("port", ps.group(1));
+                } else {
+                    m.put("portType","any");
+                    m.put("port","");
+                }
+                m.put("portStart",""); m.put("portEnd","");
             }
-            m.put("portStart", "");
-            m.put("portEnd", "");
+    
+            return m;
+        } catch(Exception e){
+            logger.error("Error fetching rule details", e);
+            return null;
         }
-
-        return  m;
     }
+    
 
     public String getRawAddedRuleLine(PC pc, String ruleId) {
         String command = "echo '" + pc.getPassword() + "' | sudo -S ufw show added | sed -n '"
@@ -553,5 +520,48 @@ public class UFWService {
             return "";
         }
     }
+
+    public Map<Integer,String> fetchAddedRules(PC pc) throws Exception {
+        // 1) Lấy output
+        Session session = connectSSH.establishSSH(
+            pc.getIpAddress(), pc.getPort(), pc.getPcUsername(), pc.getPassword());
+        String output = ubuntuInfo.executeCommand(session, "echo '" + pc.getPassword() + "' | sudo -S ufw show added");
+        session.disconnect();
+    
+        // 2) Split từng dòng
+        String[] lines = output.split("\\r?\\n");
+        Map<Integer,String> rules = new LinkedHashMap<>();
+        // 3) Bỏ header (dòng đầu tiên), đánh index từ 1
+        for(int i = 1; i < lines.length; i++){
+            String line = lines[i].trim();
+            if(line.isEmpty()) continue;
+            rules.put(i, line);
+        }
+        return rules;
+    }
+
+    public Map<Integer,String> fetchNumberedRules(PC pc) throws Exception {
+        Session session = connectSSH.establishSSH(
+            pc.getIpAddress(), pc.getPort(), pc.getPcUsername(), pc.getPassword());
+        session.disconnect();
+        String output = ubuntuInfo.executeCommand(
+          session,
+          "echo '"+pc.getPassword()+"' | sudo -S ufw status numbered"
+        );
+        session.disconnect();
+      
+        Map<Integer,String> map = new LinkedHashMap<>();
+        String[] lines = output.split("\\r?\\n");
+        Pattern p = Pattern.compile("^\\s*\\[(\\d+)\\]\\s*(.*)$");
+        for(String line: lines) {
+          Matcher m = p.matcher(line);
+          if (m.find()) {
+            int idx = Integer.parseInt(m.group(1));
+            map.put(idx, m.group(2).trim());
+          }
+        }
+        return map;
+      }
+      
 
 }

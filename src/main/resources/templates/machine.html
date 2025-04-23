@@ -3141,16 +3141,16 @@
                             }
 
                             if (data.currentLoggingLevel) {
-            document
-              .querySelectorAll('input[name="loggingLevel"]')
-              .forEach(rb => rb.checked = (rb.value === data.currentLoggingLevel));
-        }
+                                document
+                                    .querySelectorAll('input[name="loggingLevel"]')
+                                    .forEach(rb => rb.checked = (rb.value === data.currentLoggingLevel));
+                            }
 
                             if (isChecked) {
-                showToast('success', 'UFW logging đã được bật thành công!', 3000);
-            } else {
-                showToast('info', 'UFW logging đã được tắt.', 3000);
-            }
+                                showToast('success', 'UFW logging đã được bật thành công!', 3000);
+                            } else {
+                                showToast('info', 'UFW logging đã được tắt.', 3000);
+                            }
                         } else {
                             console.error('Không thể bật/tắt logging:', data.message);
                             alert('Không thể bật/tắt logging: ' + data.message);
@@ -3520,16 +3520,20 @@
                 setupFormValidations();
                 const forms = document.querySelectorAll('form');
                 forms.forEach(form => {
+                    // Nếu là update-rule form thì không bind AJAX
+                    if (form.id === 'editRuleForm') return;
                     form.removeEventListener('submit', handleFormSubmit);
                     form.addEventListener('submit', handleFormSubmit);
                 });
-                initializeRuleForm();
             }
 
             function handleFormSubmit(e) {
                 e.preventDefault();
                 if (!validateRuleForm())
                     return;
+                if (form.id === 'editRuleForm') {
+                    return;
+                }
                 const form = e.target;
                 const formData = new FormData(form);
                 const action = form.getAttribute('action');

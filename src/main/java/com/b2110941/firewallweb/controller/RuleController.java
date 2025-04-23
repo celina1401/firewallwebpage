@@ -92,7 +92,7 @@ public class RuleController {
                 redirectAttributes.addFlashAttribute("toastMessage", "Rule added successfully.");
                 break;
             case "existing":
-                redirectAttributes.addFlashAttribute("toastType", "info"); 
+                redirectAttributes.addFlashAttribute("toastType", "info");
                 redirectAttributes.addFlashAttribute("toastMessage", "Rule already exists.");
                 break;
             case "notfound":
@@ -208,102 +208,116 @@ public class RuleController {
     }
 
     @PostMapping("/machine/{pcName}/rule/update")
-public String updateRule(
-        @PathVariable("pcName") String pcName,
-        @RequestParam("ruleId") String ruleId,
-        @RequestParam("action") String action,
-        @RequestParam(value = "portCheck", required = false) Boolean isOutgoing,
-        @RequestParam("protocol") String protocol,
-        @RequestParam(value = "fromType", required = false) String fromType,
-        @RequestParam(value = "fromIp", required = false) String fromIp,
-        @RequestParam(value = "toType", required = false) String toType,
-        @RequestParam(value = "toIp", required = false) String toIp,
-        @RequestParam(value = "toInterface", required = false) String toInterface,
-        @RequestParam(value = "toApp", required = false) String toApp,
-        @RequestParam(value = "portType", required = false) String portType,
-        @RequestParam(value = "port", required = false) String port,
-        @RequestParam(value = "portRangeStart", required = false) String portRangeStart,
-        @RequestParam(value = "portRangeEnd", required = false) String portRangeEnd,
-        HttpSession session,
-        RedirectAttributes redirectAttributes) {
+    public String updateRule(
+            @PathVariable String pcName,
+            @RequestParam("ruleId") String ruleId,
+            @RequestParam("action") String action,
+            @RequestParam(value = "portCheck", required = false) Boolean isOutgoing,
+            @RequestParam("protocol") String protocol,
+            @RequestParam(value = "fromType", required = false) String fromType,
+            @RequestParam(value = "fromIp", required = false) String fromIp,
+            @RequestParam(value = "toType", required = false) String toType,
+            @RequestParam(value = "toIp", required = false) String toIp,
+            @RequestParam(value = "toInterface", required = false) String toInterface,
+            @RequestParam(value = "toApp", required = false) String toApp,
+            @RequestParam(value = "portType", required = false) String portType,
+            @RequestParam(value = "port", required = false) String port,
+            @RequestParam(value = "portRangeStart", required = false) String portRangeStart,
+            @RequestParam(value = "portRangeEnd", required = false) String portRangeEnd,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
     
-    String ownerUsername = (String) session.getAttribute("username");
-    if (ownerUsername == null) {
-        redirectAttributes.addFlashAttribute("error", "User not logged in");
-        return "redirect:/machine/" + pcName + "/rule";
-    }
-    Optional<PC> computerOptional = pcService.findByPcNameAndOwnerUsername(pcName, ownerUsername);
-    if (computerOptional.isEmpty()) {
-        redirectAttributes.addFlashAttribute("error", "Computer " + pcName + " not found");
-        return "redirect:/machine/" + pcName + "/rule";
-    }
-    PC computer = computerOptional.get();
-
-    try {
-        // 1) Xóa rule cũ
-        String deleteResult = ufwService.deleteRule(computer, ruleId);
-        if (!deleteResult.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("error", "Failed to delete existing rule: " + deleteResult);
+        // 1) Kiểm tra login + tìm PC
+        String owner = (String) session.getAttribute("username");
+        if (owner == null) {
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Please login to your account!");
             return "redirect:/machine/" + pcName + "/rule";
         }
-
-        // 2) Thêm rule mới
-        String addResult;
+        Optional<PC> opt = pcService.findByPcNameAndOwnerUsername(pcName, owner);
+        if (opt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Unable to find computer: " + pcName);
+            return "redirect:/machine/" + pcName + "/rule";
+        }
+        PC pc = opt.get();
+    
+        // 2) Lấy chi tiết rule cũ
+        Map<String, String> oldRule = ufwService.fetchRuleDetailsById(pc, ruleId);
+        if (oldRule == null) {
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Old rule not found");
+            return "redirect:/machine/" + pcName + "/rule";
+        }
+    
+        // 3) Tạo cấu trúc map cho rule mới để so sánh
+        Map<String, String> newRule = new HashMap<>(oldRule);
+        newRule.put("action", action);
+        newRule.put("direction", Boolean.TRUE.equals(isOutgoing) ? "out" : "in");
+        newRule.put("protocol", protocol);
+        newRule.put("sourceIp", "ipaddress".equals(fromType) ? fromIp : "any");
+        newRule.put("destinationIp", "ipaddress".equals(toType) ? toIp : "any");
+        // port/app/interface
+        if ("app".equals(toType)) {
+            newRule.put("app", toApp);
+            newRule.put("interface", "");
+        } else if ("interface".equals(toType)) {
+            newRule.put("interface", toInterface);
+            newRule.put("app", "");
+        } else {
+            newRule.put("interface", "");
+            newRule.put("app", "");
+        }
+        // portType / port / portStart / portEnd
+        newRule.put("portType", portType != null ? portType : "any");
+        newRule.put("port", "specific".equals(portType) ? port : "");
+        newRule.put("portStart", "range".equals(portType) ? portRangeStart : "");
+        newRule.put("portEnd",   "range".equals(portType) ? portRangeEnd   : "");
+    
+        // 4) Nếu rule mới giống rule cũ → không thay đổi
+        if (oldRule.equals(newRule)) {
+            redirectAttributes.addFlashAttribute("toastType", "info");
+            redirectAttributes.addFlashAttribute("toastMessage", "No changes detected");
+            return "redirect:/machine/" + pcName + "/rule";
+        }
+    
+        // 5) Thêm rule mới
         boolean outgoing = Boolean.TRUE.equals(isOutgoing);
-
-        if ("app".equals(toType) && toApp != null && !toApp.isEmpty()) {
-            addResult = ufwService.addRuleFromForm(
-                computer, action, outgoing, protocol,
-                "app",            // toType
-                null,             // toIp
-                null, null, null, // portRangeStart, portRangeEnd, port
-                fromType, fromIp,
-                toApp             // app
-            );
-
-        } else if ("interface".equals(toType) && toInterface != null && !toInterface.isEmpty()) {
-            // CHỖ NÀY ĐÃ SỬA: truyền tên interface vào tham số "app"
-            addResult = ufwService.addRuleFromForm(
-                computer, action, outgoing, protocol,
-                "interface",      // toType
-                null,             // toIp
-                null, null, null, // portRangeStart, portRangeEnd, port
-                fromType, fromIp,
-                toInterface       // app ← interface name
-            );
-
-        } else {
-            // IP hoặc any, port cụ thể hoặc range
-            String rangeStart = null, rangeEnd = null, portValue = null;
-            if ("specific".equals(portType)) {
-                portValue = port;
-            } else if ("range".equals(portType)) {
-                rangeStart = portRangeStart;
-                rangeEnd   = portRangeEnd;
+        String addResult = ufwService.addRuleFromForm(
+            pc, action, outgoing, protocol,
+            toType, toIp, portRangeStart, portRangeEnd, port,
+            fromType, fromIp,
+            "app".equals(toType) ? toApp :
+            "interface".equals(toType) ? toInterface : null
+        );
+    
+        // 6) Xử lý kết quả thêm
+        if (addResult.startsWith("added")) {
+            // 6.1) Nếu thêm thành công, tiến hành xóa rule cũ
+            String delResult = ufwService.deleteRule(pc, ruleId);
+            if (delResult.startsWith("success")) {
+                redirectAttributes.addFlashAttribute("toastType", "success");
+                redirectAttributes.addFlashAttribute("toastMessage", "Rule updated successfully!");
+            } else {
+                // Thêm mới thành công nhưng xóa cũ thất bại
+                redirectAttributes.addFlashAttribute("toastType", "warning");
+                redirectAttributes.addFlashAttribute("toastMessage",
+                        "New rule added but failed to delete old rule: " + delResult);
             }
-            addResult = ufwService.addRuleFromForm(
-                computer, action, outgoing, protocol,
-                toType, toIp,
-                rangeStart, rangeEnd, portValue,
-                fromType, fromIp,
-                null              // app
-            );
-        }
-
-        // 3) Thông báo kết quả
-        if (addResult.startsWith("success")) {
-            redirectAttributes.addFlashAttribute("success", "Rule updated successfully");
+    
+        } else if (addResult.startsWith("existing")) {
+            // 6.2) Rule mới đã tồn tại
+            redirectAttributes.addFlashAttribute("toastType", "info");
+            redirectAttributes.addFlashAttribute("toastMessage", "Rule already exists, no changes made.");
         } else {
-            redirectAttributes.addFlashAttribute("error", "Failed to add updated rule: " + addResult);
+            // 6.3) Lỗi: không thêm được rule mới → giữ nguyên rule cũ
+            redirectAttributes.addFlashAttribute("toastType", "error");
+            redirectAttributes.addFlashAttribute("toastMessage", "Cannot add new rule: " + addResult);
         }
-
-    } catch (Exception e) {
-        redirectAttributes.addFlashAttribute("error", "Error updating rule: " + e.getMessage());
+    
+        return "redirect:/machine/" + pcName + "/rule";
     }
-
-    return "redirect:/machine/" + pcName + "/rule";
-}
-
+    
 
     @GetMapping("/machine/{pcName}/rule/{ruleId}")
     @ResponseBody
