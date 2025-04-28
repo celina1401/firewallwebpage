@@ -260,62 +260,61 @@ public class LoggingController {
             logger.warn("No logs to parse: logsOutput is empty or null");
             return logs;
         }
-
+    
         String[] lines = logsOutput.split("\n");
         for (String line : lines) {
-            if (line == null || line.trim().isEmpty()) {
-                continue;
-            }
-
-            Map<String, String> logEntry = new HashMap<>();
-            logger.debug("Parsing UFW log line: {}", line);
-
-            // Extract timestamp (e.g., "Apr 17 12:34:56")
-            int timestampEnd = line.indexOf(".");
-            if (timestampEnd < 0) {
-                logger.warn("Invalid log line format, missing timestamp: {}", line);
-                continue;
-            }
-
-            String fullTimestamp = line.substring(0, timestampEnd);
-            System.out.println("Full Timestamp: " + fullTimestamp);
-            // String[] timestampParts = fullTimestamp.split("\\s+");
-            // String timestamp = timestampParts.length > 0 ? timestampParts[0].replace('T', ' ') : fullTimestamp;
-            // Mới add cái timestamp
-            logEntry.put("timestamp", fullTimestamp);
-
+            if (line == null || line.trim().isEmpty()) continue;
+            if (line.contains(" sudo:")) continue;
+    
             int ufwIndex = line.indexOf("[UFW");
-            if (ufwIndex < 0) {
-                logger.warn("Invalid log line format, missing [UFW]: {}", line);
-                continue;
-            }
-
-            int closeBracketIndex = line.indexOf("]", ufwIndex);
-            if (closeBracketIndex < ufwIndex) {
-                logger.warn("Invalid log line format, missing closing bracket for [UFW]: {}", line);
-                continue;
-            }
-
-            String ufwPart = line.substring(ufwIndex + 1, closeBracketIndex);
-            String[] ufwParts = ufwPart.split("\\s+", 2);
-            String action = ufwParts.length > 1 ? ufwParts[1] : "UNDEFINED";
-            // Cái action
-            logEntry.put("action", action);
-
-            extractLogInfo(line, logEntry, "DST=", "destinationIp");
-            extractLogInfo(line, logEntry, "PROTO=", "protocol");
-            extractLogInfo(line, logEntry, "IN=", "interface");
+            if (ufwIndex < 0) continue;
+    
+            Map<String, String> logEntry = new HashMap<>();
+    
+            // Timestamp
+            int timestampEnd = line.indexOf(".");
+            if (timestampEnd < 0) continue;
+            logEntry.put("timestamp", line.substring(0, timestampEnd));
+    
+            // Action
+            int closeBracket = line.indexOf("]", ufwIndex);
+            if (closeBracket < 0) continue;
+            String[] ufwParts = line.substring(ufwIndex + 1, closeBracket).trim().split("\\s+", 2);
+            logEntry.put("action", ufwParts.length > 1 ? ufwParts[1] : "UNDEFINED");
+    
+            // Chi tiết trường
             extractLogInfo(line, logEntry, "SRC=", "sourceIp");
+            extractLogInfo(line, logEntry, "DST=", "destinationIp");
             extractLogInfo(line, logEntry, "SPT=", "sourcePort");
             extractLogInfo(line, logEntry, "DPT=", "destinationPort");
-
+            extractLogInfo(line, logEntry, "PROTO=", "protocol");
+    
+            // Inline interface extraction: ưu tiên IN=, nếu không thì OUT=
+            String iface = "N/A";
+            int inIdx = line.indexOf("IN=");
+            if (inIdx >= 0) {
+                int start = inIdx + 3;
+                int end = line.indexOf(' ', start);
+                iface = (end > start) ? line.substring(start, end) : line.substring(start);
+            } else {
+                int outIdx = line.indexOf("OUT=");
+                if (outIdx >= 0) {
+                    int start = outIdx + 4;
+                    int end = line.indexOf(' ', start);
+                    iface = (end > start) ? line.substring(start, end) : line.substring(start);
+                }
+            }
+            logEntry.put("interface", iface);
+    
             if (!logEntry.isEmpty()) {
                 logs.add(logEntry);
             }
         }
-        logger.info("Parsed {} log entries", logs.size());
+    
+        logger.info("Parsed {} UFW log entries", logs.size());
         return logs;
     }
+    
 
     private static void extractLogInfo(String line, Map<String, String> logEntry, String prefix, String key) {
         int startIndex = line.indexOf(prefix);
