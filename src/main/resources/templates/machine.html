@@ -3323,7 +3323,7 @@
                     if (!tr.querySelector('td[colspan]')) { // Skip "No entries found" row
                         const row = [];
                         tr.querySelectorAll('td').forEach((td, index) => {
-                            if (index !== 4) { // Skip the Details column
+                            if (index !== 5) { // Skip the Details column
                                 row.push('"' + td.textContent.trim() + '"');
                             }
                         });
