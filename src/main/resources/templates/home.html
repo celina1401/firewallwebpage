@@ -1385,10 +1385,20 @@
                                     throw new Error('Network response was not ok: ' + response.statusText);
                                 return response.text();
                             })
+
                             .then(html => {
                                 setTimeout(() => {
                                     contentArea.innerHTML = html;
                                     contentArea.style.opacity = '1';
+
+                                    if (menuOption === 'manageSystem') {
+                                        // đợi DOM render xong rồi bấm
+                                        setTimeout(() => {
+                                            document
+                                                .querySelectorAll('.check-status-btn')
+                                                .forEach(btn => btn.click());
+                                        });
+                                    }
 
                                     // Check status for all computers if manageSystem section is loaded
                                     if (menuOption === 'manageSystem') {
@@ -1597,9 +1607,8 @@
                     });
             }
 
-
             function shutdownPC(event, button) {
-                // NGĂN CHẶN redirect từ click container
+                // Ngăn chặn redirect container
                 event.stopPropagation();
                 event.preventDefault();
 
@@ -1618,17 +1627,17 @@
                     .then(data => {
                         if (data.success) {
                             showToast('success', 'Shutdown command sent successfully!', 5000);
-                            setTimeout(() => {
-                                // tìm nút check-status tương ứng trong cùng 1 .computer
-                                const statusBtn = button
-                                    .closest('.computer')
-                                    .querySelector('.check-status-btn');
-                                if (statusBtn) {
-                                    // fake event để không redirect container
-                                    checkSSHStatusOne({ stopPropagation: () => { } }, statusBtn);
-                                }
-                            }, 1000);
 
+                            // Chỉ click nút check-status của cùng 1 .computer
+                            const pcDiv = button.closest('.computer');
+                            const statusBtn = pcDiv.querySelector('.check-status-btn');
+                            if (statusBtn) {
+                                // Cho server có thời gian shutdown xong, rồi check lại
+                                setTimeout(() => {
+                                    // Dùng click() hoặc gọi trực tiếp hàm
+                                    statusBtn.click();
+                                }, 1500);
+                            }
                         } else {
                             showToast('error', `Error: ${data.message}`, 5000);
                         }
@@ -1638,6 +1647,7 @@
                         showToast('error', 'Error sending shutdown command', 5000);
                     });
             }
+
 
             function openDetailModal(e, btn) {
                 e.stopPropagation();
