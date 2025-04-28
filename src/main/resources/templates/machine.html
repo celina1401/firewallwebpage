@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@4.19.0/css/xterm.min.css" />
     <title>Machine Management</title>
 
-    <!--        <script src="https://unpkg.com/xterm/lib/xterm.js"></script>-->
     <script src="https://cdn.jsdelivr.net/npm/xterm@4.19.0/lib/xterm.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.5.0/lib/xterm-addon-fit.min.js"></script>
     <style>
@@ -512,6 +511,7 @@
         }
 
         .logging-table td {
+            text-align: center;
             padding: 18px 24px;
             font-size: 16px;
             border-bottom: 1px solid #eef2f7;
@@ -539,6 +539,11 @@
         .logging-table td:nth-child(4) {
             background: linear-gradient(to right, rgba(39, 174, 96, 0.1), transparent);
             color: #27ae60;
+        }
+
+        .logging-table td:nth-child(5) {
+            background: linear-gradient(to right, rgba(231, 76, 60, 0.1), transparent);
+            color: #c0392b;
         }
 
         .logging-table tr:hover td {
@@ -2319,7 +2324,6 @@
                             <select id="actionFilter" name="action" th:value="${selectedAction}">
                                 <option value="all">All</option>
                                 <option value="ALLOW">Allow</option>
-                                <option value="DENY">Deny</option>
                                 <option value="AUDIT">Audit</option>
                                 <option value="BLOCK">Block</option>
                             </select>
@@ -2357,6 +2361,7 @@
                             <table class="logging-table">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
                                         <th>Timestamp</th>
                                         <th>Action</th>
                                         <th>Destination IP</th>
@@ -2365,7 +2370,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr th:each="logEntry : ${ufwLogs}">
+                                    <tr th:each="logEntry,stat : ${ufwLogs}">
+                                        <td th:text="${stat.index + 1}">1</td>
                                         <td th:text="${logEntry.timestamp}">Timestamp</td>
                                         <td th:text="${logEntry.action}">Action</td>
                                         <td th:text="${logEntry.destinationIp}">Destination IP</td>
@@ -2575,57 +2581,124 @@
                 return true;
             }
 
-            function changeLoggingLevel(level) {
-                const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
-                if (!pcName) {
-                    console.error("PC name not found");
-                    return;
-                }
+            // function changeLoggingLevel(level) {
+            //     const pcName = document.querySelector('.menu-btn.active')?.getAttribute('data-pcname');
+            //     if (!pcName) {
+            //         console.error("PC name not found");
+            //         return;
+            //     }
 
-                fetch(`/machine/${pcName}/logging-level`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `level=${level}`
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            showToast('success', data.message);
-                            const tbody = document.querySelector('.logging-table tbody');
-                            if (tbody) {
-                                tbody.innerHTML = '';
-                                if (data.ufwLogs.length === 0) {
-                                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected level.</td></tr>';
-                                } else {
-                                    data.ufwLogs.forEach(log => {
-                                        tbody.innerHTML += `
-                                        <tr>
-                                            <td>${log.timestamp || ''}</td>
-                                            <td>${log.action || ''}</td>
-                                            <td>${log.destinationIp || ''}</td>
-                                            <td>${log.protocol || ''}</td>
-                                            <td class="details-cell">
-                                                <button class="details-btn" data-timestamp="${log.timestamp || ''}" onclick="showLogDetails(this)">
-                                                    <img src="/images/details.png" alt="">
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                    });
-                                }
-                            }
-                        } else {
-                            console.error('Failed to change logging level:', data.message);
-                            alert('Failed to change logging level: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error changing logging level');
-                    });
-            }
+            //     fetch(`/machine/${pcName}/logging-level`, {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/x-www-form-urlencoded',
+            //         },
+            //         body: `level=${level}`
+            //     })
+            //         .then(response => response.json())
+            //         .then(data => {
+            //             if (data.success) {
+            //                 showToast('success', data.message);
+            //                 const tbody = document.querySelector('.logging-table tbody');
+            //                 if (tbody) {
+            //                     tbody.innerHTML = '';
+            //                     if (data.ufwLogs.length === 0) {
+            //                         tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected level.</td></tr>';
+            //                     } else {
+            //                         data.ufwLogs.forEach(log,idx => {
+            //                             tbody.innerHTML += `
+            //                             <tr>
+            //                                 <td>${idx + 1}</td>
+            //                                 <td>${log.timestamp || ''}</td>
+            //                                 <td>${log.action || ''}</td>
+            //                                 <td>${log.destinationIp || ''}</td>
+            //                                 <td>${log.protocol || ''}</td>
+            //                                 <td class="details-cell">
+            //                                     <button class="details-btn" data-timestamp="${log.timestamp || ''}" onclick="showLogDetails(this)">
+            //                                         <img src="/images/details.png" alt="">
+            //                                     </button>
+            //                                 </td>
+            //                             </tr>
+            //                         `;
+            //                         });
+            //                     }
+            //                 }
+            //             } else {
+            //                 console.error('Failed to change logging level:', data.message);
+            //                 alert('Failed to change logging level: ' + data.message);
+            //             }
+            //         })
+            //         .catch(error => {
+            //             console.error('Error:', error);
+            //             alert('Error changing logging level');
+            //         });
+            // }
+
+            function changeLoggingLevel(level) {
+    const btn = document.querySelector('.menu-btn.active');
+    const pcName = btn?.getAttribute('data-pcname');
+    if (!pcName) {
+        console.error("PC name not found");
+        return;
+    }
+
+    fetch(`/machine/${pcName}/logging-level`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({ level })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(data => {
+        if (!data.success) {
+            alert('Failed: ' + data.message);
+            return;
+        }
+        showToast('success', data.message);
+
+        const tbody = document.querySelector('.logging-table tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (!data.ufwLogs || data.ufwLogs.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align:center">
+                        No log entries found for selected level.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        data.ufwLogs.forEach((log, idx) => {
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td>${log.timestamp || ''}</td>
+                    <td>${log.action || ''}</td>
+                    <td>${log.destinationIp || ''}</td>
+                    <td>${log.protocol || ''}</td>
+                    <td class="details-cell">
+                        <button class="details-btn"
+                                data-timestamp="${log.timestamp || ''}"
+                                onclick="showLogDetails(this)">
+                            <img src="/images/details.png" alt="">
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    })
+    .catch(err => {
+        console.error('Error changing logging level:', err);
+        alert('Error changing logging level:\n' + err.message);
+    });
+}
+
 
 
 
@@ -2698,9 +2771,10 @@
                 if (!logs || logs.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No log entries found for selected filters.</td></tr>';
                 } else {
-                    logs.forEach(log => {
+                    logs.forEach((log, idx) => {
                         tbody.innerHTML += `
                         <tr>
+                            <td>${idx + 1}</td>
                             <td>${log.timestamp || ''}</td>
                             <td>${log.action || ''}</td>
                             <td>${log.destinationIp || ''}</td>

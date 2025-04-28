@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -94,6 +95,11 @@ public class FillterController {
             String fullCommand = "echo '" + computer.getPassword() + "' | sudo -S " + command.toString();
             String logsOutput = ubuntuInfo.executeCommand(sshSession, fullCommand);
             List<Map<String, String>> filteredLogs = parseUfwLogs(logsOutput);
+
+            AtomicInteger counter = new AtomicInteger(1);
+            filteredLogs.forEach(logEntry ->
+                logEntry.put("id", String.valueOf(counter.getAndIncrement()))
+            );
 
             response.put("success", true);
             response.put("ufwLogs", filteredLogs);
