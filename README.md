@@ -91,24 +91,8 @@ o	Xem nhật ký tường lửa (UFW logs).
 o	Chọn máy chủ và mở terminal tích hợp để thực hiện các lệnh từ xa qua kết nối SSH.
 Cấu trúc Dự án
 Dưới đây là cấu trúc thư mục chính của dự án Web Firewall:
-firewallwebpage/
-├── src/
-│   ├── main/
-│   │   ├── java/com/b2110941/firewallweb/
-│   │   │   ├── controller/      # Xử lý các yêu cầu HTTP
-│   │   │   ├── model/         # Định nghĩa các đối tượng dữ liệu (ví dụ: Machine, User)
-│   │   │   ├── repository/      # Giao tiếp với cơ sở dữ liệu MongoDB
-│   │   │   ├── service/       # Chứa logic nghiệp vụ, giao tiếp với SSH và UFW
-│   │   │   └── FirewallwebApplication.java  # Điểm khởi chạy ứng dụng Spring Boot
-│   │   └── resources/
-│   │       ├── static/        # Chứa các tệp tĩnh (CSS, JavaScript, hình ảnh)
-│   │       ├── templates/     # Chứa các tệp mẫu giao diện (ví dụ: Thymeleaf, HTML)
-│   │       └── application.properties   # Tệp cấu hình ứng dụng
-│   └── test/              # Chứa các tệp kiểm thử
-├── .mvn/
-├── mvnw                 # Wrapper script cho Maven (Linux/macOS)
-├── mvnw.cmd             # Wrapper script cho Maven (Windows)
-└── pom.xml              # Tệp cấu hình dự án Maven, định nghĩa các phụ thuộc
+![image](https://github.com/user-attachments/assets/97d4bec5-a981-48db-a854-156078c258ee)
+
 
 
 Xử lý Sự cố
