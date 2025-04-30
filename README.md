@@ -7,9 +7,11 @@ Web Firewall là một ứng dụng web được phát triển bằng Spring Boo
 •	Theo dõi nhật ký tường lửa
 •	Truy cập terminal từ xa thông qua SSH
 •	Quản lý người dùng và xác thực
+
 Về Khởi tạo Dự án Spring Boot (Init Spring Boot)
 Các dự án Spring Boot thường được khởi tạo (init) một cách dễ dàng bằng cách sử dụng Spring Initializr (tại https://start.spring.io/). Đây là công cụ giúp bạn tạo cấu trúc dự án ban đầu với các phụ thuộc (dependencies) cần thiết cho ứng dụng của mình (ví dụ: Spring Web, Spring Data MongoDB, SSH library, v.v.). Spring Initializr cho phép bạn chọn ngôn ngữ (Java, Kotlin, Groovy), loại dự án (Maven hoặc Gradle) và các thư viện (dependencies) cần thiết, sau đó tạo ra một tệp nén chứa cấu trúc dự án cơ bản sẵn sàng để phát triển.
 Tuy nhiên, trong hướng dẫn này, bạn sẽ bắt đầu bằng cách tải xuống mã nguồn của ứng dụng Web Firewall đã được tạo sẵn thông qua Git, thay vì tự khởi tạo từ đầu bằng Spring Initializr.
+
 Yêu cầu Hệ thống
 Máy chủ Web Firewall
 •	Java Development Kit (JDK) 17 trở lên
