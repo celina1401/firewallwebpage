@@ -1,0 +1,84 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+    
+    - name: Build static site
+      run: |
+        # Tạo thư mục docs nếu chưa có
+        mkdir -p docs
+        
+        # Copy static files từ src/main/resources/static
+        cp -r src/main/resources/static/* docs/ 2>/dev/null || true
+        
+        # Đảm bảo index.html được copy và có quyền ưu tiên cao nhất
+        if [ -f "docs/index.html" ]; then
+          echo "index.html found and will be used as homepage"
+        else
+          echo "index.html not found, creating default"
+          cp docs/index.html docs/index.html.backup 2>/dev/null || true
+        fi
+        
+        # Tạo README cho docs (sẽ không hiển thị làm homepage)
+        echo "# Firewall Web Application Documentation" > docs/README.md
+        echo "" >> docs/README.md
+        echo "Đây là trang landing page cho ứng dụng Firewall Web." >> docs/README.md
+        echo "" >> docs/README.md
+        echo "## Tính năng chính:" >> docs/README.md
+        echo "- 🛡️ Quản lý firewall rules" >> docs/README.md
+        echo "- 📊 Theo dõi logs" >> docs/README.md
+        echo "- 💻 Quản lý máy tính" >> docs/README.md
+        echo "- 🔧 Terminal SSH tích hợp" >> docs/README.md
+        
+        # Tạo file .nojekyll để disable Jekyll processing
+        touch docs/.nojekyll
+        
+        # Liệt kê files trong docs để debug
+        echo "Files in docs directory:"
+        ls -la docs/
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
