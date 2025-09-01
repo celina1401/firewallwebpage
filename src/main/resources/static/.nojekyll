@@ -1,0 +1,2 @@
+# This file tells GitHub Pages not to process this directory with Jekyll
+# This ensures that index.html is served as the homepage instead of README.md

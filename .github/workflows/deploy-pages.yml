@@ -34,42 +34,33 @@ jobs:
     
     - name: Build static site
       run: |
-        # Tạo thư mục docs nếu chưa có
-        mkdir -p docs
+        # Kiểm tra cấu trúc thư mục src
+        echo "📁 Checking src directory structure:"
+        ls -la src/
+        echo "📁 Checking src/main/resources:"
+        ls -la src/main/resources/
         
-        # Copy static files từ src/main/resources/static
-        cp -r src/main/resources/static/* docs/ 2>/dev/null || true
-        
-        # Đảm bảo index.html được copy và có quyền ưu tiên cao nhất
-        if [ -f "docs/index.html" ]; then
-          echo "index.html found and will be used as homepage"
+        # Tạo index.html từ template có sẵn
+        if [ -f "src/main/resources/templates/home.html" ]; then
+          cp src/main/resources/templates/home.html src/main/resources/static/index.html
+          echo "✅ Created index.html from home.html"
+        elif [ -f "src/main/resources/templates/login.html" ]; then
+          cp src/main/resources/templates/login.html src/main/resources/static/index.html
+          echo "✅ Created index.html from login.html"
         else
-          echo "index.html not found, creating default"
-          cp docs/index.html docs/index.html.backup 2>/dev/null || true
+          echo "⚠️ No suitable template found for index.html"
         fi
         
-        # Tạo README cho docs (sẽ không hiển thị làm homepage)
-        echo "# Firewall Web Application Documentation" > docs/README.md
-        echo "" >> docs/README.md
-        echo "Đây là trang landing page cho ứng dụng Firewall Web." >> docs/README.md
-        echo "" >> docs/README.md
-        echo "## Tính năng chính:" >> docs/README.md
-        echo "- 🛡️ Quản lý firewall rules" >> docs/README.md
-        echo "- 📊 Theo dõi logs" >> docs/README.md
-        echo "- 💻 Quản lý máy tính" >> docs/README.md
-        echo "- 🔧 Terminal SSH tích hợp" >> docs/README.md
+        # Tạo file .nojekyll trong static để disable Jekyll
+        touch src/main/resources/static/.nojekyll
         
-        # Tạo file .nojekyll để disable Jekyll processing
-        touch docs/.nojekyll
-        
-        # Liệt kê files trong docs để debug
-        echo "Files in docs directory:"
-        ls -la docs/
+        echo "📁 Final static directory contents:"
+        ls -la src/main/resources/static/
     
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
-        path: docs/
+        path: src/main/resources/static
 
   deploy:
     environment:
