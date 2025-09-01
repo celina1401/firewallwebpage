@@ -34,15 +34,13 @@ jobs:
         echo "📁 Checking src/main/resources:"
         ls -la src/main/resources/
         
-        # Tạo index.html từ template có sẵn
-        if [ -f "src/main/resources/templates/home.html" ]; then
-          cp src/main/resources/templates/home.html src/main/resources/static/index.html
-          echo "✅ Created index.html from home.html"
-        elif [ -f "src/main/resources/templates/login.html" ]; then
+        # Copy login.html có sẵn thành index.html
+        if [ -f "src/main/resources/templates/login.html" ]; then
           cp src/main/resources/templates/login.html src/main/resources/static/index.html
-          echo "✅ Created index.html from login.html"
+          echo "✅ Copied login.html to index.html (using existing template)"
         else
-          echo "⚠️ No suitable template found for index.html"
+          echo "❌ login.html not found in templates directory"
+          exit 1
         fi
         
         # Tạo file .nojekyll trong static để disable Jekyll

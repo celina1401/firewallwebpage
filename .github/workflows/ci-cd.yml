@@ -28,13 +28,21 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     
     - name: Build with Maven
-      run: ./mvnw clean compile test
+      run: |
+        # Make mvnw executable
+        chmod +x ./mvnw
+        # Build project
+        ./mvnw clean compile test
     
     - name: Run tests
       run: ./mvnw test
     
     - name: Build JAR
-      run: ./mvnw clean package -DskipTests
+      run: |
+        # Make mvnw executable (if not already done)
+        chmod +x ./mvnw
+        # Build JAR
+        ./mvnw clean package -DskipTests
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
