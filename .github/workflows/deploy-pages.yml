@@ -34,20 +34,34 @@ jobs:
         echo "📁 Checking src/main/resources:"
         ls -la src/main/resources/
         
-        # Copy login.html có sẵn thành index.html
-        if [ -f "src/main/resources/templates/login.html" ]; then
-          cp src/main/resources/templates/login.html src/main/resources/static/index.html
-          echo "✅ Copied login.html to index.html (using existing template)"
+        # Kiểm tra xem index.html đã có chưa
+        if [ -f "src/main/resources/static/index.html" ]; then
+          echo "✅ index.html already exists in static directory"
         else
-          echo "❌ login.html not found in templates directory"
-          exit 1
+          echo "❌ index.html not found, creating from login.html template"
+          if [ -f "src/main/resources/templates/login.html" ]; then
+            cp src/main/resources/templates/login.html src/main/resources/static/index.html
+            echo "✅ Copied login.html to index.html"
+          else
+            echo "❌ login.html not found in templates directory"
+            exit 1
+          fi
         fi
         
         # Tạo file .nojekyll trong static để disable Jekyll
         touch src/main/resources/static/.nojekyll
         
+        # Xóa README.md nếu có để tránh conflict
+        if [ -f "README.md" ]; then
+          echo "⚠️ README.md found, this might conflict with index.html"
+        fi
+        
         echo "📁 Final static directory contents:"
         ls -la src/main/resources/static/
+        
+        # Kiểm tra nội dung index.html
+        echo "📄 Checking index.html content (first 5 lines):"
+        head -5 src/main/resources/static/index.html
     
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v4
