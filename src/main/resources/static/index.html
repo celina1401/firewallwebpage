@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    <link rel="icon" th:href="@{/images/favicon.png}" />
+    <title>Log In</title>
+    <style>
+        /* Reset & font */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(150deg, #301616, #0367ca);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        /* Container */
+        .login-container {
+            display: flex;
+            max-width: 900px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* Left panel */
+        .left-panel {
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 40%;
+            position: relative;
+            overflow: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h10v10H0zm10 10h10v10H10zm10 0h10v10H20zm10-10h10v10H30z' fill='%23ffffff' fill-opacity='0.1'/ %3E%3C/svg%3E");
+        }
+
+        .left-panel::after {
+            content: '';
+            position: absolute;
+            right: -50px;
+            top: 0;
+            height: 100%;
+            width: 100px;
+            background: white;
+            transform: skewX(-10deg);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel .logo img {
+            width: 100px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            margin-bottom: 20px;
+        }
+
+        .left-panel .title {
+            font-size: 28px;
+            font-weight: 600;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .left-panel .subtitle {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            max-width: 90%;
+            line-height: 1.5;
+        }
+
+        /* Right box */
+        .login-box {
+            background: white;
+            padding: 40px;
+            width: 60%;
+            position: relative;
+        }
+
+        .login-box .title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        .login-box .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        /* Inputs */
+        .input-contain {
+            position: relative;
+            margin: 15px 0;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-field:focus {
+            border-color: #0d6efd;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
+
+        label {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            color: #999;
+            font-size: 14px;
+            background: white;
+            padding: 0 5px;
+        }
+
+        .input-field:focus+label,
+        .input-field.has-content+label {
+            top: 0;
+            font-size: 12px;
+            color: #0d6efd;
+            transform: translateY(-50%);
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #999;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .eye-icon:hover {
+            color: #0d6efd;
+        }
+
+        /* forgot password */
+        .forgot-password {
+            margin: 10px 0 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: right;
+        }
+
+        .forgot-password a {
+            font-size: 14px;
+            color: #0d6efd;
+            text-decoration: none;
+            transition: color 0.3s, text-decoration 0.3s;
+        }
+
+        .forgot-password a:hover {
+            color: #084298;
+            text-decoration: underline;
+        }
+
+        /* Buttons */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            background: linear-gradient(to right, #0d6efd, #0a58ca);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+            transition: all 0.3s ease;
+            height: 48px;
+        }
+
+        .login-btn:hover {
+            background: linear-gradient(to right, #0a58ca, #084298);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(13, 110, 253, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(13, 110, 253, 0.3);
+        }
+
+        .register-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            background: white;
+            color: #0d6efd;
+            border: 2px solid #0d6efd;
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+            height: 48px;
+        }
+
+        .register-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: rgba(13, 110, 253, 0.08);
+            transition: all 0.3s;
+            z-index: -1;
+            border-radius: 6px;
+        }
+
+        .register-btn:hover {
+            color: #084298;
+            border-color: #084298;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .register-btn:hover::before {
+            width: 100%;
+        }
+
+        /* Footer text */
+        .login-text {
+            margin-top: 25px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-text a {
+            color: #0d6efd;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .login-text a:hover {
+            color: #084298;
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+                width: 95%;
+            }
+
+            .left-panel {
+                width: 100%;
+                border-radius: 10px 10px 0 0;
+                padding: 30px;
+            }
+
+            .login-box {
+                width: 100%;
+                border-radius: 0 0 10px 10px;
+            }
+
+            .left-panel::after,
+            .login-box::before {
+                display: none;
+            }
+        }
+
+        /* ===== TOAST CSS ===== */
+        :root {
+            --toast-success: #28a745;
+            --toast-error: #dc3545;
+            --toast-info: #0d6efd;
+            --toast-warning: #ffc107;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            min-width: 350px;
+            max-width: 450px;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            z-index: 1000;
+            border-left: 8px solid var(--toast-color);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+            50% {
+                box-shadow: 0 15px 45px rgba(var(--toast-shadow-color), 0.5);
+            }
+            100% {
+                box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            }
+        }
+        
+        .toast--visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast--success { 
+            --toast-color: var(--toast-success);
+            --toast-shadow-color: 40, 167, 69;
+            /* background: linear-gradient(to right, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05), white); */
+        }
+        
+        .toast--error { 
+            --toast-color: var(--toast-error);
+            --toast-shadow-color: 220, 53, 69;
+            /* background: linear-gradient(to right, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05), white); */
+        }
+
+        .toast__icon {
+            font-size: 28px;
+            margin-right: 16px;
+            color: var(--toast-color);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .toast__message {
+            flex: 1;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.4;
+            font-weight: 500;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .toast__close {
+            margin-left: 16px;
+            font-size: 24px;
+            color: #777;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.05);
+        }
+        
+        .toast__close:hover {
+            color: var(--toast-color);
+            background: rgba(0, 0, 0, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .toast__progress {
+            position: absolute;
+            bottom: 0; 
+            left: 0;
+            width: 0;
+            height: 5px;
+            background: linear-gradient(to right, var(--toast-color), rgba(var(--toast-shadow-color), 0.6));
+            transition: width linear 4s;
+            border-radius: 0 2px 2px 0;
+        }
+    </style>
+
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <!-- … left‑panel + login‑box như cũ … -->
+        <div class="left-panel">
+            <div class="logo"><img th:src="@{/images/logo.png}" alt="Logo" /></div>
+            <h1 class="title">Firewall</h1>
+            <p class="subtitle">
+                Secure your network with our advanced firewall management system
+            </p>
+        </div>
+        <div class="login-box">
+            <h1 class="title">Welcome Back</h1>
+            <p class="subtitle">Login to your account</p>
+            <form th:action="@{/}" method="post">
+                <div class="input-contain">
+                    <input id="username" name="username" class="input-field" required />
+                    <label for="username">Username</label>
+                </div>
+                <div class="input-contain">
+                    <input id="password" type="password" name="password" class="input-field" required />
+                    <label for="password">Password</label>
+                    <span class="eye-icon" onclick="togglePassword()">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                <div class="forgot-password">
+                    <a th:href="@{/forgot-password}">Forgot password?</a>
+                </div>
+                <div class="buttons">
+                    <button type="submit" class="login-btn">Sign In</button>
+                    <button type="button" class="register-btn" onclick="window.location.href='/register'">
+                        Sign Up
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- === TOASTs: sẽ chỉ render khi có message hoặc error === -->
+    <div th:if="${toastMessage}" id="toast-message" 
+         class="toast" th:classappend="${toastType == 'error'} ? 'toast--error' : 'toast--success'">
+        <div class="toast__icon">
+            <i th:class="${toastType == 'error'} ? 'fas fa-exclamation-circle' : 'fas fa-check-circle'"></i>
+        </div>
+        <div class="toast__message" th:utext="${toastMessage}">…</div>
+        <div class="toast__close" onclick="hideToast(this)">&times;</div>
+        <div class="toast__progress"></div>
+    </div>
+
+    <script>
+        // toggle mật khẩu
+        function togglePassword() {
+            const inp = document.querySelector("input[name='password']");
+            const icon = document.querySelector(".eye-icon i");
+            if (inp.type === "password") {
+                inp.type = "text";
+                icon.classList.replace("fa-eye", "fa-eye-slash");
+            } else {
+                inp.type = "password";
+                icon.classList.replace("fa-eye-slash", "fa-eye");
+            }
+        }
+
+        // Khi DOM load, show bất kỳ toast nào tồn tại
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".toast").forEach(toast => {
+                // show
+                toast.classList.add("toast--visible");
+                // start progress bar
+                const bar = toast.querySelector(".toast__progress");
+                setTimeout(() => bar.style.width = '100%', 50);
+                // auto hide sau 4s
+                setTimeout(() => hideToast(null, toast), 4000);
+            });
+
+            // floating‑label cho inputs
+            document.querySelectorAll(".input-field").forEach(input => {
+                input.addEventListener("blur", () => {
+                    input.value.trim() !== ""
+                        ? input.classList.add("has-content")
+                        : input.classList.remove("has-content");
+                });
+                if (input.value.trim() !== "")
+                    input.classList.add("has-content");
+            });
+        });
+
+        // hide toast (thisBtn optional)
+        function hideToast(btn, toastEl) {
+            const toast = toastEl || btn.closest(".toast");
+            toast.classList.remove("toast--visible");
+        }
+    </script>
+</body>
+
+</html>
