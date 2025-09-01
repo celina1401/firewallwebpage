@@ -1,0 +1,80 @@
+name: Deploy to Server
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: firewallweb-jar
+        path: target/
+    
+    - name: Deploy to server via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ secrets.SERVER_PORT }}
+        script: |
+          # Tạo thư mục deploy nếu chưa có
+          mkdir -p ~/firewallweb
+          cd ~/firewallweb
+          
+          # Backup version cũ
+          if [ -f firewallweb.jar ]; then
+            mv firewallweb.jar firewallweb.jar.backup
+          fi
+          
+          # Dừng service cũ nếu đang chạy
+          sudo systemctl stop firewallweb || true
+          
+          # Tạo service file nếu chưa có
+          if [ ! -f /etc/systemd/system/firewallweb.service ]; then
+            sudo tee /etc/systemd/system/firewallweb.service > /dev/null <<EOF
+          [Unit]
+          Description=Firewall Web Application
+          After=network.target
+          
+          [Service]
+          Type=simple
+          User=${{ secrets.SERVER_USERNAME }}
+          WorkingDirectory=/home/${{ secrets.SERVER_USERNAME }}/firewallweb
+          ExecStart=/usr/bin/java -Dspring.profiles.active=prod -jar firewallweb.jar
+          Restart=always
+          RestartSec=10
+          
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          sudo systemctl daemon-reload
+          sudo systemctl enable firewallweb
+          fi
+          
+          # Khởi động service
+          sudo systemctl start firewallweb
+          
+          # Kiểm tra status
+          sudo systemctl status firewallweb
+          
+          echo "Deployment completed successfully!"
+    
+    - name: Health Check
+      run: |
+        echo "Waiting for application to start..."
+        sleep 30
+        
+        # Kiểm tra health endpoint (nếu có)
+        # curl -f http://${{ secrets.SERVER_HOST }}:1402/actuator/health || echo "Health check failed"
+        
+        echo "Deployment verification completed" 

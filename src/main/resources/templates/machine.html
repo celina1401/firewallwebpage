@@ -2635,47 +2635,47 @@
             // }
 
             function changeLoggingLevel(level) {
-    const btn = document.querySelector('.menu-btn.active');
-    const pcName = btn?.getAttribute('data-pcname');
-    if (!pcName) {
-        console.error("PC name not found");
-        return;
-    }
+                const btn = document.querySelector('.menu-btn.active');
+                const pcName = btn?.getAttribute('data-pcname');
+                if (!pcName) {
+                    console.error("PC name not found");
+                    return;
+                }
 
-    fetch(`/machine/${pcName}/logging-level`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({ level })
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-    })
-    .then(data => {
-        if (!data.success) {
-            alert('Failed: ' + data.message);
-            return;
-        }
-        showToast('success', data.message);
+                fetch(`/machine/${pcName}/logging-level`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({ level })
+                })
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (!data.success) {
+                            alert('Failed: ' + data.message);
+                            return;
+                        }
+                        showToast('success', data.message);
 
-        const tbody = document.querySelector('.logging-table tbody');
-        if (!tbody) return;
+                        const tbody = document.querySelector('.logging-table tbody');
+                        if (!tbody) return;
 
-        tbody.innerHTML = '';
-        if (!data.ufwLogs || data.ufwLogs.length === 0) {
-            tbody.innerHTML = `
+                        tbody.innerHTML = '';
+                        if (!data.ufwLogs || data.ufwLogs.length === 0) {
+                            tbody.innerHTML = `
                 <tr>
                     <td colspan="6" style="text-align:center">
                         No log entries found for selected level.
                     </td>
                 </tr>`;
-            return;
-        }
+                            return;
+                        }
 
-        data.ufwLogs.forEach((log, idx) => {
-            tbody.insertAdjacentHTML('beforeend', `
+                        data.ufwLogs.forEach((log, idx) => {
+                            tbody.insertAdjacentHTML('beforeend', `
                 <tr>
                     <td>${idx + 1}</td>
                     <td>${log.timestamp || ''}</td>
@@ -2691,13 +2691,13 @@
                     </td>
                 </tr>
             `);
-        });
-    })
-    .catch(err => {
-        console.error('Error changing logging level:', err);
-        alert('Error changing logging level:\n' + err.message);
-    });
-}
+                        });
+                    })
+                    .catch(err => {
+                        console.error('Error changing logging level:', err);
+                        alert('Error changing logging level:\n' + err.message);
+                    });
+            }
 
 
 

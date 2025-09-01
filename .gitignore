@@ -31,3 +31,33 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db
+
+### Logs ###
+*.log
+logs/
+
+### Application Properties ###
+application-local.properties
+application-prod.properties
+
+### Docker ###
+.dockerignore
+
+### Environment Variables ###
+.env
+.env.local
+.env.production
+
+### Temporary Files ###
+*.tmp
+*.temp
+*.swp
+*.swo
+
+### Backup Files ###
+*.bak
+*.backup
